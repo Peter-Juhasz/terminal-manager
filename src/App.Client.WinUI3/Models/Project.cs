@@ -24,6 +24,10 @@ public abstract record class Project
     [JsonIgnore]
     public abstract string TerminalDisplayName { get; }
 
+    /// <summary>The logo of the terminal the commands are run by.</summary>
+    [JsonIgnore]
+    public abstract Uri TerminalIconUri { get; }
+
     /// <summary>
     /// Describes the process that runs <paramref name="command"/>. Its working folder and the redirection of its streams are set by the caller.
     /// </summary>

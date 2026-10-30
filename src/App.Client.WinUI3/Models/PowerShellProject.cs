@@ -20,6 +20,11 @@ public sealed record class PowerShellProject : Project
     [JsonIgnore]
     public override string TerminalDisplayName => "PowerShell";
 
+    private static readonly Uri IconUri = new("ms-appx:///Assets/pwsh.svg");
+
+    [JsonIgnore]
+    public override Uri TerminalIconUri => IconUri;
+
     public override ProcessStartInfo CreateStartInfo(string command)
     {
         ArgumentNullException.ThrowIfNull(command);

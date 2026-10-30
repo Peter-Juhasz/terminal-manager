@@ -53,7 +53,11 @@
                         <DataTemplate x:DataType="vm:ProjectSessionViewModel">
                             <NavigationViewItem Content="{x:Bind Project.DisplayName, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind Project.WorkingFolder, Mode=OneWay}">
                                 <NavigationViewItem.Icon>
-                                    <FontIcon Glyph="&#xE756;" />
+                                    <ImageIcon>
+                                        <ImageIcon.Source>
+                                            <SvgImageSource UriSource="{x:Bind Project.TerminalIconUri, Mode=OneWay}" />
+                                        </ImageIcon.Source>
+                                    </ImageIcon>
                                 </NavigationViewItem.Icon>
                                 <NavigationViewItem.InfoBadge>
                                     <InfoBadge Style="{ThemeResource AttentionDotInfoBadgeStyle}" Visibility="{x:Bind IsRunning, Mode=OneWay}" />

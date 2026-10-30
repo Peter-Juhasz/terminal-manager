@@ -35,7 +35,10 @@ public partial class App : Application
         var services = new ServiceCollection();
 
         // Packaged apps have this redirected to their own per-package folder.
-        var dataFolder = new DirectoryInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Terminal"));
+        var dataFolderPath = Environment.GetEnvironmentVariable("TERMINAL_DATA_FOLDER") is { Length: > 0 } overridden
+            ? overridden
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Terminal");
+        var dataFolder = new DirectoryInfo(Environment.ExpandEnvironmentVariables(dataFolderPath));
 
         // The type infos are passed in rather than the context, as getting them from the context isn't trim safe.
         services.AddSingleton(new ProjectStore(
