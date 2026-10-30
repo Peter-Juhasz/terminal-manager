@@ -1,9 +1,12 @@
 using System.Runtime.InteropServices;
+using App.Client.WinUI3.Models;
+using App.Client.WinUI3.Services;
 using App.Client.WinUI3.ViewModels;
 using App.Client.WinUI3.Views;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Windows.Graphics;
 using Windows.Win32;
@@ -18,14 +21,26 @@ public sealed partial class MainWindow : Window
 	private const int DefaultWidth = 1200;
 	private const int DefaultHeight = 800;
 
-	public MainWindow(MainViewModel viewModel)
+	private readonly SettingsService _settingsService;
+
+	public MainWindow(MainViewModel viewModel, SettingsService settingsService)
 	{
 		ViewModel = viewModel;
+		_settingsService = settingsService;
 		InitializeComponent();
+		NavView.Loaded += (_, _) =>
+		{
+			// Opens a dialog rather than a page; its label would otherwise follow the system language, not the app's.
+			var settingsItem = (NavigationViewItem)NavView.SettingsItem;
+			settingsItem.SelectsOnInvoked = false;
+			settingsItem.Content = "Settings";
+			AutomationProperties.SetName(settingsItem, "Settings");
+		};
 
 		ExtendsContentIntoTitleBar = true;
 		SetTitleBar(AppTitleBar);
 		AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
+		ApplyTheme();
 
 		var window = new HWND(Win32Interop.GetWindowFromWindowId(AppWindow.Id));
 		var scale = PInvoke.GetDpiForWindow(window) / 96d;
@@ -69,6 +84,22 @@ public sealed partial class MainWindow : Window
 
 	public MainViewModel ViewModel { get; }
 
+	private void ApplyTheme()
+	{
+		((FrameworkElement)Content).RequestedTheme = _settingsService.Settings.Theme switch
+		{
+			AppTheme.Dark => ElementTheme.Dark,
+			AppTheme.Light => ElementTheme.Light,
+			_ => ElementTheme.Default,
+		};
+		AppWindow.TitleBar.PreferredTheme = _settingsService.Settings.Theme switch
+		{
+			AppTheme.Dark => TitleBarTheme.Dark,
+			AppTheme.Light => TitleBarTheme.Light,
+			_ => TitleBarTheme.UseDefaultAppMode,
+		};
+	}
+
 	private void OnPaneToggleRequested(TitleBar sender, object args) => NavView.IsPaneOpen = !NavView.IsPaneOpen;
 
 	private void OnNavigationSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
@@ -81,7 +112,15 @@ public sealed partial class MainWindow : Window
 
 	private async void OnNavigationItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
 	{
-		if (args.InvokedItemContainer?.DataContext is NewProjectMenuItem)
+		if (args.IsSettingsInvoked)
+		{
+			var dialog = new SettingsDialog(_settingsService) { XamlRoot = Content.XamlRoot };
+			if (await Dialogs.ShowAsync(dialog) is ContentDialogResult.Primary)
+			{
+				ApplyTheme();
+			}
+		}
+		else if (args.InvokedItemContainer?.DataContext is NewProjectMenuItem)
 		{
 			await AddProjectAsync();
 		}

@@ -32,7 +32,7 @@
             Grid.Row="1"
             IsBackButtonVisible="Collapsed"
             IsPaneToggleButtonVisible="False"
-            IsSettingsVisible="False"
+            IsSettingsVisible="True"
             ItemInvoked="OnNavigationItemInvoked"
             MenuItemsSource="{x:Bind ViewModel.Sessions}"
             OpenPaneLength="260"

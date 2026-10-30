@@ -1,8 +1,11 @@
+using System.Text.Json;
 using App.Client.WinUI3.Models;
 using App.Client.WinUI3.Services;
 using App.Client.WinUI3.ViewModels;
+using App.Client.WinUI3.Views;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using PeterJuhasz.Repositories.Blobs;
 using PeterJuhasz.Repositories.FileSystem;
 using PeterJuhasz.Repositories.Locking;
@@ -23,11 +26,33 @@ public partial class App : Application
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
+        string? settingsError = null;
+        try
+        {
+            await _services.GetRequiredService<SettingsService>().LoadAsync();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        {
+            settingsError = $"The saved settings couldn't be loaded. The system theme is used instead. The settings file hasn't been changed.\n\n{ex.Message}";
+        }
+
         // Loaded before the window is shown, so it doesn't flash empty first.
         await _services.GetRequiredService<MainViewModel>().LoadAsync(CancellationToken.None);
 
         _window = _services.GetRequiredService<MainWindow>();
         _window.Activate();
+
+        if (settingsError is not null)
+        {
+            await Dialogs.ShowAsync(new ContentDialog
+            {
+                XamlRoot = _window.Content.XamlRoot,
+                Style = (Style)Resources["DefaultContentDialogStyle"],
+                Title = "Couldn't load settings",
+                Content = new TextBlock { Text = settingsError, TextWrapping = TextWrapping.Wrap },
+                CloseButtonText = "OK",
+            });
+        }
     }
 
     private static ServiceProvider ConfigureServices()
@@ -48,6 +73,12 @@ public partial class App : Application
                 .AsCollectionRepository(new JsonTypeInfoJsonCollectionSerializer<Project>(
                     AppJsonSerializerContext.Default.IReadOnlyCollectionProject,
                     AppJsonSerializerContext.Default.Project))));
+
+        services.AddSingleton(new SettingsService(
+            dataFolder.GetPartition()
+                .GetBlob("settings.json")
+                .WithLocking()
+                .AsJsonObjectRepository<AppSettings>(AppJsonSerializerContext.Default.AppSettings)));
 
         services.AddSingleton<CommandRunner>();
         services.AddSingleton<MainViewModel>();

@@ -7,4 +7,5 @@ namespace App.Client.WinUI3.Models;
 [JsonSourceGenerationOptions(JsonSerializerDefaults.Web, WriteIndented = true)]
 [JsonSerializable(typeof(Project))]
 [JsonSerializable(typeof(IReadOnlyCollection<Project>))]
+[JsonSerializable(typeof(AppSettings))]
 public sealed partial class AppJsonSerializerContext : JsonSerializerContext;
