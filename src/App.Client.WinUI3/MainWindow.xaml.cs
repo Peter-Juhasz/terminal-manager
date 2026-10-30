@@ -25,8 +25,18 @@ public sealed partial class MainWindow : Window
 		SetTitleBar(AppTitleBar);
 		AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
 
-		var scale = PInvoke.GetDpiForWindow(new HWND(Win32Interop.GetWindowFromWindowId(AppWindow.Id))) / 96d;
+		var window = new HWND(Win32Interop.GetWindowFromWindowId(AppWindow.Id));
+		var scale = PInvoke.GetDpiForWindow(window) / 96d;
 		AppWindow.Resize(new SizeInt32((int)(DefaultWidth * scale), (int)(DefaultHeight * scale)));
+
+		var taskbarProgress = new TaskbarProgress(window);
+		ViewModel.PropertyChanged += (_, e) =>
+		{
+			if (e.PropertyName is nameof(MainViewModel.OverallProgress))
+			{
+				taskbarProgress.Report(ViewModel.OverallProgress);
+			}
+		};
 
 		Closed += (_, _) => ViewModel.StopAll();
 	}

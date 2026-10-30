@@ -15,12 +15,51 @@ public sealed partial class MainViewModel(ProjectStore store, CommandRunner runn
     [ObservableProperty]
     public partial bool HasProjects { get; private set; }
 
+    /// <summary>
+    /// The progress of the commands running in all the projects, to be shown on the taskbar: the average of those that report a value,
+    /// in the most pressing state any of them is in, or indeterminate when none report a value. Commands that don't report progress aren't counted.
+    /// </summary>
+    [ObservableProperty]
+    public partial ProgressReport OverallProgress { get; private set; }
+
+    private void Attach(ProjectSessionViewModel session)
+    {
+        session.RunningProgressChanged += OnRunningProgressChanged;
+        Sessions.Add(session);
+    }
+
+    private void OnRunningProgressChanged(object? sender, EventArgs e)
+    {
+        var reporting = Sessions
+            .SelectMany(static session => session.RunningEntries)
+            .Where(static entry => entry.IsProgressVisible)
+            .ToList();
+
+        if (reporting.Count == 0)
+        {
+            OverallProgress = new ProgressReport(ProgressState.None, null);
+            return;
+        }
+
+        var state = reporting.Any(static entry => entry.ProgressState is ProgressState.Error) ? ProgressState.Error
+            : reporting.Any(static entry => entry.ProgressState is ProgressState.Paused) ? ProgressState.Paused
+            : reporting.Any(static entry => entry.ProgressState is ProgressState.Normal) ? ProgressState.Normal
+            : ProgressState.Indeterminate;
+
+        var values = reporting
+            .Where(static entry => entry.ProgressState is not ProgressState.Indeterminate)
+            .Select(static entry => entry.ProgressValue)
+            .ToList();
+
+        OverallProgress = new ProgressReport(state, values.Count > 0 ? (int)values.Average() : null);
+    }
+
     public async Task LoadAsync(CancellationToken cancellationToken)
     {
         var projects = await store.ListAsync(cancellationToken);
         foreach (var project in projects.OrderBy(static project => project.DisplayName, StringComparer.CurrentCultureIgnoreCase))
         {
-            Sessions.Add(new ProjectSessionViewModel(project, runner, store));
+            Attach(new ProjectSessionViewModel(project, runner, store));
         }
 
         HasProjects = Sessions.Count > 0;
@@ -32,7 +71,7 @@ public sealed partial class MainViewModel(ProjectStore store, CommandRunner runn
         await store.AddAsync(project, cancellationToken);
 
         var session = new ProjectSessionViewModel(project, runner, store);
-        Sessions.Add(session);
+        Attach(session);
         HasProjects = true;
         SelectedSession = session;
     }
@@ -54,6 +93,8 @@ public sealed partial class MainViewModel(ProjectStore store, CommandRunner runn
         session.StopAll();
         var index = Sessions.IndexOf(session);
         Sessions.Remove(session);
+        session.RunningProgressChanged -= OnRunningProgressChanged;
+        OnRunningProgressChanged(this, EventArgs.Empty);
         HasProjects = Sessions.Count > 0;
         if (SelectedSession == session || SelectedSession is null)
         {

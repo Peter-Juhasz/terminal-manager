@@ -42,7 +42,10 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     private readonly List<CommandEntryViewModel> _running = [];
 
     // The command whose progress is shown on the project, when it is the only one running.
-    private CommandEntryViewModel? _soleRunning;
+    private CommandEntryViewModel? SoleRunning => _running.Count == 1 ? _running[0] : null;
+
+    /// <summary>The commands that are running, in the order they were started.</summary>
+    public IReadOnlyList<CommandEntryViewModel> RunningEntries => _running;
 
     /// <summary>The number of commands that are running; any number of them can run at the same time.</summary>
     [ObservableProperty]
@@ -59,13 +62,16 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     public bool IsRunningBadgeVisible => IsRunning && !HasRunningProgress;
 
     /// <summary>Whether the only command running reports its progress.</summary>
-    public bool HasRunningProgress => _soleRunning is { IsProgressVisible: true };
+    public bool HasRunningProgress => SoleRunning is { IsProgressVisible: true };
 
-    public ProgressState RunningProgressState => _soleRunning?.ProgressState ?? ProgressState.None;
+    public ProgressState RunningProgressState => SoleRunning?.ProgressState ?? ProgressState.None;
 
-    public double RunningProgressValue => _soleRunning?.ProgressValue ?? 0;
+    public double RunningProgressValue => SoleRunning?.ProgressValue ?? 0;
 
-    public bool IsRunningProgressIndeterminate => _soleRunning is { IsProgressIndeterminate: true };
+    public bool IsRunningProgressIndeterminate => SoleRunning is { IsProgressIndeterminate: true };
+
+    /// <summary>Raised when a command is started or ends, or one that is running reports its progress.</summary>
+    public event EventHandler? RunningProgressChanged;
 
     /// <summary>Raised when a command is started, so it can be scrolled into view.</summary>
     public event EventHandler<CommandEntryViewModel>? CommandStarted;
@@ -130,6 +136,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         Entries.Add(entry);
         HasEntries = true;
         _running.Add(entry);
+        entry.PropertyChanged += OnRunningChanged;
         UpdateRunning();
         CommandStarted?.Invoke(this, entry);
 
@@ -164,6 +171,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         {
             await tickSource.CancelAsync();
             await ticking;
+            entry.PropertyChanged -= OnRunningChanged;
             _running.Remove(entry);
             UpdateRunning();
         }
@@ -172,26 +180,10 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     private void UpdateRunning()
     {
         RunningCount = _running.Count;
-
-        var sole = _running.Count == 1 ? _running[0] : null;
-        if (sole != _soleRunning)
-        {
-            if (_soleRunning is not null)
-            {
-                _soleRunning.PropertyChanged -= OnSoleRunningChanged;
-            }
-
-            _soleRunning = sole;
-            if (sole is not null)
-            {
-                sole.PropertyChanged += OnSoleRunningChanged;
-            }
-        }
-
         NotifyRunningProgressChanged();
     }
 
-    private void OnSoleRunningChanged(object? sender, PropertyChangedEventArgs e)
+    private void OnRunningChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(CommandEntryViewModel.ProgressState) or nameof(CommandEntryViewModel.ProgressValue) or nameof(CommandEntryViewModel.IsProgressVisible))
         {
@@ -206,6 +198,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         OnPropertyChanged(nameof(RunningProgressState));
         OnPropertyChanged(nameof(RunningProgressValue));
         OnPropertyChanged(nameof(IsRunningProgressIndeterminate));
+        RunningProgressChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>Stops the command that was started last of those still running, if there is one.</summary>
