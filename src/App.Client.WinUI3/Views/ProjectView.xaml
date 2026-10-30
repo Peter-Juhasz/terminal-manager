@@ -68,6 +68,15 @@
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                         Style="{ThemeResource CaptionTextBlockStyle}"
                         Text="{x:Bind StatusText, Mode=OneWay}" />
+                    <ProgressBar
+                        Width="120"
+                        VerticalAlignment="Center"
+                        IsIndeterminate="{x:Bind IsProgressIndeterminate, Mode=OneWay}"
+                        Maximum="100"
+                        ShowError="{x:Bind IsProgressError, Mode=OneWay}"
+                        ShowPaused="{x:Bind IsProgressPaused, Mode=OneWay}"
+                        Visibility="{x:Bind IsProgressVisible, Mode=OneWay}"
+                        Value="{x:Bind ProgressValue, Mode=OneWay}" />
                     <TextBlock
                         VerticalAlignment="Center"
                         Foreground="{ThemeResource TextFillColorTertiaryBrush}"
