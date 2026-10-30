@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using App.Client.WinUI3.ViewModels;
 using App.Client.WinUI3.Views;
 using Microsoft.UI;
@@ -7,6 +8,7 @@ using Microsoft.UI.Xaml.Controls;
 using Windows.Graphics;
 using Windows.Win32;
 using Windows.Win32.Foundation;
+using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace App.Client.WinUI3;
 
@@ -38,7 +40,31 @@ public sealed partial class MainWindow : Window
 			}
 		};
 
+		ViewModel.CommandCompleted += (_, _) =>
+		{
+			if (!_isActive)
+			{
+				FlashTaskbar(window);
+			}
+		};
+		Activated += (_, e) => _isActive = e.WindowActivationState is not WindowActivationState.Deactivated;
+
 		Closed += (_, _) => ViewModel.StopAll();
+	}
+
+	// Whether the window has the focus, so a command that ends is noticed without flashing.
+	private bool _isActive = true;
+
+	/// <summary>Flashes the taskbar button of <paramref name="window"/> until it is brought to the foreground.</summary>
+	private static void FlashTaskbar(HWND window)
+	{
+		var info = new FLASHWINFO
+		{
+			cbSize = (uint)Marshal.SizeOf<FLASHWINFO>(),
+			hwnd = window,
+			dwFlags = FLASHWINFO_FLAGS.FLASHW_TRAY | FLASHWINFO_FLAGS.FLASHW_TIMERNOFG,
+		};
+		PInvoke.FlashWindowEx(in info);
 	}
 
 	public MainViewModel ViewModel { get; }

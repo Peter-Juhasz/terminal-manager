@@ -22,11 +22,17 @@ public sealed partial class MainViewModel(ProjectStore store, CommandRunner runn
     [ObservableProperty]
     public partial ProgressReport OverallProgress { get; private set; }
 
+    /// <summary>Raised when a command has ended in any of the projects.</summary>
+    public event EventHandler<CommandEntryViewModel>? CommandCompleted;
+
     private void Attach(ProjectSessionViewModel session)
     {
         session.RunningProgressChanged += OnRunningProgressChanged;
+        session.CommandCompleted += OnCommandCompleted;
         Sessions.Add(session);
     }
+
+    private void OnCommandCompleted(object? sender, CommandEntryViewModel entry) => CommandCompleted?.Invoke(sender, entry);
 
     private void OnRunningProgressChanged(object? sender, EventArgs e)
     {
@@ -94,6 +100,7 @@ public sealed partial class MainViewModel(ProjectStore store, CommandRunner runn
         var index = Sessions.IndexOf(session);
         Sessions.Remove(session);
         session.RunningProgressChanged -= OnRunningProgressChanged;
+        session.CommandCompleted -= OnCommandCompleted;
         OnRunningProgressChanged(this, EventArgs.Empty);
         HasProjects = Sessions.Count > 0;
         if (SelectedSession == session || SelectedSession is null)

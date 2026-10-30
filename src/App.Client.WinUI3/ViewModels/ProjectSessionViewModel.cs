@@ -73,6 +73,9 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     /// <summary>Raised when a command is started or ends, or one that is running reports its progress.</summary>
     public event EventHandler? RunningProgressChanged;
 
+    /// <summary>Raised when a command has ended, however it did.</summary>
+    public event EventHandler<CommandEntryViewModel>? CommandCompleted;
+
     /// <summary>Raised when a command is started, so it can be scrolled into view.</summary>
     public event EventHandler<CommandEntryViewModel>? CommandStarted;
 
@@ -174,6 +177,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
             entry.PropertyChanged -= OnRunningChanged;
             _running.Remove(entry);
             UpdateRunning();
+            CommandCompleted?.Invoke(this, entry);
         }
     }
 

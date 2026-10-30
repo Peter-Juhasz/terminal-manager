@@ -1,3 +1,4 @@
 GetDpiForWindow
 ITaskbarList3
 TaskbarList
+FlashWindowEx
