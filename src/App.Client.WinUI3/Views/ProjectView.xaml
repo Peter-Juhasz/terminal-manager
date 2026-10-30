@@ -34,7 +34,7 @@
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="8"
-                    Visibility="{x:Bind HasOutput, Mode=OneWay}">
+                    Visibility="{x:Bind IsOutputVisible, Mode=OneWay}">
                     <RichTextBlock
                         controls:TerminalOutput.Segments="{x:Bind Segments}"
                         FontFamily="{StaticResource MonospaceFontFamily}"
@@ -86,6 +86,16 @@
                         ToolTipService.ToolTip="Copy output"
                         Visibility="{x:Bind HasOutput, Mode=OneWay}">
                         <FontIcon FontSize="12" Glyph="&#xE8C8;" />
+                    </Button>
+                    <Button
+                        Margin="-8,0,0,0"
+                        VerticalAlignment="Center"
+                        AutomationProperties.Name="{x:Bind ExpandToolTip, Mode=OneWay}"
+                        Command="{x:Bind ToggleExpandedCommand}"
+                        Style="{StaticResource IconButtonStyle}"
+                        ToolTipService.ToolTip="{x:Bind ExpandToolTip, Mode=OneWay}"
+                        Visibility="{x:Bind HasOutput, Mode=OneWay}">
+                        <FontIcon FontSize="12" Glyph="{x:Bind ExpandGlyph, Mode=OneWay}" />
                     </Button>
                 </StackPanel>
             </StackPanel>

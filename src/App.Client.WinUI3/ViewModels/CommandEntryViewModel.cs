@@ -20,6 +20,16 @@ public sealed partial class CommandEntryViewModel(string command) : ObservableOb
     public bool HasOutput => Segments.Count > 0;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsOutputVisible), nameof(ExpandGlyph), nameof(ExpandToolTip))]
+    public partial bool IsExpanded { get; set; } = true;
+
+    public bool IsOutputVisible => HasOutput && IsExpanded;
+
+    public string ExpandGlyph => IsExpanded ? "\uE70E" : "\uE70D";
+
+    public string ExpandToolTip => IsExpanded ? "Collapse output" : "Expand output";
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCompleted), nameof(IsSucceeded), nameof(IsFailed), nameof(StatusText))]
     public partial bool IsRunning { get; private set; } = true;
 
@@ -63,6 +73,7 @@ public sealed partial class CommandEntryViewModel(string command) : ObservableOb
         if (Segments.Count == 1)
         {
             OnPropertyChanged(nameof(HasOutput));
+            OnPropertyChanged(nameof(IsOutputVisible));
         }
     }
 
@@ -73,6 +84,9 @@ public sealed partial class CommandEntryViewModel(string command) : ObservableOb
         WasStopped = wasStopped;
         IsRunning = false;
     }
+
+    [RelayCommand]
+    private void ToggleExpanded() => IsExpanded = !IsExpanded;
 
     [RelayCommand]
     private void Copy()
