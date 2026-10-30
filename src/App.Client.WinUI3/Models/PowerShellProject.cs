@@ -23,7 +23,7 @@ public sealed record class PowerShellProject : Project
     private static readonly Uri IconUri = new("ms-appx:///Assets/pwsh.svg");
 
     [JsonIgnore]
-    public override Uri TerminalIconUri => IconUri;
+    public override Uri? TerminalIconUri => IconUri;
 
     public override ProcessStartInfo CreateStartInfo(string command)
     {

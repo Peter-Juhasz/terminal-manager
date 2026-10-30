@@ -1,4 +1,6 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace App.Client.WinUI3.Views;
 
@@ -18,4 +20,9 @@ public static class Bind
     public static Visibility VisibleIfNotNull(object? value) => value is null ? Visibility.Collapsed : Visibility.Visible;
 
     public static Visibility VisibleIfNull(object? value) => value is null ? Visibility.Visible : Visibility.Collapsed;
+
+    /// <summary>The logo at <paramref name="source"/>, or the generic terminal glyph without one.</summary>
+    public static IconElement TerminalIcon(Uri? source) => source is null
+        ? new FontIcon { Glyph = "\uE756" }
+        : new ImageIcon { Source = new SvgImageSource(source) };
 }

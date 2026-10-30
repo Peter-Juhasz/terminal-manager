@@ -8,6 +8,7 @@ namespace App.Client.WinUI3.Models;
 /// </summary>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
 [JsonDerivedType(typeof(PowerShellProject), "pwsh")]
+[JsonDerivedType(typeof(CmdProject), "cmd")]
 public abstract record class Project
 {
     public required Guid Id { get; init; }
@@ -24,9 +25,9 @@ public abstract record class Project
     [JsonIgnore]
     public abstract string TerminalDisplayName { get; }
 
-    /// <summary>The logo of the terminal the commands are run by.</summary>
+    /// <summary>The logo of the terminal the commands are run by, or <see langword="null"/> to show a generic terminal icon.</summary>
     [JsonIgnore]
-    public abstract Uri TerminalIconUri { get; }
+    public abstract Uri? TerminalIconUri { get; }
 
     /// <summary>
     /// Describes the process that runs <paramref name="command"/>. Its working folder and the redirection of its streams are set by the caller.
