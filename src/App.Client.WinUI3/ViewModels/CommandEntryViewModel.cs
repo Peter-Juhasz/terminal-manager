@@ -10,7 +10,7 @@ namespace App.Client.WinUI3.ViewModels;
 /// <summary>
 /// A command that was run, with what it wrote, and how it ended.
 /// </summary>
-public sealed partial class CommandEntryViewModel(string command) : ObservableObject
+public sealed partial class CommandEntryViewModel(string command, Action stop) : ObservableObject
 {
     public string Command { get; } = command;
 
@@ -31,6 +31,7 @@ public sealed partial class CommandEntryViewModel(string command) : ObservableOb
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCompleted), nameof(IsSucceeded), nameof(IsFailed), nameof(StatusText))]
+    [NotifyCanExecuteChangedFor(nameof(StopCommand))]
     public partial bool IsRunning { get; private set; } = true;
 
     [ObservableProperty]
@@ -83,6 +84,16 @@ public sealed partial class CommandEntryViewModel(string command) : ObservableOb
         ExitCode = exitCode;
         WasStopped = wasStopped;
         IsRunning = false;
+    }
+
+    /// <summary>Stops the command, and all the processes it started, if it is still running.</summary>
+    [RelayCommand(CanExecute = nameof(IsRunning))]
+    private void Stop()
+    {
+        if (IsRunning)
+        {
+            stop();
+        }
     }
 
     [RelayCommand]

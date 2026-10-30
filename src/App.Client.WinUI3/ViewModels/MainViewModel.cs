@@ -51,7 +51,7 @@ public sealed partial class MainViewModel(ProjectStore store, CommandRunner runn
 
         await store.DeleteAsync(session.Project.Id, cancellationToken);
 
-        session.StopCommand.Execute(null);
+        session.StopAll();
         var index = Sessions.IndexOf(session);
         Sessions.Remove(session);
         HasProjects = Sessions.Count > 0;
@@ -66,7 +66,7 @@ public sealed partial class MainViewModel(ProjectStore store, CommandRunner runn
     {
         foreach (var session in Sessions)
         {
-            session.StopCommand.Execute(null);
+            session.StopAll();
         }
     }
 }

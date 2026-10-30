@@ -55,8 +55,12 @@
                                 Content="{x:Bind Project.DisplayName, Mode=OneWay}"
                                 Icon="{x:Bind views:Bind.TerminalIcon(Project.TerminalIconUri), Mode=OneWay}"
                                 ToolTipService.ToolTip="{x:Bind Project.WorkingFolder, Mode=OneWay}">
+                                <!--  A dot while a command is running, and the number of them while more are.  -->
                                 <NavigationViewItem.InfoBadge>
-                                    <InfoBadge Style="{ThemeResource AttentionDotInfoBadgeStyle}" Visibility="{x:Bind IsRunning, Mode=OneWay}" />
+                                    <InfoBadge
+                                        Style="{x:Bind views:Bind.RunningBadgeStyle(RunningCount), Mode=OneWay}"
+                                        Value="{x:Bind RunningBadgeValue, Mode=OneWay}"
+                                        Visibility="{x:Bind IsRunning, Mode=OneWay}" />
                                 </NavigationViewItem.InfoBadge>
                                 <NavigationViewItem.ContextFlyout>
                                     <MenuFlyout>

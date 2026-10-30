@@ -21,6 +21,10 @@ public static class Bind
 
     public static Visibility VisibleIfNull(object? value) => value is null ? Visibility.Visible : Visibility.Collapsed;
 
+    /// <summary>The style of the badge of a project with <paramref name="runningCount"/> commands running: a dot for one, a number for more.</summary>
+    public static Style RunningBadgeStyle(int runningCount) =>
+        (Style)Application.Current.Resources[runningCount > 1 ? "AttentionValueInfoBadgeStyle" : "AttentionDotInfoBadgeStyle"];
+
     /// <summary>The logo at <paramref name="source"/>, or the generic terminal glyph without one.</summary>
     public static IconElement TerminalIcon(Uri? source) => source is null
         ? new FontIcon { Glyph = "\uE756" }

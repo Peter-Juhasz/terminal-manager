@@ -81,6 +81,19 @@
                     <Button
                         Margin="4,0,0,0"
                         VerticalAlignment="Center"
+                        AutomationProperties.Name="Stop"
+                        Command="{x:Bind StopCommand}"
+                        Style="{StaticResource IconButtonStyle}"
+                        ToolTipService.ToolTip="Stop"
+                        Visibility="{x:Bind IsRunning, Mode=OneWay}">
+                        <FontIcon
+                            FontSize="12"
+                            Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                            Glyph="&#xE71A;" />
+                    </Button>
+                    <Button
+                        Margin="4,0,0,0"
+                        VerticalAlignment="Center"
                         AutomationProperties.Name="Copy output"
                         Command="{x:Bind CopyCommand}"
                         Style="{StaticResource IconButtonStyle}"
@@ -234,33 +247,20 @@
                 Text="{x:Bind Session.Input, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                 TextWrapping="Wrap" />
 
-            <!--  Run and stop stand in for each other.  -->
-            <Grid
+            <!--  Commands can be run while others are running; each is stopped from its own item.  -->
+            <Button
+                Width="40"
+                Height="40"
                 Margin="0,0,8,8"
                 HorizontalAlignment="Right"
-                VerticalAlignment="Bottom">
-                <Button
-                    Width="40"
-                    Height="40"
-                    AutomationProperties.Name="Run"
-                    Command="{x:Bind Session.RunCommand, Mode=OneWay}"
-                    CornerRadius="10"
-                    Style="{ThemeResource AccentButtonStyle}"
-                    ToolTipService.ToolTip="Run (Enter)"
-                    Visibility="{x:Bind local:Bind.CollapsedIf(Session.IsRunning), Mode=OneWay}">
-                    <FontIcon FontSize="16" Glyph="&#xE724;" />
-                </Button>
-                <Button
-                    Width="40"
-                    Height="40"
-                    AutomationProperties.Name="Stop"
-                    Command="{x:Bind Session.StopCommand, Mode=OneWay}"
-                    CornerRadius="10"
-                    ToolTipService.ToolTip="Stop (Ctrl+C)"
-                    Visibility="{x:Bind local:Bind.VisibleIf(Session.IsRunning), Mode=OneWay}">
-                    <FontIcon FontSize="16" Glyph="&#xE71A;" />
-                </Button>
-            </Grid>
+                VerticalAlignment="Bottom"
+                AutomationProperties.Name="Run"
+                Command="{x:Bind Session.RunCommand, Mode=OneWay}"
+                CornerRadius="10"
+                Style="{ThemeResource AccentButtonStyle}"
+                ToolTipService.ToolTip="Run (Enter)">
+                <FontIcon FontSize="16" Glyph="&#xE724;" />
+            </Button>
         </Grid>
 
         <!--  Saved scripts, each run with a single click, and edited or deleted from its menu.  -->
@@ -299,7 +299,7 @@
                     </ItemsRepeater.Layout>
                     <ItemsRepeater.ItemTemplate>
                         <DataTemplate x:DataType="models:SavedScript">
-                            <!--  The menu is on the item rather than the button, so it is available while a command runs.  -->
+                            <!--  The menu is on the item rather than the button, so it is available whatever the state of the button.  -->
                             <Grid>
                                 <Grid.ContextFlyout>
                                     <MenuFlyout>
@@ -322,7 +322,7 @@
                                     </MenuFlyout>
                                 </Grid.ContextFlyout>
 
-                                <!--  Its command is the session's, set when the item is prepared, so it is disabled while a command runs.  -->
+                                <!--  Its command is the session's, set when the item is prepared.  -->
                                 <Button
                                     Padding="12,8,40,8"
                                     HorizontalAlignment="Stretch"

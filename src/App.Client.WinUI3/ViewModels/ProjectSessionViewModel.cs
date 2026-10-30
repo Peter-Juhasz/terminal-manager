@@ -21,8 +21,6 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     private readonly List<string> _history = [];
     private int _historyIndex;
 
-    private CancellationTokenSource? _stopSource;
-
     [ObservableProperty]
     public partial Project Project { get; set; } = project;
 
@@ -40,16 +38,23 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     [NotifyCanExecuteChangedFor(nameof(RunCommand))]
     public partial string Input { get; set; } = string.Empty;
 
+    /// <summary>The number of commands that are running; any number of them can run at the same time.</summary>
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(RunCommand), nameof(RunScriptCommand), nameof(StopCommand), nameof(ClearCommand))]
-    public partial bool IsRunning { get; private set; }
+    [NotifyPropertyChangedFor(nameof(IsRunning), nameof(RunningBadgeValue))]
+    [NotifyCanExecuteChangedFor(nameof(ClearCommand))]
+    public partial int RunningCount { get; private set; }
+
+    public bool IsRunning => RunningCount > 0;
+
+    /// <summary>The number shown on the badge of the project, or -1 for a dot when only one command is running.</summary>
+    public int RunningBadgeValue => RunningCount > 1 ? RunningCount : -1;
 
     /// <summary>Raised when a command is started, so it can be scrolled into view.</summary>
     public event EventHandler<CommandEntryViewModel>? CommandStarted;
 
-    private bool CanRun => !IsRunning && !string.IsNullOrWhiteSpace(Input);
+    private bool CanRun => !string.IsNullOrWhiteSpace(Input);
 
-    [RelayCommand(CanExecute = nameof(CanRun))]
+    [RelayCommand(CanExecute = nameof(CanRun), AllowConcurrentExecutions = true)]
     private Task RunAsync()
     {
         var command = Input.Trim();
@@ -57,10 +62,10 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         return ExecuteAsync(command);
     }
 
-    private bool CanRunScript(SavedScript? script) => !IsRunning && script is not null;
+    private bool CanRunScript(SavedScript? script) => script is not null;
 
     /// <summary>Runs <paramref name="script"/>, and leaves what was typed in the input as it is.</summary>
-    [RelayCommand(CanExecute = nameof(CanRunScript))]
+    [RelayCommand(CanExecute = nameof(CanRunScript), AllowConcurrentExecutions = true)]
     private Task RunScriptAsync(SavedScript? script) => script is null ? Task.CompletedTask : ExecuteAsync(script.Command);
 
     /// <summary>Adds <paramref name="script"/>, or replaces the one with the same id, and saves the project.</summary>
@@ -102,13 +107,13 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         _history.Add(command);
         _historyIndex = _history.Count;
 
-        var entry = new CommandEntryViewModel(command);
+        using var stopSource = new CancellationTokenSource();
+        var entry = new CommandEntryViewModel(command, stopSource.Cancel);
         Entries.Add(entry);
         HasEntries = true;
-        IsRunning = true;
+        RunningCount++;
         CommandStarted?.Invoke(this, entry);
 
-        using var stopSource = _stopSource = new CancellationTokenSource();
         using var tickSource = new CancellationTokenSource();
         var stopwatch = Stopwatch.StartNew();
         var ticking = TickAsync(entry, stopwatch, tickSource.Token);
@@ -140,21 +145,43 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         {
             await tickSource.CancelAsync();
             await ticking;
-            _stopSource = null;
-            IsRunning = false;
+            RunningCount--;
         }
     }
 
-    [RelayCommand(CanExecute = nameof(IsRunning))]
-    private void Stop() => _stopSource?.Cancel();
+    /// <summary>Stops the command that was started last of those still running, if there is one.</summary>
+    public bool StopLatest()
+    {
+        if (Entries.LastOrDefault(static entry => entry.IsRunning) is not { } entry)
+        {
+            return false;
+        }
 
-    private bool CanClear => !IsRunning;
+        entry.StopCommand.Execute(null);
+        return true;
+    }
 
+    /// <summary>Stops all the commands that are running.</summary>
+    public void StopAll()
+    {
+        foreach (var entry in Entries.Where(static entry => entry.IsRunning).ToList())
+        {
+            entry.StopCommand.Execute(null);
+        }
+    }
+
+    private bool CanClear => Entries.Any(static entry => !entry.IsRunning);
+
+    /// <summary>Removes the commands that have ended; those still running are kept.</summary>
     [RelayCommand(CanExecute = nameof(CanClear))]
     private void Clear()
     {
-        Entries.Clear();
-        HasEntries = false;
+        foreach (var entry in Entries.Where(static entry => !entry.IsRunning).ToList())
+        {
+            Entries.Remove(entry);
+        }
+
+        HasEntries = Entries.Count > 0;
     }
 
     /// <summary>Puts the command run before the one recalled into the input, if there is one.</summary>

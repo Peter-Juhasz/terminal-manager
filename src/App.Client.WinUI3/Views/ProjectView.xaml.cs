@@ -147,7 +147,7 @@ public sealed partial class ProjectView : UserControl
 
     /// <summary>
     /// Enter runs the command, and Shift+Enter starts a new line. The arrow keys recall the commands run before, from the first and last lines.
-    /// Ctrl+C stops the running command, unless there is text selected to copy.
+    /// Ctrl+C stops the command started last of those running, unless there is text selected to copy.
     /// </summary>
     private void OnInputPreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
@@ -185,9 +185,8 @@ public sealed partial class ProjectView : UserControl
 
                 break;
 
-            case VirtualKey.C when IsKeyDown(VirtualKey.Control) && session.IsRunning && InputBox.SelectionLength == 0:
-                e.Handled = true;
-                session.StopCommand.Execute(null);
+            case VirtualKey.C when IsKeyDown(VirtualKey.Control) && InputBox.SelectionLength == 0:
+                e.Handled = session.StopLatest();
                 break;
         }
     }
