@@ -3,6 +3,7 @@ using App.Client.WinUI3.Models;
 using App.Client.WinUI3.ViewModels;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Windows.System;
@@ -63,6 +64,17 @@ public sealed partial class ProjectView : UserControl
         {
             Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true })?.Dispose();
         }
+    }
+
+    private void OnToggleScriptsClick(object sender, RoutedEventArgs e)
+    {
+        var show = ScriptsPane.Visibility is Visibility.Collapsed;
+        ScriptsPane.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        ScriptsToggleIcon.Glyph = show ? "\uE89F" : "\uE8A0";
+
+        var label = show ? "Hide scripts" : "Show scripts";
+        AutomationProperties.SetName(ScriptsToggleButton, label);
+        ToolTipService.SetToolTip(ScriptsToggleButton, label);
     }
 
     // The run button of a script gets the command of the session, which is out of reach of the template.

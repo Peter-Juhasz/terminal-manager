@@ -170,6 +170,17 @@
                     ToolTipService.ToolTip="Clear history">
                     <FontIcon FontSize="16" Glyph="&#xE894;" />
                 </Button>
+                <Button
+                    x:Name="ScriptsToggleButton"
+                    AutomationProperties.Name="Hide scripts"
+                    Click="OnToggleScriptsClick"
+                    Style="{StaticResource IconButtonStyle}"
+                    ToolTipService.ToolTip="Hide scripts">
+                    <FontIcon
+                        x:Name="ScriptsToggleIcon"
+                        FontSize="16"
+                        Glyph="&#xE89F;" />
+                </Button>
             </StackPanel>
         </Grid>
 
@@ -254,6 +265,7 @@
 
         <!--  Saved scripts, each run with a single click, and edited or deleted from its menu.  -->
         <Grid
+            x:Name="ScriptsPane"
             Grid.RowSpan="3"
             Grid.Column="1"
             Width="280"
