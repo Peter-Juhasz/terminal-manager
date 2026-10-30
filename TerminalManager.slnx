@@ -4,6 +4,9 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/App.Client.WinUI3.Benchmarks/App.Client.WinUI3.Benchmarks.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/App.Client.WinUI3/App.Client.WinUI3.csproj">
       <Platform Solution="*|ARM64" Project="ARM64" />
@@ -11,5 +14,8 @@
       <Platform Solution="*|x86" Project="x86" />
       <Deploy />
     </Project>
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/App.Client.WinUI3.Tests/App.Client.WinUI3.Tests.csproj" />
   </Folder>
 </Solution>

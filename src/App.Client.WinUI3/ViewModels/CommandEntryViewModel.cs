@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.Globalization;
 using App.Client.WinUI3.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -14,10 +13,10 @@ public sealed partial class CommandEntryViewModel(string command, Action stop) :
 {
     public string Command { get; } = command;
 
-    /// <summary>What the command wrote, in the order it was written, with consecutive writes to the same stream joined.</summary>
-    public ObservableCollection<OutputSegment> Segments { get; } = [];
+    /// <summary>What the command wrote, in the order it was written.</summary>
+    public CommandOutput Output { get; } = new();
 
-    public bool HasOutput => Segments.Count > 0;
+    public bool HasOutput => !Output.IsEmpty;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsOutputVisible), nameof(ExpandGlyph), nameof(ExpandToolTip))]
@@ -28,8 +27,6 @@ public sealed partial class CommandEntryViewModel(string command, Action stop) :
     public string ExpandGlyph => IsExpanded ? "\uE70E" : "\uE70D";
 
     public string ExpandToolTip => IsExpanded ? "Collapse output" : "Expand output";
-
-    private readonly ProgressSequenceParser _progressParser = new();
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCompleted), nameof(IsSucceeded), nameof(IsFailed), nameof(StatusText), nameof(IsProgressVisible))]
@@ -84,46 +81,22 @@ public sealed partial class CommandEntryViewModel(string command, Action stop) :
 
     public string DurationText => FormatDuration(Duration);
 
-    public void Append(OutputChunk chunk)
+    /// <summary>Shows what the command wrote since the last batch, and the progress it reported so far.</summary>
+    public void Append(OutputBatch batch)
     {
-        if (chunk.Stream is OutputStream.StandardOutput)
-        {
-            chunk = chunk with { Text = _progressParser.Parse(chunk.Text, ReportProgress) };
-        }
-
-        AppendText(chunk);
+        AppendOutput(batch.Chunks);
+        ProgressValue = batch.Progress.Value ?? 0;
+        ProgressState = batch.Progress.State;
     }
 
-    private void ReportProgress(ProgressReport report)
+    /// <summary>Shows <paramref name="chunk"/> as if the command wrote it, like the reason it couldn't be run.</summary>
+    public void Append(OutputChunk chunk) => AppendOutput((OutputChunk[])[chunk]);
+
+    private void AppendOutput(IReadOnlyList<OutputChunk> chunks)
     {
-        // As on the taskbar, an error or a pause without a value keeps the value it had.
-        if (report.Value is { } value && (value > 0 || report.State is not (ProgressState.Error or ProgressState.Paused)))
-        {
-            ProgressValue = value;
-        }
-        else if (report.State is ProgressState.None)
-        {
-            ProgressValue = 0;
-        }
-
-        ProgressState = report.State;
-    }
-
-    private void AppendText(OutputChunk chunk)
-    {
-        if (chunk.Text.Length == 0)
-        {
-            return;
-        }
-
-        if (Segments.Count > 0 && Segments[^1] is { } last && last.Stream == chunk.Stream)
-        {
-            last.Append(chunk.Text);
-            return;
-        }
-
-        Segments.Add(new OutputSegment(chunk.Stream, chunk.Text));
-        if (Segments.Count == 1)
+        var hadOutput = HasOutput;
+        Output.Append(chunks);
+        if (!hadOutput && HasOutput)
         {
             OnPropertyChanged(nameof(HasOutput));
             OnPropertyChanged(nameof(IsOutputVisible));
@@ -132,9 +105,6 @@ public sealed partial class CommandEntryViewModel(string command, Action stop) :
 
     public void Complete(int? exitCode, bool wasStopped, TimeSpan duration)
     {
-        // What looked like the start of a progress sequence, but wasn't continued, was output after all.
-        AppendText(new OutputChunk(OutputStream.StandardOutput, _progressParser.Flush()));
-
         Duration = duration;
         ExitCode = exitCode;
         WasStopped = wasStopped;
@@ -158,7 +128,7 @@ public sealed partial class CommandEntryViewModel(string command, Action stop) :
     private void Copy()
     {
         var package = new DataPackage { RequestedOperation = DataPackageOperation.Copy };
-        package.SetText(string.Concat(Segments.Select(static segment => segment.Text)));
+        package.SetText(Output.ToString());
         Clipboard.SetContent(package);
     }
 

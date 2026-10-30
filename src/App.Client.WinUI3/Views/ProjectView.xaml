@@ -37,7 +37,7 @@
                     CornerRadius="8"
                     Visibility="{x:Bind IsOutputVisible, Mode=OneWay}">
                     <RichTextBlock
-                        controls:TerminalOutput.Segments="{x:Bind Segments}"
+                        controls:TerminalOutput.Output="{x:Bind Output}"
                         FontFamily="{StaticResource MonospaceFontFamily}"
                         FontSize="13"
                         IsTextSelectionEnabled="True"

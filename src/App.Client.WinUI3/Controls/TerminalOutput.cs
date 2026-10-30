@@ -1,6 +1,5 @@
-using System.Collections.Specialized;
-using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using App.Client.WinUI3.Services;
 using App.Client.WinUI3.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -10,33 +9,37 @@ using Microsoft.UI.Xaml.Media;
 namespace App.Client.WinUI3.Controls;
 
 /// <summary>
-/// Shows the output of a command in a <see cref="RichTextBlock"/> as it is written, with a run for each <see cref="OutputSegment"/>,
+/// Shows the output of a command in a <see cref="RichTextBlock"/> as it is written, in the runs laid out by <see cref="OutputRunBuilder"/>,
 /// so it can be selected across the standard output and error alike.
 /// </summary>
+/// <remarks>
+/// The text block lays out all of its text again whenever any of it changes, so showing more takes the longer the more there is,
+/// which is why more is shown only at an interval.
+/// </remarks>
 public static class TerminalOutput
 {
     // The subscriptions of each text block, so they can be undone when it is recycled to show other output.
     private static readonly ConditionalWeakTable<RichTextBlock, Subscription> Subscriptions = [];
 
-    public static readonly DependencyProperty SegmentsProperty = DependencyProperty.RegisterAttached(
-        "Segments",
-        typeof(IReadOnlyList<OutputSegment>),
+    public static readonly DependencyProperty OutputProperty = DependencyProperty.RegisterAttached(
+        "Output",
+        typeof(CommandOutput),
         typeof(TerminalOutput),
-        new PropertyMetadata(null, OnSegmentsChanged));
+        new PropertyMetadata(null, OnOutputChanged));
 
-    public static IReadOnlyList<OutputSegment>? GetSegments(RichTextBlock element)
+    public static CommandOutput? GetOutput(RichTextBlock element)
     {
         ArgumentNullException.ThrowIfNull(element);
-        return (IReadOnlyList<OutputSegment>?)element.GetValue(SegmentsProperty);
+        return (CommandOutput?)element.GetValue(OutputProperty);
     }
 
-    public static void SetSegments(RichTextBlock element, IReadOnlyList<OutputSegment>? value)
+    public static void SetOutput(RichTextBlock element, CommandOutput? value)
     {
         ArgumentNullException.ThrowIfNull(element);
-        element.SetValue(SegmentsProperty, value);
+        element.SetValue(OutputProperty, value);
     }
 
-    private static void OnSegmentsChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
+    private static void OnOutputChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
     {
         var block = (RichTextBlock)sender;
         if (Subscriptions.TryGetValue(block, out var previous))
@@ -46,107 +49,71 @@ public static class TerminalOutput
         }
 
         block.Blocks.Clear();
-        if (e.NewValue is IReadOnlyList<OutputSegment> segments)
+        if (e.NewValue is CommandOutput output)
         {
-            Subscriptions.Add(block, new Subscription(block, segments));
+            Subscriptions.Add(block, new Subscription(block, output));
         }
     }
 
     private sealed class Subscription : IDisposable
     {
         private readonly Paragraph _paragraph = new();
-        private readonly IReadOnlyList<OutputSegment> _segments;
-        private readonly Dictionary<OutputSegment, Run> _runs = [];
+        private readonly CommandOutput _output;
+        private readonly OutputRunBuilder _builder = new();
+        private readonly List<RunUpdate> _updates = [];
 
-        // The last one is shown without the line break it ends with, so there is no empty line below the output.
-        private OutputSegment? _last;
+        // The last run, which is the only one whose text still changes.
+        private Run? _last;
+        private int _runCount;
 
-        public Subscription(RichTextBlock block, IReadOnlyList<OutputSegment> segments)
+        // The number of chunks of the output that were laid out.
+        private int _chunkCount;
+
+        public Subscription(RichTextBlock block, CommandOutput output)
         {
-            _segments = segments;
+            _output = output;
             block.Blocks.Add(_paragraph);
-
-            foreach (var segment in segments)
-            {
-                Add(segment);
-            }
-
-            if (segments is INotifyCollectionChanged observable)
-            {
-                observable.CollectionChanged += OnCollectionChanged;
-            }
+            Show();
+            output.Appended += OnAppended;
         }
 
         public void Dispose()
         {
-            if (_segments is INotifyCollectionChanged observable)
-            {
-                observable.CollectionChanged -= OnCollectionChanged;
-            }
-
-            foreach (var segment in _runs.Keys)
-            {
-                segment.PropertyChanged -= OnSegmentChanged;
-            }
-
-            _runs.Clear();
+            _output.Appended -= OnAppended;
             _paragraph.Inlines.Clear();
         }
 
-        private void Add(OutputSegment segment)
+        private void OnAppended(object? sender, EventArgs e) => Show();
+
+        // Shows the chunks appended since the last time.
+        private void Show()
         {
-            if (_last is not null)
+            var chunks = _output.Chunks;
+            for (; _chunkCount < chunks.Count; _chunkCount++)
             {
-                _runs[_last].Text = _last.Text;
+                _builder.Append(chunks[_chunkCount]);
             }
 
-            _last = segment;
-            var run = new Run { Text = TrimEnd(segment.Text) };
-            if (segment.IsError)
+            _builder.Flush(_updates);
+            foreach (var update in _updates)
             {
-                run.Foreground = (Brush)Application.Current.Resources["SystemFillColorCriticalBrush"];
-            }
-
-            _paragraph.Inlines.Add(run);
-            _runs.Add(segment, run);
-            segment.PropertyChanged += OnSegmentChanged;
-        }
-
-        private void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-        {
-            if (e.Action is NotifyCollectionChangedAction.Add && e.NewItems is { } added)
-            {
-                foreach (OutputSegment segment in added)
+                if (_last is not null && update.Index < _runCount)
                 {
-                    Add(segment);
+                    _last.Text = update.Text;
+                    continue;
                 }
 
-                return;
+                _last = new Run { Text = update.Text };
+                if (update.Stream is OutputStream.StandardError)
+                {
+                    _last.Foreground = (Brush)Application.Current.Resources["SystemFillColorCriticalBrush"];
+                }
+
+                _paragraph.Inlines.Add(_last);
+                _runCount++;
             }
 
-            // Output only ever grows, but anything else is shown by starting over.
-            foreach (var segment in _runs.Keys)
-            {
-                segment.PropertyChanged -= OnSegmentChanged;
-            }
-
-            _runs.Clear();
-            _last = null;
-            _paragraph.Inlines.Clear();
-            foreach (var segment in _segments)
-            {
-                Add(segment);
-            }
+            _updates.Clear();
         }
-
-        private void OnSegmentChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            if (sender is OutputSegment segment && _runs.TryGetValue(segment, out var run))
-            {
-                run.Text = segment == _last ? TrimEnd(segment.Text) : segment.Text;
-            }
-        }
-
-        private static string TrimEnd(string text) => text.TrimEnd('\r', '\n');
     }
 }

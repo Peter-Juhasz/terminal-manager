@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Globalization;
 using System.Text;
 
@@ -18,7 +19,7 @@ public readonly record struct ProgressReport(ProgressState State, int? Value);
 
 /// <summary>
 /// Takes the progress sequences (<c>ESC ] 9 ; 4 ; state ; value</c>, ended by <c>ESC \</c> or <c>BEL</c>), that Windows Terminal and ConEmu show
-/// on the taskbar, out of the output of a command, even when one is split between the pieces it is read in.
+/// on the taskbar, out of the output of a command, even when one is split between the pieces it is read in, and keeps the progress they report.
 /// </summary>
 public sealed class ProgressSequenceParser
 {
@@ -27,120 +28,151 @@ public sealed class ProgressSequenceParser
     // Longer than any valid sequence, so something that only starts like one isn't held back for long.
     private const int MaxLength = 32;
 
-    // The start of a sequence at the end of the last piece, which may be continued in the next.
-    private string _pending = string.Empty;
+    // The start of a sequence at the end of the last piece, which may be continued in the next; it is never longer than MaxLength.
+    private readonly char[] _pending = new char[MaxLength];
+    private int _pendingLength;
 
     /// <summary>
-    /// Returns <paramref name="text"/> without the progress sequences, reporting each to <paramref name="report"/>.
-    /// The end of a sequence that may continue in the next piece is held back until then.
+    /// The progress reported so far, the way it would be shown on the taskbar: with the percent it shows,
+    /// which an error or a pause reported without one leaves as it was.
     /// </summary>
-    public string Parse(string text, Action<ProgressReport> report)
+    public ProgressReport Progress { get; private set; } = new(ProgressState.None, 0);
+
+    /// <summary>
+    /// Appends <paramref name="text"/> to <paramref name="output"/> without the progress sequences, updating <see cref="Progress"/> by each of them.
+    /// The start of a sequence that may continue in the next piece is held back until then.
+    /// </summary>
+    public void Parse(ReadOnlySpan<char> text, StringBuilder output)
     {
-        ArgumentNullException.ThrowIfNull(text);
-        ArgumentNullException.ThrowIfNull(report);
+        ArgumentNullException.ThrowIfNull(output);
 
-        text = string.Concat(_pending, text);
-        _pending = string.Empty;
-
-        if (!text.Contains('\e', StringComparison.Ordinal))
+        if (_pendingLength == 0)
         {
-            return text;
+            ParseCore(text, output);
+            return;
         }
 
-        var result = new StringBuilder(text.Length);
-        var start = 0;
-        while (start < text.Length)
+        // The start of a sequence was held back, so it is parsed joined with what follows it, which is rare enough not to avoid the copy.
+        var length = _pendingLength + text.Length;
+        var joined = ArrayPool<char>.Shared.Rent(length);
+        try
         {
-            var escape = text.IndexOf('\e', start);
+            _pending.AsSpan(0, _pendingLength).CopyTo(joined);
+            text.CopyTo(joined.AsSpan(_pendingLength));
+            _pendingLength = 0;
+            ParseCore(joined.AsSpan(0, length), output);
+        }
+        finally
+        {
+            ArrayPool<char>.Shared.Return(joined);
+        }
+    }
+
+    /// <summary>Appends what was held back as the start of a sequence to <paramref name="output"/>, when there is nothing more to come.</summary>
+    public void Flush(StringBuilder output)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+
+        output.Append(_pending, 0, _pendingLength);
+        _pendingLength = 0;
+    }
+
+    private void ParseCore(ReadOnlySpan<char> text, StringBuilder output)
+    {
+        while (true)
+        {
+            var escape = text.IndexOf('\e');
             if (escape < 0)
             {
-                result.Append(text, start, text.Length - start);
-                break;
+                output.Append(text);
+                return;
             }
 
-            result.Append(text, start, escape - start);
-            switch (TryReadSequence(text, escape, out var end, out var sequence))
+            output.Append(text[..escape]);
+            text = text[escape..];
+            switch (TryReadSequence(text, out var length, out var report))
             {
                 case SequenceResult.Complete:
-                    if (sequence is { } value)
+                    if (report is { } value)
                     {
-                        report(value);
+                        Report(value);
                     }
 
-                    start = end;
+                    text = text[length..];
                     break;
 
                 case SequenceResult.Incomplete:
-                    _pending = text[escape..];
-                    return result.ToString();
+                    text.CopyTo(_pending);
+                    _pendingLength = text.Length;
+                    return;
 
                 default:
-                    result.Append('\e');
-                    start = escape + 1;
+                    output.Append('\e');
+                    text = text[1..];
                     break;
             }
         }
-
-        return result.ToString();
     }
 
-    /// <summary>Returns what was held back as the start of a sequence, when there is nothing more to come.</summary>
-    public string Flush()
+    private void Report(ProgressReport report)
     {
-        var pending = _pending;
-        _pending = string.Empty;
-        return pending;
-    }
-
-    private static SequenceResult TryReadSequence(string text, int start, out int end, out ProgressReport? report)
-    {
-        end = start;
-        report = null;
-
-        var available = text.Length - start;
-        if (available < Prefix.Length)
+        // As on the taskbar, an error or a pause without a value keeps the value it had.
+        var value = Progress.Value;
+        if (report.Value is { } reported && (reported > 0 || report.State is not (ProgressState.Error or ProgressState.Paused)))
         {
-            return string.CompareOrdinal(text, start, Prefix, 0, available) == 0 ? SequenceResult.Incomplete : SequenceResult.Invalid;
+            value = reported;
+        }
+        else if (report.State is ProgressState.None)
+        {
+            value = 0;
         }
 
-        if (string.CompareOrdinal(text, start, Prefix, 0, Prefix.Length) != 0)
+        Progress = new ProgressReport(report.State, value);
+    }
+
+    // Reads the sequence that text starts with, which is incomplete only while it is shorter than MaxLength.
+    private static SequenceResult TryReadSequence(ReadOnlySpan<char> text, out int length, out ProgressReport? report)
+    {
+        length = 0;
+        report = null;
+
+        if (text.Length < Prefix.Length)
+        {
+            return Prefix.AsSpan().StartsWith(text, StringComparison.Ordinal) ? SequenceResult.Incomplete : SequenceResult.Invalid;
+        }
+
+        if (!text.StartsWith(Prefix, StringComparison.Ordinal))
         {
             return SequenceResult.Invalid;
         }
 
-        var body = start + Prefix.Length;
-        for (var index = body; index < text.Length; index++)
+        for (var index = Prefix.Length; index < text.Length && index < MaxLength; index++)
         {
-            if (index - start >= MaxLength)
+            switch (text[index])
             {
-                return SequenceResult.Invalid;
-            }
+                case '\a':
+                    length = index + 1;
+                    break;
 
-            var terminatorLength = text[index] switch
-            {
-                '\a' => 1,
-                '\e' when index + 1 >= text.Length => 0,
-                '\e' when text[index + 1] == '\\' => 2,
-                '\e' => -1,
-                _ => (int?)null,
-            };
-
-            switch (terminatorLength)
-            {
-                case null:
-                    continue;
-                case 0:
+                case '\e' when index + 1 == text.Length:
                     return SequenceResult.Incomplete;
-                case < 0:
+
+                case '\e' when text[index + 1] == '\\':
+                    length = index + 2;
+                    break;
+
+                case '\e':
                     return SequenceResult.Invalid;
+
+                default:
+                    continue;
             }
 
-            end = index + terminatorLength.Value;
-            report = ParseBody(text.AsSpan(body, index - body));
+            report = ParseBody(text[Prefix.Length..index]);
             return SequenceResult.Complete;
         }
 
-        return text.Length - start < MaxLength ? SequenceResult.Incomplete : SequenceResult.Invalid;
+        return text.Length < MaxLength ? SequenceResult.Incomplete : SequenceResult.Invalid;
     }
 
     // Unknown states are taken out of the output all the same, as a terminal wouldn't show them either.

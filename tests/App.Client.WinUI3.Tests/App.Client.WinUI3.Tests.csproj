@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AppDirectory>..\..\src\App.Client.WinUI3\</AppDirectory>
+  </PropertyGroup>
+
+  <!-- A WinUI app can't be referenced by a test project, so the code under test, which doesn't depend on WinUI, is compiled in from it. -->
+  <ItemGroup>
+    <Compile Include="$(AppDirectory)Controls\OutputRunBuilder.cs" Link="App\Controls\OutputRunBuilder.cs" />
+    <Compile Include="$(AppDirectory)Models\CmdProject.cs" Link="App\Models\CmdProject.cs" />
+    <Compile Include="$(AppDirectory)Models\PowerShellProject.cs" Link="App\Models\PowerShellProject.cs" />
+    <Compile Include="$(AppDirectory)Models\Project.cs" Link="App\Models\Project.cs" />
+    <Compile Include="$(AppDirectory)Models\SavedScript.cs" Link="App\Models\SavedScript.cs" />
+    <Compile Include="$(AppDirectory)Services\CommandRunner.cs" Link="App\Services\CommandRunner.cs" />
+    <Compile Include="$(AppDirectory)Services\OutputBuffer.cs" Link="App\Services\OutputBuffer.cs" />
+    <Compile Include="$(AppDirectory)Services\OutputChunk.cs" Link="App\Services\OutputChunk.cs" />
+    <Compile Include="$(AppDirectory)Services\ProgressSequenceParser.cs" Link="App\Services\ProgressSequenceParser.cs" />
+    <Compile Include="$(AppDirectory)ViewModels\CommandOutput.cs" Link="App\ViewModels\CommandOutput.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MSTest" Version="4.*" />
+  </ItemGroup>
+
+</Project>

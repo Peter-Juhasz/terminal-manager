@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Threading.Channels;
 using App.Client.WinUI3.Models;
 using App.Client.WinUI3.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -16,6 +15,9 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
 {
     // How often the time spent by the running command is updated.
     private static readonly TimeSpan DurationRefreshInterval = TimeSpan.FromMilliseconds(100);
+
+    // How often more of the output of a running command is shown, as the text block showing it lays all of it out again each time.
+    private static readonly TimeSpan OutputRefreshInterval = TimeSpan.FromMilliseconds(50);
 
     // The commands that were run, so they can be recalled with the arrow keys; the index is that of the one recalled.
     private readonly List<string> _history = [];
@@ -147,19 +149,17 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         var stopwatch = Stopwatch.StartNew();
         var ticking = TickAsync(entry, stopwatch, tickSource.Token);
 
-        var output = Channel.CreateUnbounded<OutputChunk>(new UnboundedChannelOptions { SingleReader = true });
+        var output = new OutputBuffer();
         var project = Project;
-        var run = Task.Run(() => runner.RunAsync(project, command, output.Writer, stopSource.Token), CancellationToken.None);
+        var run = Task.Run(() => runner.RunAsync(project, command, output, stopSource.Token), CancellationToken.None);
 
         try
         {
-            // Everything read since the last update is shown at once, so a command that writes a lot doesn't flood the UI thread.
-            while (await output.Reader.WaitToReadAsync(CancellationToken.None))
+            // Everything written since the last refresh is shown at once, so a command that writes a lot doesn't flood the UI thread.
+            while (await output.WaitToReadAsync(CancellationToken.None))
             {
-                while (output.Reader.TryRead(out var chunk))
-                {
-                    entry.Append(chunk);
-                }
+                entry.Append(output.Read());
+                await WaitToRefreshAsync(output.Completion);
             }
 
             var exitCode = await run;
@@ -263,6 +263,22 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         _historyIndex++;
         Input = _historyIndex < _history.Count ? _history[_historyIndex] : string.Empty;
         return true;
+    }
+
+    // Waits until more of the output can be shown, or it is complete, so its end is shown right away.
+    // When laying out what was shown kept the UI thread busy past the interval, it is left as long to everything else,
+    // so the app keeps responding to input however much output there is to lay out.
+    private static async Task WaitToRefreshAsync(Task completion)
+    {
+        var started = Stopwatch.GetTimestamp();
+        await Task.WhenAny(Task.Delay(OutputRefreshInterval, CancellationToken.None), completion);
+
+        // Waking up late by less than this is put down to the resolution of the timer.
+        var elapsed = Stopwatch.GetElapsedTime(started);
+        if (elapsed - OutputRefreshInterval > OutputRefreshInterval / 2)
+        {
+            await Task.WhenAny(Task.Delay(elapsed, CancellationToken.None), completion);
+        }
     }
 
     private static async Task TickAsync(CommandEntryViewModel entry, Stopwatch stopwatch, CancellationToken cancellationToken)
