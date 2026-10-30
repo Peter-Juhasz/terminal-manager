@@ -52,15 +52,36 @@
                     <views:NavigationMenuTemplateSelector.SessionTemplate>
                         <DataTemplate x:DataType="vm:ProjectSessionViewModel">
                             <NavigationViewItem
-                                Content="{x:Bind Project.DisplayName, Mode=OneWay}"
                                 Icon="{x:Bind views:Bind.TerminalIcon(Project.TerminalIconUri), Mode=OneWay}"
                                 ToolTipService.ToolTip="{x:Bind Project.WorkingFolder, Mode=OneWay}">
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        Text="{x:Bind Project.DisplayName, Mode=OneWay}"
+                                        TextTrimming="CharacterEllipsis" />
+                                    <!--  The progress of the command, when it is the only one running and it reports one.  -->
+                                    <ProgressRing
+                                        Grid.Column="1"
+                                        Width="16"
+                                        Height="16"
+                                        VerticalAlignment="Center"
+                                        Foreground="{x:Bind views:Bind.ProgressForeground(RunningProgressState), Mode=OneWay}"
+                                        IsActive="{x:Bind HasRunningProgress, Mode=OneWay}"
+                                        IsIndeterminate="{x:Bind IsRunningProgressIndeterminate, Mode=OneWay}"
+                                        Maximum="100"
+                                        Visibility="{x:Bind HasRunningProgress, Mode=OneWay}"
+                                        Value="{x:Bind RunningProgressValue, Mode=OneWay}" />
+                                </Grid>
                                 <!--  A dot while a command is running, and the number of them while more are.  -->
                                 <NavigationViewItem.InfoBadge>
                                     <InfoBadge
                                         Style="{x:Bind views:Bind.RunningBadgeStyle(RunningCount), Mode=OneWay}"
                                         Value="{x:Bind RunningBadgeValue, Mode=OneWay}"
-                                        Visibility="{x:Bind IsRunning, Mode=OneWay}" />
+                                        Visibility="{x:Bind IsRunningBadgeVisible, Mode=OneWay}" />
                                 </NavigationViewItem.InfoBadge>
                                 <NavigationViewItem.ContextFlyout>
                                     <MenuFlyout>

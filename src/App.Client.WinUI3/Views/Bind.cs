@@ -1,5 +1,7 @@
+using App.Client.WinUI3.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace App.Client.WinUI3.Views;
@@ -24,6 +26,14 @@ public static class Bind
     /// <summary>The style of the badge of a project with <paramref name="runningCount"/> commands running: a dot for one, a number for more.</summary>
     public static Style RunningBadgeStyle(int runningCount) =>
         (Style)Application.Current.Resources[runningCount > 1 ? "AttentionValueInfoBadgeStyle" : "AttentionDotInfoBadgeStyle"];
+
+    /// <summary>The color of a progress ring in <paramref name="state"/>, as a progress bar shows an error or a pause.</summary>
+    public static Brush ProgressForeground(ProgressState state) => (Brush)Application.Current.Resources[state switch
+    {
+        ProgressState.Error => "SystemFillColorCriticalBrush",
+        ProgressState.Paused => "SystemFillColorCautionBrush",
+        _ => "AccentFillColorDefaultBrush",
+    }];
 
     /// <summary>The logo at <paramref name="source"/>, or the generic terminal glyph without one.</summary>
     public static IconElement TerminalIcon(Uri? source) => source is null
