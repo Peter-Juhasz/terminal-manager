@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using App.Client.WinUI3.Models;
 using App.Client.WinUI3.ViewModels;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
@@ -61,6 +62,74 @@ public sealed partial class ProjectView : UserControl
         if (Session?.Project.WorkingFolder is { } folder && Directory.Exists(folder))
         {
             Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true })?.Dispose();
+        }
+    }
+
+    // The run button of a script gets the command of the session, which is out of reach of the template.
+    private void OnScriptElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
+    {
+        if (args.Element is Panel { Children: [Button run, ..] })
+        {
+            run.Command = Session?.RunScriptCommand;
+        }
+    }
+
+    private void OnScriptMoreClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Parent: FrameworkElement { ContextFlyout: { } flyout } })
+        {
+            flyout.ShowAt((FrameworkElement)sender);
+        }
+    }
+
+    private async void OnAddScriptClick(object sender, RoutedEventArgs e)
+    {
+        if (Session is not { } session)
+        {
+            return;
+        }
+
+        var dialog = new ScriptDialog(new ScriptEditorViewModel(session.Input.Trim())) { XamlRoot = XamlRoot };
+        if (await Dialogs.ShowAsync(dialog) is ContentDialogResult.Primary)
+        {
+            await session.SaveScriptAsync(dialog.ViewModel.Build(), CancellationToken.None);
+        }
+    }
+
+    private async void OnEditScriptClick(object sender, RoutedEventArgs e)
+    {
+        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not SavedScript script)
+        {
+            return;
+        }
+
+        var dialog = new ScriptDialog(new ScriptEditorViewModel(script)) { XamlRoot = XamlRoot };
+        if (await Dialogs.ShowAsync(dialog) is ContentDialogResult.Primary)
+        {
+            await session.SaveScriptAsync(dialog.ViewModel.Build(), CancellationToken.None);
+        }
+    }
+
+    private async void OnDeleteScriptClick(object sender, RoutedEventArgs e)
+    {
+        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not SavedScript script)
+        {
+            return;
+        }
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"],
+            Title = "Delete script?",
+            Content = $"'{script.Name}' is removed from the project.",
+            PrimaryButtonText = "Delete",
+            CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Close,
+        };
+        if (await Dialogs.ShowAsync(dialog) is ContentDialogResult.Primary)
+        {
+            await session.DeleteScriptAsync(script, CancellationToken.None);
         }
     }
 

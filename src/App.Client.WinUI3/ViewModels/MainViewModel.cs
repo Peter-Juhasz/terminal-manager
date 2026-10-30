@@ -20,7 +20,7 @@ public sealed partial class MainViewModel(ProjectStore store, CommandRunner runn
         var projects = await store.ListAsync(cancellationToken);
         foreach (var project in projects.OrderBy(static project => project.DisplayName, StringComparer.CurrentCultureIgnoreCase))
         {
-            Sessions.Add(new ProjectSessionViewModel(project, runner));
+            Sessions.Add(new ProjectSessionViewModel(project, runner, store));
         }
 
         HasProjects = Sessions.Count > 0;
@@ -31,7 +31,7 @@ public sealed partial class MainViewModel(ProjectStore store, CommandRunner runn
     {
         await store.AddAsync(project, cancellationToken);
 
-        var session = new ProjectSessionViewModel(project, runner);
+        var session = new ProjectSessionViewModel(project, runner, store);
         Sessions.Add(session);
         HasProjects = true;
         SelectedSession = session;

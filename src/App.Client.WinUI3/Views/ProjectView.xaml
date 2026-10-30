@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:App.Client.WinUI3.Controls"
     xmlns:local="using:App.Client.WinUI3.Views"
+    xmlns:models="using:App.Client.WinUI3.Models"
     xmlns:vm="using:App.Client.WinUI3.ViewModels">
 
     <UserControl.Resources>
@@ -108,6 +109,10 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
 
         <!--  Header  -->
         <Grid
@@ -245,6 +250,123 @@
                     <FontIcon FontSize="16" Glyph="&#xE71A;" />
                 </Button>
             </Grid>
+        </Grid>
+
+        <!--  Saved scripts, each run with a single click, and edited or deleted from its menu.  -->
+        <Grid
+            Grid.RowSpan="3"
+            Grid.Column="1"
+            Width="280"
+            Background="{ThemeResource LayerFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1,0,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Grid Padding="20,24,12,12">
+                <TextBlock
+                    VerticalAlignment="Center"
+                    Style="{ThemeResource BodyStrongTextBlockStyle}"
+                    Text="Scripts" />
+                <Button
+                    HorizontalAlignment="Right"
+                    AutomationProperties.Name="Save script"
+                    Click="OnAddScriptClick"
+                    Style="{StaticResource IconButtonStyle}"
+                    ToolTipService.ToolTip="Save a script; what is typed in the input is filled in">
+                    <FontIcon FontSize="14" Glyph="&#xE710;" />
+                </Button>
+            </Grid>
+
+            <ScrollViewer Grid.Row="1" Padding="8,0,8,12">
+                <ItemsRepeater ElementPrepared="OnScriptElementPrepared" ItemsSource="{x:Bind Session.Scripts, Mode=OneWay}">
+                    <ItemsRepeater.Layout>
+                        <StackLayout Spacing="2" />
+                    </ItemsRepeater.Layout>
+                    <ItemsRepeater.ItemTemplate>
+                        <DataTemplate x:DataType="models:SavedScript">
+                            <!--  The menu is on the item rather than the button, so it is available while a command runs.  -->
+                            <Grid>
+                                <Grid.ContextFlyout>
+                                    <MenuFlyout>
+                                        <MenuFlyoutItem
+                                            Click="OnEditScriptClick"
+                                            Tag="{x:Bind}"
+                                            Text="Edit">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE70F;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem
+                                            Click="OnDeleteScriptClick"
+                                            Tag="{x:Bind}"
+                                            Text="Delete">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE74D;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                    </MenuFlyout>
+                                </Grid.ContextFlyout>
+
+                                <!--  Its command is the session's, set when the item is prepared, so it is disabled while a command runs.  -->
+                                <Button
+                                    Padding="12,8,40,8"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Stretch"
+                                    AutomationProperties.Name="{x:Bind Name}"
+                                    CommandParameter="{x:Bind}"
+                                    Style="{StaticResource IconButtonStyle}"
+                                    ToolTipService.ToolTip="{x:Bind Command}">
+                                    <Grid ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <FontIcon
+                                            Margin="0,3,0,0"
+                                            VerticalAlignment="Top"
+                                            FontSize="12"
+                                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                            Glyph="&#xE768;" />
+                                        <StackPanel Grid.Column="1" Spacing="2">
+                                            <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock
+                                                FontFamily="{StaticResource MonospaceFontFamily}"
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                MaxLines="2"
+                                                Style="{ThemeResource CaptionTextBlockStyle}"
+                                                Text="{x:Bind Command}"
+                                                TextTrimming="CharacterEllipsis"
+                                                TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Button>
+                                <Button
+                                    Margin="0,4,4,0"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    AutomationProperties.Name="{x:Bind local:Bind.Format('More options for {0}', Name)}"
+                                    Click="OnScriptMoreClick"
+                                    Style="{StaticResource IconButtonStyle}"
+                                    ToolTipService.ToolTip="More options">
+                                    <FontIcon FontSize="12" Glyph="&#xE712;" />
+                                </Button>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsRepeater.ItemTemplate>
+                </ItemsRepeater>
+            </ScrollViewer>
+
+            <TextBlock
+                Grid.Row="1"
+                Margin="20,0,20,0"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Style="{ThemeResource CaptionTextBlockStyle}"
+                Text="Save commands you run often, and run them here with a single click."
+                TextWrapping="Wrap"
+                Visibility="{x:Bind local:Bind.CollapsedIf(Session.HasScripts), Mode=OneWay}" />
         </Grid>
     </Grid>
 </UserControl>

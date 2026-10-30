@@ -15,8 +15,6 @@ public sealed partial class MainWindow : Window
     private const int DefaultWidth = 1200;
     private const int DefaultHeight = 800;
 
-    private bool _isDialogOpen;
-
     public MainWindow(MainViewModel viewModel)
     {
         ViewModel = viewModel;
@@ -62,7 +60,7 @@ public sealed partial class MainWindow : Window
         }
 
         var dialog = new ProjectDialog(new ProjectEditorViewModel(session.Project)) { XamlRoot = Content.XamlRoot };
-        if (await ShowDialogAsync(dialog) is ContentDialogResult.Primary)
+        if (await Dialogs.ShowAsync(dialog) is ContentDialogResult.Primary)
         {
             await ViewModel.UpdateAsync(session, dialog.ViewModel.Build(), CancellationToken.None);
         }
@@ -85,7 +83,7 @@ public sealed partial class MainWindow : Window
             CloseButtonText = "Cancel",
             DefaultButton = ContentDialogButton.Close,
         };
-        if (await ShowDialogAsync(dialog) is ContentDialogResult.Primary)
+        if (await Dialogs.ShowAsync(dialog) is ContentDialogResult.Primary)
         {
             await ViewModel.DeleteAsync(session, CancellationToken.None);
         }
@@ -94,28 +92,9 @@ public sealed partial class MainWindow : Window
     private async Task AddProjectAsync()
     {
         var dialog = new ProjectDialog(new ProjectEditorViewModel()) { XamlRoot = Content.XamlRoot };
-        if (await ShowDialogAsync(dialog) is ContentDialogResult.Primary)
+        if (await Dialogs.ShowAsync(dialog) is ContentDialogResult.Primary)
         {
             await ViewModel.AddAsync(dialog.ViewModel.Build(), CancellationToken.None);
-        }
-    }
-
-    // Only one dialog can be open at a time, and an item may be invoked again while one is.
-    private async Task<ContentDialogResult?> ShowDialogAsync(ContentDialog dialog)
-    {
-        if (_isDialogOpen)
-        {
-            return null;
-        }
-
-        _isDialogOpen = true;
-        try
-        {
-            return await dialog.ShowAsync();
-        }
-        finally
-        {
-            _isDialogOpen = false;
         }
     }
 

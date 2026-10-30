@@ -17,6 +17,9 @@ public abstract record class Project
     /// <summary>The folder commands are run in.</summary>
     public required string WorkingFolder { get; init; }
 
+    /// <summary>The commands saved to the project, in the order they are shown.</summary>
+    public IReadOnlyList<SavedScript> Scripts { get; init; } = Array.Empty<SavedScript>();
+
     /// <summary>The name of the terminal the commands are run by, as shown to the user.</summary>
     [JsonIgnore]
     public abstract string TerminalDisplayName { get; }

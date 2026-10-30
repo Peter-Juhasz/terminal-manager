@@ -12,7 +12,7 @@ namespace App.Client.WinUI3.ViewModels;
 /// <summary>
 /// A project, with the commands run in it since the app was started.
 /// </summary>
-public sealed partial class ProjectSessionViewModel(Project project, CommandRunner runner) : ObservableObject
+public sealed partial class ProjectSessionViewModel(Project project, CommandRunner runner, ProjectStore store) : ObservableObject
 {
     // How often the time spent by the running command is updated.
     private static readonly TimeSpan DurationRefreshInterval = TimeSpan.FromMilliseconds(100);
@@ -28,6 +28,11 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
 
     public ObservableCollection<CommandEntryViewModel> Entries { get; } = [];
 
+    public ObservableCollection<SavedScript> Scripts { get; } = new(project.Scripts);
+
+    [ObservableProperty]
+    public partial bool HasScripts { get; private set; } = project.Scripts.Count > 0;
+
     [ObservableProperty]
     public partial bool HasEntries { get; private set; }
 
@@ -36,7 +41,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     public partial string Input { get; set; } = string.Empty;
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(RunCommand), nameof(StopCommand), nameof(ClearCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RunCommand), nameof(RunScriptCommand), nameof(StopCommand), nameof(ClearCommand))]
     public partial bool IsRunning { get; private set; }
 
     /// <summary>Raised when a command is started, so it can be scrolled into view.</summary>
@@ -45,11 +50,54 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     private bool CanRun => !IsRunning && !string.IsNullOrWhiteSpace(Input);
 
     [RelayCommand(CanExecute = nameof(CanRun))]
-    private async Task RunAsync()
+    private Task RunAsync()
     {
         var command = Input.Trim();
         Input = string.Empty;
+        return ExecuteAsync(command);
+    }
 
+    private bool CanRunScript(SavedScript? script) => !IsRunning && script is not null;
+
+    /// <summary>Runs <paramref name="script"/>, and leaves what was typed in the input as it is.</summary>
+    [RelayCommand(CanExecute = nameof(CanRunScript))]
+    private Task RunScriptAsync(SavedScript? script) => script is null ? Task.CompletedTask : ExecuteAsync(script.Command);
+
+    /// <summary>Adds <paramref name="script"/>, or replaces the one with the same id, and saves the project.</summary>
+    public Task SaveScriptAsync(SavedScript script, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(script);
+
+        var index = Scripts.Select(static other => other.Id).ToList().IndexOf(script.Id);
+        if (index >= 0)
+        {
+            Scripts[index] = script;
+        }
+        else
+        {
+            Scripts.Add(script);
+        }
+
+        return SaveScriptsAsync(cancellationToken);
+    }
+
+    public Task DeleteScriptAsync(SavedScript script, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(script);
+
+        Scripts.Remove(script);
+        return SaveScriptsAsync(cancellationToken);
+    }
+
+    private Task SaveScriptsAsync(CancellationToken cancellationToken)
+    {
+        HasScripts = Scripts.Count > 0;
+        Project = Project with { Scripts = Scripts.ToArray() };
+        return store.UpdateAsync(Project, cancellationToken);
+    }
+
+    private async Task ExecuteAsync(string command)
+    {
         _history.Remove(command);
         _history.Add(command);
         _historyIndex = _history.Count;
