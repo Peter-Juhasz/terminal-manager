@@ -1,0 +1,139 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="App.Client.WinUI3.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:views="using:App.Client.WinUI3.Views"
+    xmlns:vm="using:App.Client.WinUI3.ViewModels"
+    Title="Terminal">
+
+    <Window.SystemBackdrop>
+        <MicaBackdrop />
+    </Window.SystemBackdrop>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TitleBar
+            x:Name="AppTitleBar"
+            Title="Terminal"
+            IsPaneToggleButtonVisible="True"
+            PaneToggleRequested="OnPaneToggleRequested">
+            <TitleBar.IconSource>
+                <FontIconSource Glyph="&#xE756;" />
+            </TitleBar.IconSource>
+        </TitleBar>
+
+        <NavigationView
+            x:Name="NavView"
+            Grid.Row="1"
+            IsBackButtonVisible="Collapsed"
+            IsPaneToggleButtonVisible="False"
+            IsSettingsVisible="False"
+            ItemInvoked="OnNavigationItemInvoked"
+            MenuItemsSource="{x:Bind ViewModel.Sessions}"
+            OpenPaneLength="260"
+            PaneDisplayMode="Left"
+            SelectedItem="{x:Bind ViewModel.SelectedSession, Mode=OneWay}"
+            SelectionChanged="OnNavigationSelectionChanged">
+
+            <!--  The pane is left transparent, so the backdrop shows through it, as in the title bar above.  -->
+            <NavigationView.Resources>
+                <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="Transparent" />
+                <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="Transparent" />
+            </NavigationView.Resources>
+
+            <!--  A selector, as the footer items are templated by it as well.  -->
+            <NavigationView.MenuItemTemplateSelector>
+                <views:NavigationMenuTemplateSelector>
+                    <views:NavigationMenuTemplateSelector.SessionTemplate>
+                        <DataTemplate x:DataType="vm:ProjectSessionViewModel">
+                            <NavigationViewItem Content="{x:Bind Project.DisplayName, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind Project.WorkingFolder, Mode=OneWay}">
+                                <NavigationViewItem.Icon>
+                                    <FontIcon Glyph="&#xE756;" />
+                                </NavigationViewItem.Icon>
+                                <NavigationViewItem.InfoBadge>
+                                    <InfoBadge Style="{ThemeResource AttentionDotInfoBadgeStyle}" Visibility="{x:Bind IsRunning, Mode=OneWay}" />
+                                </NavigationViewItem.InfoBadge>
+                                <NavigationViewItem.ContextFlyout>
+                                    <MenuFlyout>
+                                        <MenuFlyoutItem
+                                            Click="OnEditProjectClick"
+                                            Tag="{x:Bind}"
+                                            Text="Edit">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE70F;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem
+                                            Click="OnDeleteProjectClick"
+                                            Tag="{x:Bind}"
+                                            Text="Delete">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE74D;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                    </MenuFlyout>
+                                </NavigationViewItem.ContextFlyout>
+                            </NavigationViewItem>
+                        </DataTemplate>
+                    </views:NavigationMenuTemplateSelector.SessionTemplate>
+                    <views:NavigationMenuTemplateSelector.NewProjectTemplate>
+                        <DataTemplate x:DataType="views:NewProjectMenuItem">
+                            <NavigationViewItem Content="New project" SelectsOnInvoked="False">
+                                <NavigationViewItem.Icon>
+                                    <FontIcon Glyph="&#xE710;" />
+                                </NavigationViewItem.Icon>
+                            </NavigationViewItem>
+                        </DataTemplate>
+                    </views:NavigationMenuTemplateSelector.NewProjectTemplate>
+                </views:NavigationMenuTemplateSelector>
+            </NavigationView.MenuItemTemplateSelector>
+
+            <NavigationView.FooterMenuItems>
+                <views:NewProjectMenuItem />
+            </NavigationView.FooterMenuItems>
+
+            <Grid>
+                <views:ProjectView
+                    x:Name="ProjectView"
+                    Session="{x:Bind ViewModel.SelectedSession, Mode=OneWay}"
+                    Visibility="{x:Bind views:Bind.VisibleIfNotNull(ViewModel.SelectedSession), Mode=OneWay}" />
+
+                <StackPanel
+                    MaxWidth="360"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="12"
+                    Visibility="{x:Bind views:Bind.CollapsedIf(ViewModel.HasProjects), Mode=OneWay}">
+                    <FontIcon
+                        FontSize="48"
+                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                        Glyph="&#xE756;" />
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        Style="{ThemeResource SubtitleTextBlockStyle}"
+                        Text="No projects yet" />
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="Add a project to run commands in its working folder."
+                        TextAlignment="Center"
+                        TextWrapping="Wrap" />
+                    <Button
+                        HorizontalAlignment="Center"
+                        Click="OnNewProjectClick"
+                        Style="{ThemeResource AccentButtonStyle}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon FontSize="14" Glyph="&#xE710;" />
+                            <TextBlock Text="New project" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </NavigationView>
+    </Grid>
+</Window>

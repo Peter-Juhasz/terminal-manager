@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="App.Client.WinUI3.Views.ProjectDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:App.Client.WinUI3.Views"
+    xmlns:models="using:App.Client.WinUI3.Models"
+    Title="{x:Bind ViewModel.Title}"
+    CloseButtonText="Cancel"
+    DefaultButton="Primary"
+    IsPrimaryButtonEnabled="{x:Bind ViewModel.IsValid, Mode=OneWay}"
+    PrimaryButtonText="{x:Bind ViewModel.PrimaryButtonText}"
+    Style="{StaticResource DefaultContentDialogStyle}">
+
+    <StackPanel MinWidth="440" Spacing="16">
+        <ComboBox
+            HorizontalAlignment="Stretch"
+            Header="Terminal"
+            IsEnabled="{x:Bind ViewModel.IsNew}"
+            ItemsSource="{x:Bind ViewModel.Kinds}"
+            SelectedItem="{x:Bind ViewModel.Kind, Mode=TwoWay}">
+            <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="models:ProjectKind">
+                    <TextBlock Text="{x:Bind DisplayName}" />
+                </DataTemplate>
+            </ComboBox.ItemTemplate>
+        </ComboBox>
+
+        <TextBox
+            x:Name="DisplayNameBox"
+            Header="Name"
+            PlaceholderText="My project"
+            Text="{x:Bind ViewModel.DisplayName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+        <StackPanel Spacing="4">
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBox
+                    Header="Working folder"
+                    PlaceholderText="C:\src\my-project"
+                    Text="{x:Bind ViewModel.WorkingFolder, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <Button
+                    Grid.Column="1"
+                    VerticalAlignment="Bottom"
+                    Click="OnBrowseClick"
+                    Content="Browse…" />
+            </Grid>
+            <TextBlock
+                Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                Style="{ThemeResource CaptionTextBlockStyle}"
+                Text="The folder doesn't exist."
+                Visibility="{x:Bind ViewModel.IsWorkingFolderMissing, Mode=OneWay}" />
+        </StackPanel>
+    </StackPanel>
+</ContentDialog>

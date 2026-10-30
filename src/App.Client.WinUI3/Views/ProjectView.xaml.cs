@@ -1,0 +1,118 @@
+using System.Diagnostics;
+using App.Client.WinUI3.ViewModels;
+using Microsoft.UI.Input;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
+using Windows.System;
+using Windows.UI.Core;
+
+namespace App.Client.WinUI3.Views;
+
+/// <summary>
+/// The commands run in a project, and where the next one is typed.
+/// </summary>
+public sealed partial class ProjectView : UserControl
+{
+    public ProjectView() => InitializeComponent();
+
+    public static readonly DependencyProperty SessionProperty = DependencyProperty.Register(
+        nameof(Session),
+        typeof(ProjectSessionViewModel),
+        typeof(ProjectView),
+        new PropertyMetadata(null, OnSessionChanged));
+
+    public ProjectSessionViewModel? Session
+    {
+        get => (ProjectSessionViewModel?)GetValue(SessionProperty);
+        set => SetValue(SessionProperty, value);
+    }
+
+    private static void OnSessionChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
+    {
+        var view = (ProjectView)sender;
+        if (e.OldValue is ProjectSessionViewModel previous)
+        {
+            previous.CommandStarted -= view.OnCommandStarted;
+        }
+
+        if (e.NewValue is ProjectSessionViewModel session)
+        {
+            session.CommandStarted += view.OnCommandStarted;
+            view.ScrollToEnd();
+            view.FocusInput();
+        }
+    }
+
+    private void OnCommandStarted(object? sender, CommandEntryViewModel e) => ScrollToEnd();
+
+    // Deferred, so the history is laid out with what was just added to it first.
+    private void ScrollToEnd() => DispatcherQueue.TryEnqueue(() =>
+    {
+        HistoryScroller.UpdateLayout();
+        HistoryScroller.ChangeView(null, HistoryScroller.ScrollableHeight, null, disableAnimation: true);
+    });
+
+    // Deferred, as whatever changed the session, such as the navigation menu, may still be taking focus.
+    private void FocusInput() => DispatcherQueue.TryEnqueue(() => InputBox.Focus(FocusState.Programmatic));
+
+    private void OnOpenFolderClick(object sender, RoutedEventArgs e)
+    {
+        if (Session?.Project.WorkingFolder is { } folder && Directory.Exists(folder))
+        {
+            Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true })?.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Enter runs the command, and Shift+Enter starts a new line. The arrow keys recall the commands run before, from the first and last lines.
+    /// Ctrl+C stops the running command, unless there is text selected to copy.
+    /// </summary>
+    private void OnInputPreviewKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (Session is not { } session)
+        {
+            return;
+        }
+
+        switch (e.Key)
+        {
+            case VirtualKey.Enter when !IsKeyDown(VirtualKey.Shift):
+                e.Handled = true;
+                if (session.RunCommand.CanExecute(null))
+                {
+                    session.RunCommand.Execute(null);
+                }
+
+                break;
+
+            case VirtualKey.Up when !InputBox.Text[..InputBox.SelectionStart].Contains('\r', StringComparison.Ordinal):
+                e.Handled = session.RecallPrevious();
+                if (e.Handled)
+                {
+                    MoveCaretToEnd();
+                }
+
+                break;
+
+            case VirtualKey.Down when !InputBox.Text[(InputBox.SelectionStart + InputBox.SelectionLength)..].Contains('\r', StringComparison.Ordinal):
+                e.Handled = session.RecallNext();
+                if (e.Handled)
+                {
+                    MoveCaretToEnd();
+                }
+
+                break;
+
+            case VirtualKey.C when IsKeyDown(VirtualKey.Control) && session.IsRunning && InputBox.SelectionLength == 0:
+                e.Handled = true;
+                session.StopCommand.Execute(null);
+                break;
+        }
+    }
+
+    private void MoveCaretToEnd() => DispatcherQueue.TryEnqueue(() => InputBox.Select(InputBox.Text.Length, 0));
+
+    private static bool IsKeyDown(VirtualKey key) =>
+        InputKeyboardSource.GetKeyStateForCurrentThread(key).HasFlag(CoreVirtualKeyStates.Down);
+}
