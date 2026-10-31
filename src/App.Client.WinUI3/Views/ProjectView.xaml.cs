@@ -93,6 +93,9 @@ public sealed partial class ProjectView : UserControl
         }
     }
 
+    // The command runs the script, and the input is focused to type the next one.
+    private void OnScriptButtonClick(object sender, RoutedEventArgs e) => FocusInput();
+
     private void OnScriptMoreClick(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { Parent: FrameworkElement { ContextFlyout: { } flyout } })
@@ -168,6 +171,7 @@ public sealed partial class ProjectView : UserControl
         }
 
         session.RunScriptCommand.Execute(script);
+        FocusInput();
     }
 
     private void OnEnqueueScriptClick(object sender, RoutedEventArgs e)
@@ -178,6 +182,7 @@ public sealed partial class ProjectView : UserControl
         }
 
         session.EnqueueScriptCommand.Execute(script);
+        FocusInput();
     }
 
     private void OnCancelQueuedClick(object sender, RoutedEventArgs e)

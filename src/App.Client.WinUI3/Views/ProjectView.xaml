@@ -480,6 +480,7 @@
                                     HorizontalAlignment="Stretch"
                                     HorizontalContentAlignment="Stretch"
                                     AutomationProperties.Name="{x:Bind Name}"
+                                    Click="OnScriptButtonClick"
                                     CommandParameter="{x:Bind}"
                                     Style="{StaticResource IconButtonStyle}"
                                     ToolTipService.ToolTip="{x:Bind Command}">
