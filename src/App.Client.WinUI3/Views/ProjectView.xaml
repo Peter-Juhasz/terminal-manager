@@ -397,7 +397,7 @@
                 FontFamily="{StaticResource MonospaceFontFamily}"
                 IsSpellCheckEnabled="False"
                 IsTextPredictionEnabled="False"
-                PlaceholderText="Type a command — Enter to run, Ctrl+Enter to queue, Shift+Enter for a new line"
+                PlaceholderText="Type a command"
                 LostFocus="OnInputLostFocus"
                 PreviewKeyDown="OnInputPreviewKeyDown"
                 SelectionChanged="OnInputSelectionChanged"
@@ -434,10 +434,10 @@
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="services:CompletionMatch">
                                 <StackPanel Orientation="Horizontal" Spacing="10">
-                                    <FontIcon
-                                        FontSize="14"
-                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                        Glyph="{x:Bind local:Bind.CompletionGlyph(ResultType)}" />
+                                    <ImageIcon
+                                        Width="16"
+                                        Height="16"
+                                        Source="{x:Bind local:Bind.CompletionIcon(ResultType)}" />
                                     <TextBlock
                                         FontFamily="{StaticResource MonospaceFontFamily}"
                                         Text="{x:Bind ListItemText}"

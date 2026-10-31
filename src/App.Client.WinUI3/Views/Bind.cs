@@ -35,19 +35,42 @@ public static class Bind
         _ => "AccentFillColorDefaultBrush",
     }];
 
-    /// <summary>The glyph of a match of a completion of the kind <paramref name="resultType"/>, a name of the kinds PowerShell completes.</summary>
-    public static string CompletionGlyph(string resultType) => resultType switch
+    // The icons of the kinds of matches, each loaded once.
+    private static readonly Dictionary<string, SvgImageSource> CompletionIcons = [];
+
+    /// <summary>
+    /// The icon of a match of a completion of the kind <paramref name="resultType"/>, a name of the kinds PowerShell completes,
+    /// the one Visual Studio shows for the same kind of thing in C#.
+    /// </summary>
+    public static ImageSource CompletionIcon(string resultType)
     {
-        "Command" => "",
-        "ProviderContainer" => "",
-        "ProviderItem" => "",
-        "ParameterName" or "ParameterValue" => "",
-        "Variable" or "Property" or "Method" => "",
-        "Type" or "Namespace" => "",
-        "Keyword" or "DynamicKeyword" => "",
-        "History" => "",
-        _ => "",
-    };
+        var name = resultType switch
+        {
+            // a command is called as a method is
+            "Command" or "Method" => "MethodPublic",
+            "Property" => "PropertyPublic",
+            "Variable" => "LocalVariable",
+            "ParameterName" => "Parameter",
+
+            // the values a parameter takes are mostly those of an enum, or a set like one
+            "ParameterValue" => "EnumerationItemPublic",
+            "Type" => "ClassPublic",
+            "Namespace" => "Namespace",
+            "Keyword" or "DynamicKeyword" => "IntelliSenseKeyword",
+            "ProviderContainer" => "FolderClosed",
+            "ProviderItem" => "Document",
+            "History" => "History",
+            _ => "TextFile",
+        };
+
+        if (!CompletionIcons.TryGetValue(name, out var icon))
+        {
+            icon = new SvgImageSource(new Uri($"ms-appx:///Assets/Completion/{name}.svg"));
+            CompletionIcons[name] = icon;
+        }
+
+        return icon;
+    }
 
     /// <summary>The logo at <paramref name="source"/>, or the generic terminal glyph without one.</summary>
     public static IconElement TerminalIcon(Uri? source) => source is null

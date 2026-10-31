@@ -33,6 +33,8 @@
     <Content Include="Assets\pwsh.svg" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\AppIcon.svg" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\AppIcon.ico" CopyToOutputDirectory="PreserveNewest" />
+    <!-- From the Visual Studio Image Library. -->
+    <Content Include="Assets\Completion\*.svg" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
