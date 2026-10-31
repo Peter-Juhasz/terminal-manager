@@ -11,7 +11,7 @@ namespace App.Client.WinUI3.ViewModels;
 /// <summary>
 /// A project, with the commands run in it since the app was started.
 /// </summary>
-public sealed partial class ProjectSessionViewModel(Project project, CommandRunner runner, ElevatedCommandRunner elevatedRunner, ProjectStore store) : ObservableObject
+public sealed partial class ProjectSessionViewModel(Project project, CommandRunner runner, ElevatedCommandRunner elevatedRunner, PowerShellCompleter completer, ProjectStore store) : ObservableObject
 {
     // How often the time spent by the running command is updated.
     private static readonly TimeSpan DurationRefreshInterval = TimeSpan.FromSeconds(1);
@@ -359,6 +359,25 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         Input = _historyIndex < _history.Count ? _history[_historyIndex] : string.Empty;
         return true;
     }
+
+    /// <summary>Whether what is typed in the input can be completed, which it can be by PowerShell.</summary>
+    public bool CanComplete => Project is PowerShellProject;
+
+    /// <summary>Gets completion ready, so completing for the first time doesn't wait for it to start up.</summary>
+    public void PrepareCompletion()
+    {
+        if (!CanComplete)
+        {
+            return;
+        }
+
+        completer.Prepare(Project.ExpandedWorkingFolder);
+    }
+
+    /// <summary>Completes the text before <paramref name="cursor"/> in <paramref name="input"/>, or returns <see langword="null"/> when it can't be completed.</summary>
+    public Task<CommandCompletion?> CompleteAsync(string input, int cursor, CancellationToken cancellationToken) => CanComplete
+        ? completer.CompleteAsync(Project.ExpandedWorkingFolder, input, cursor, cancellationToken)
+        : Task.FromResult<CommandCompletion?>(null);
 
     // Waits until more of the output can be shown, or it is complete, so its end is shown right away.
     // When laying out what was shown kept the UI thread busy past the interval, it is left as long to everything else,

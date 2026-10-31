@@ -17,6 +17,7 @@
     <Compile Include="$(AppDirectory)Models\PowerShellProject.cs" Link="App\Models\PowerShellProject.cs" />
     <Compile Include="$(AppDirectory)Models\Project.cs" Link="App\Models\Project.cs" />
     <Compile Include="$(AppDirectory)Models\SavedScript.cs" Link="App\Models\SavedScript.cs" />
+    <Compile Include="$(AppDirectory)Services\CommandCompletion.cs" Link="App\Services\CommandCompletion.cs" />
     <Compile Include="$(AppDirectory)Services\CommandRunner.cs" Link="App\Services\CommandRunner.cs" />
     <Compile Include="$(AppDirectory)Services\ElevationClient.cs" Link="App\Services\ElevationClient.cs" />
     <Compile Include="$(AppDirectory)Services\ElevationProtocol.cs" Link="App\Services\ElevationProtocol.cs" />
@@ -25,6 +26,7 @@
     <Compile Include="$(AppDirectory)Services\IOutputSink.cs" Link="App\Services\IOutputSink.cs" />
     <Compile Include="$(AppDirectory)Services\OutputBuffer.cs" Link="App\Services\OutputBuffer.cs" />
     <Compile Include="$(AppDirectory)Services\OutputChunk.cs" Link="App\Services\OutputChunk.cs" />
+    <Compile Include="$(AppDirectory)Services\PowerShellCompleter.cs" Link="App\Services\PowerShellCompleter.cs" />
     <Compile Include="$(AppDirectory)Services\ProgressSequenceParser.cs" Link="App\Services\ProgressSequenceParser.cs" />
     <Compile Include="$(AppDirectory)Services\SettingsService.cs" Link="App\Services\SettingsService.cs" />
     <Compile Include="$(AppDirectory)ViewModels\CommandOutput.cs" Link="App\ViewModels\CommandOutput.cs" />

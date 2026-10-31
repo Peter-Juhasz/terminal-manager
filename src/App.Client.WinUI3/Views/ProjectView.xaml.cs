@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using App.Client.WinUI3.Models;
+using App.Client.WinUI3.Services;
 using App.Client.WinUI3.ViewModels;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
@@ -57,6 +58,7 @@ public sealed partial class ProjectView : UserControl
             view.SetScriptsPaneVisible(session.HasScripts);
             view.ScrollToEnd();
             view.FocusInput();
+            session.PrepareCompletion();
         }
     }
 
@@ -134,6 +136,12 @@ public sealed partial class ProjectView : UserControl
         if (e.PropertyName is nameof(ProjectSessionViewModel.HasScripts) && Session is { HasScripts: true })
         {
             SetScriptsPaneVisible(true);
+        }
+
+        // the working folder may have changed
+        if (e.PropertyName is nameof(ProjectSessionViewModel.Project) && Session is { } session)
+        {
+            session.PrepareCompletion();
         }
     }
 
@@ -313,6 +321,7 @@ public sealed partial class ProjectView : UserControl
     /// Enter runs the command, Ctrl+Enter queues it, Ctrl+Shift+Enter runs it as an administrator, and Shift+Enter starts a new line.
     /// The arrow keys recall the commands run before, from the first and last lines.
     /// Ctrl+C stops the command started last of those running, unless there is text selected to copy.
+    /// Tab completes the text before the caret, and goes on to the next match when pressed again, Shift+Tab to the one before.
     /// </summary>
     private void OnInputPreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
@@ -371,7 +380,72 @@ public sealed partial class ProjectView : UserControl
             case VirtualKey.C when IsKeyDown(VirtualKey.Control) && InputBox.SelectionLength == 0:
                 e.Handled = session.StopLatest();
                 break;
+
+            // otherwise it moves the focus on, as it does for the Command Prompt, which can't complete
+            case VirtualKey.Tab when session.CanComplete && !IsKeyDown(VirtualKey.Control):
+                e.Handled = true;
+                _ = CompleteAsync(session, isBackward: IsKeyDown(VirtualKey.Shift));
+                break;
         }
+    }
+
+    // The completion that Tab goes through the matches of, while the input is left as the last one put in.
+    private TabCompletion? _completion;
+
+    // The completion being asked for, which is canceled when it is asked for again.
+    private CancellationTokenSource? _completing;
+
+    private async Task CompleteAsync(ProjectSessionViewModel session, bool isBackward)
+    {
+        if (_completion is { } current && current.Text == InputBox.Text)
+        {
+            var count = current.Completion.Matches.Count;
+            ApplyCompletion(current with { Match = (current.Match + (isBackward ? count - 1 : 1)) % count });
+            return;
+        }
+
+        _completion = null;
+        _completing?.Cancel();
+        using var completing = _completing = new CancellationTokenSource();
+        var input = InputBox.Text;
+
+        CommandCompletion? completion;
+        try
+        {
+            completion = await session.CompleteAsync(input, InputBox.SelectionStart, completing.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        finally
+        {
+            if (_completing == completing)
+            {
+                _completing = null;
+            }
+        }
+
+        // the input was changed, or another project selected, while waiting for it
+        if (completion is not { Matches.Count: > 0 } || InputBox.Text != input || Session != session)
+        {
+            return;
+        }
+
+        ApplyCompletion(new TabCompletion(Input: input, Completion: completion, Match: isBackward ? completion.Matches.Count - 1 : 0));
+    }
+
+    private void ApplyCompletion(TabCompletion completion)
+    {
+        _completion = completion;
+        InputBox.Text = completion.Text;
+        InputBox.Select(completion.Completion.GetCaret(completion.Match), 0);
+    }
+
+    // The input as it was when the completion was asked for, with the match put in that is at Match.
+    private sealed record TabCompletion(string Input, CommandCompletion Completion, int Match)
+    {
+        public string Text => Completion.Apply(Input, Match);
     }
 
     private void MoveCaretToEnd() => DispatcherQueue.TryEnqueue(() => InputBox.Select(InputBox.Text.Length, 0));
