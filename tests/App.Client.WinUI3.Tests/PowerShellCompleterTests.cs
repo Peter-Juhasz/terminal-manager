@@ -17,7 +17,7 @@ public sealed class PowerShellCompleterTests(TestContext testContext)
         Assert.IsNotNull(completion);
         Assert.AreEqual(0, completion.ReplacementIndex);
         Assert.AreEqual(11, completion.ReplacementLength);
-        Assert.Contains("Get-ChildItem", completion.Matches);
+        Assert.Contains("Get-ChildItem", completion.Matches.Select(static match => match.CompletionText));
     }
 
     [TestMethod]
@@ -34,7 +34,10 @@ public sealed class PowerShellCompleterTests(TestContext testContext)
 
             Assert.IsNotNull(completion);
             Assert.AreEqual(4, completion.ReplacementIndex);
-            Assert.AreSequenceEqual(["'.\\alpha one.txt'", ".\\alpine.txt"], completion.Matches);
+            Assert.AreSequenceEqual(["'.\\alpha one.txt'", ".\\alpine.txt"], completion.Matches.Select(static match => match.CompletionText));
+            Assert.AreSequenceEqual(["alpha one.txt", "alpine.txt"], completion.Matches.Select(static match => match.ListItemText));
+            Assert.AreSequenceEqual(["ProviderItem", "ProviderItem"], completion.Matches.Select(static match => match.ResultType));
+            Assert.AreEqual(Path.Combine(folder.FullName, "alpine.txt"), completion.Matches[1].ToolTip);
         }
         finally
         {
@@ -51,7 +54,7 @@ public sealed class PowerShellCompleterTests(TestContext testContext)
 
         Assert.IsNotNull(completion);
         Assert.AreEqual(7, completion.ReplacementIndex);
-        Assert.Contains("Write-Host", completion.Matches);
+        Assert.Contains("Write-Host", completion.Matches.Select(static match => match.CompletionText));
     }
 
     [TestMethod]
@@ -64,8 +67,8 @@ public sealed class PowerShellCompleterTests(TestContext testContext)
 
         Assert.IsNotNull(first);
         Assert.IsNotNull(second);
-        Assert.Contains("Get-Date", first.Matches);
-        Assert.Contains("Get-Location", second.Matches);
+        Assert.Contains("Get-Date", first.Matches.Select(static match => match.CompletionText));
+        Assert.Contains("Get-Location", second.Matches.Select(static match => match.CompletionText));
     }
 
     [TestMethod]
@@ -82,9 +85,11 @@ public sealed class PowerShellCompleterTests(TestContext testContext)
     [TestMethod]
     public void ApplyReplacesCompletedText()
     {
-        var completion = new CommandCompletion(ReplacementIndex: 4, ReplacementLength: 2, Matches: ["alpha", "alpine"]);
+        var completion = new CommandCompletion(ReplacementIndex: 4, ReplacementLength: 2, Matches: [Match("alpha"), Match("alpine")]);
 
         Assert.AreEqual("dir alpine -Force", completion.Apply("dir al -Force", 1));
         Assert.AreEqual(10, completion.GetCaret(1));
     }
+
+    private static CompletionMatch Match(string text) => new(CompletionText: text, ListItemText: text, ResultType: "ProviderItem", ToolTip: null);
 }

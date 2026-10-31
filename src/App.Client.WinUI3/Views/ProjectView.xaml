@@ -6,6 +6,7 @@
     xmlns:controls="using:App.Client.WinUI3.Controls"
     xmlns:local="using:App.Client.WinUI3.Views"
     xmlns:models="using:App.Client.WinUI3.Models"
+    xmlns:services="using:App.Client.WinUI3.Services"
     xmlns:vm="using:App.Client.WinUI3.ViewModels">
 
     <UserControl.Resources>
@@ -397,9 +398,77 @@
                 IsSpellCheckEnabled="False"
                 IsTextPredictionEnabled="False"
                 PlaceholderText="Type a command — Enter to run, Ctrl+Enter to queue, Shift+Enter for a new line"
+                LostFocus="OnInputLostFocus"
                 PreviewKeyDown="OnInputPreviewKeyDown"
+                SelectionChanged="OnInputSelectionChanged"
                 Text="{x:Bind Session.Input, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                 TextWrapping="Wrap" />
+
+            <!--
+                The matches the text before the caret can be completed to, opened by Ctrl+Space above the text completed.
+                The focus is left on the input, which moves through the matches with the arrow keys, so the list is never focused, not even by a click.
+            -->
+            <Popup
+                x:Name="CompletionPopup"
+                Grid.Row="1"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top">
+                <Border
+                    Width="420"
+                    Padding="0,4"
+                    Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}"
+                    BackgroundSizing="InnerBorderEdge"
+                    BorderBrush="{ThemeResource SurfaceStrokeColorFlyoutBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{ThemeResource OverlayCornerRadius}">
+                    <ListView
+                        x:Name="CompletionList"
+                        MaxHeight="280"
+                        AllowFocusOnInteraction="False"
+                        AutomationProperties.Name="Completions"
+                        IsItemClickEnabled="True"
+                        IsTabStop="False"
+                        ItemClick="OnCompletionItemClick"
+                        SelectionChanged="OnCompletionSelectionChanged"
+                        SelectionMode="Single">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="services:CompletionMatch">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <FontIcon
+                                        FontSize="14"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Glyph="{x:Bind local:Bind.CompletionGlyph(ResultType)}" />
+                                    <TextBlock
+                                        FontFamily="{StaticResource MonospaceFontFamily}"
+                                        Text="{x:Bind ListItemText}"
+                                        TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Border>
+            </Popup>
+
+            <!--  What the match selected is, such as the syntax of a command, or the full path of a file, beside it, as Visual Studio shows it.  -->
+            <Popup x:Name="CompletionInfoPopup" DesiredPlacement="RightEdgeAlignedTop">
+                <Border
+                    MaxWidth="400"
+                    Margin="8,0,0,0"
+                    Padding="12,8"
+                    Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}"
+                    BackgroundSizing="InnerBorderEdge"
+                    BorderBrush="{ThemeResource SurfaceStrokeColorFlyoutBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{ThemeResource OverlayCornerRadius}">
+                    <TextBlock
+                        x:Name="CompletionToolTip"
+                        FontFamily="{StaticResource MonospaceFontFamily}"
+                        MaxLines="12"
+                        Style="{ThemeResource CaptionTextBlockStyle}"
+                        TextTrimming="CharacterEllipsis"
+                        TextWrapping="Wrap" />
+                </Border>
+            </Popup>
 
             <!--
                 Commands can be run while others are running; each is stopped from its own item.

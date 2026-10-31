@@ -26,13 +26,20 @@ public sealed class PowerShellCompleter : IDisposable
                 @{
                     replacementIndex = $completion.ReplacementIndex
                     replacementLength = $completion.ReplacementLength
-                    matches = @($completion.CompletionMatches | ForEach-Object CompletionText)
+                    matches = @($completion.CompletionMatches | ForEach-Object {
+                        @{
+                            completionText = $_.CompletionText
+                            listItemText = $_.ListItemText
+                            resultType = $_.ResultType.ToString()
+                            toolTip = $_.ToolTip
+                        }
+                    })
                 }
             }
             catch {
                 @{ replacementIndex = 0; replacementLength = 0; matches = @() }
             }
-            [Console]::Out.WriteLine((ConvertTo-Json -InputObject $response -Compress))
+            [Console]::Out.WriteLine((ConvertTo-Json -InputObject $response -Depth 4 -Compress))
         }
         """;
 

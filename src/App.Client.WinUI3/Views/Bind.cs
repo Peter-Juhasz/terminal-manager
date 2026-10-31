@@ -35,6 +35,20 @@ public static class Bind
         _ => "AccentFillColorDefaultBrush",
     }];
 
+    /// <summary>The glyph of a match of a completion of the kind <paramref name="resultType"/>, a name of the kinds PowerShell completes.</summary>
+    public static string CompletionGlyph(string resultType) => resultType switch
+    {
+        "Command" => "",
+        "ProviderContainer" => "",
+        "ProviderItem" => "",
+        "ParameterName" or "ParameterValue" => "",
+        "Variable" or "Property" or "Method" => "",
+        "Type" or "Namespace" => "",
+        "Keyword" or "DynamicKeyword" => "",
+        "History" => "",
+        _ => "",
+    };
+
     /// <summary>The logo at <paramref name="source"/>, or the generic terminal glyph without one.</summary>
     public static IconElement TerminalIcon(Uri? source) => source is null
         ? new FontIcon { Glyph = "\uE756" }
