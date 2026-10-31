@@ -44,5 +44,7 @@
 
   <Capabilities>
     <rescap:Capability Name="runFullTrust" />
+    <!-- So the app can start a copy of itself as an administrator, to run commands elevated. -->
+    <rescap:Capability Name="allowElevation" />
   </Capabilities>
 </Package>

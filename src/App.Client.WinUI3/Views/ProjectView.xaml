@@ -41,6 +41,15 @@
                             VerticalAlignment="Top"
                             Orientation="Horizontal"
                             Spacing="0">
+                            <FontIcon
+                                Margin="0,0,8,0"
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="Run as administrator"
+                                FontSize="12"
+                                Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                                Glyph="&#xEA18;"
+                                ToolTipService.ToolTip="Run as administrator"
+                                Visibility="{x:Bind IsElevated}" />
                             <TextBlock
                                 Margin="0,0,4,0"
                                 VerticalAlignment="Center"
@@ -369,7 +378,7 @@
                 x:Name="InputBox"
                 MinHeight="56"
                 MaxHeight="200"
-                Padding="12,17,60,10"
+                Padding="12,17,96,10"
                 AcceptsReturn="True"
                 AutomationProperties.Name="Command"
                 CornerRadius="12"
@@ -381,21 +390,51 @@
                 Text="{x:Bind Session.Input, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                 TextWrapping="Wrap" />
 
-            <!--  Commands can be run while others are running; each is stopped from its own item.  -->
-            <Button
+            <!--
+                Commands can be run while others are running; each is stopped from its own item.
+                The button runs the command, and its menu runs it as an administrator, which the user is asked to allow the first time, or queues it.
+                The shortcuts are shown rather than registered, as they are handled by the input.
+            -->
+            <SplitButton
                 Grid.Row="1"
-                Width="40"
                 Height="40"
                 Margin="0,0,8,8"
+                Padding="12,0"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Bottom"
                 AutomationProperties.Name="Run"
                 Command="{x:Bind Session.RunCommand, Mode=OneWay}"
-                CornerRadius="10"
-                Style="{ThemeResource AccentButtonStyle}"
                 ToolTipService.ToolTip="Run (Enter)">
                 <FontIcon FontSize="16" Glyph="&#xE724;" />
-            </Button>
+                <SplitButton.Flyout>
+                    <MenuFlyout Placement="TopEdgeAlignedRight">
+                        <MenuFlyoutItem
+                            Command="{x:Bind Session.RunCommand, Mode=OneWay}"
+                            KeyboardAcceleratorTextOverride="Enter"
+                            Text="Run">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE768;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem
+                            Command="{x:Bind Session.RunElevatedCommand, Mode=OneWay}"
+                            KeyboardAcceleratorTextOverride="Ctrl+Shift+Enter"
+                            Text="Run as administrator">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xEA18;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem
+                            Command="{x:Bind Session.EnqueueCommand, Mode=OneWay}"
+                            KeyboardAcceleratorTextOverride="Ctrl+Enter"
+                            Text="Queue">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE823;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                    </MenuFlyout>
+                </SplitButton.Flyout>
+            </SplitButton>
         </Grid>
 
         <!--  Saved scripts, each run with a single click, and edited or deleted from its menu.  -->
@@ -444,6 +483,14 @@
                                             Text="Run">
                                             <MenuFlyoutItem.Icon>
                                                 <FontIcon Glyph="&#xE768;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem
+                                            Click="OnRunScriptElevatedClick"
+                                            Tag="{x:Bind}"
+                                            Text="Run as administrator">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xEA18;" />
                                             </MenuFlyoutItem.Icon>
                                         </MenuFlyoutItem>
                                         <MenuFlyoutItem

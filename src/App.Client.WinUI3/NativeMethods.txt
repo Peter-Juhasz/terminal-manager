@@ -2,3 +2,5 @@ GetDpiForWindow
 ITaskbarList3
 TaskbarList
 FlashWindowEx
+GetNamedPipeClientProcessId
+GetNamedPipeServerProcessId

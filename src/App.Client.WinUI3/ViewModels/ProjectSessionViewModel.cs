@@ -11,7 +11,7 @@ namespace App.Client.WinUI3.ViewModels;
 /// <summary>
 /// A project, with the commands run in it since the app was started.
 /// </summary>
-public sealed partial class ProjectSessionViewModel(Project project, CommandRunner runner, ProjectStore store) : ObservableObject
+public sealed partial class ProjectSessionViewModel(Project project, CommandRunner runner, ElevatedCommandRunner elevatedRunner, ProjectStore store) : ObservableObject
 {
     // How often the time spent by the running command is updated.
     private static readonly TimeSpan DurationRefreshInterval = TimeSpan.FromSeconds(1);
@@ -37,7 +37,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     public partial bool HasEntries { get; private set; }
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(RunCommand), nameof(EnqueueCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RunCommand), nameof(RunElevatedCommand), nameof(EnqueueCommand))]
     public partial string Input { get; set; } = string.Empty;
 
     /// <summary>The commands waiting to be run, one at a time, each once all the commands running have ended.</summary>
@@ -90,18 +90,28 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     private bool CanRun => !string.IsNullOrWhiteSpace(Input);
 
     [RelayCommand(CanExecute = nameof(CanRun), AllowConcurrentExecutions = true)]
-    private Task RunAsync()
+    private Task RunAsync() => RunInputAsync(isElevated: false);
+
+    /// <summary>Runs what was typed in the input as an administrator, which the user is asked to allow the first time.</summary>
+    [RelayCommand(CanExecute = nameof(CanRun), AllowConcurrentExecutions = true)]
+    private Task RunElevatedAsync() => RunInputAsync(isElevated: true);
+
+    private Task RunInputAsync(bool isElevated)
     {
         var command = Input.Trim();
         Input = string.Empty;
-        return ExecuteAsync(command);
+        return ExecuteAsync(command, isElevated);
     }
 
     private bool CanRunScript(SavedScript? script) => script is not null;
 
     /// <summary>Runs <paramref name="script"/>, and leaves what was typed in the input as it is.</summary>
     [RelayCommand(CanExecute = nameof(CanRunScript), AllowConcurrentExecutions = true)]
-    private Task RunScriptAsync(SavedScript? script) => script is null ? Task.CompletedTask : ExecuteAsync(script.Command);
+    private Task RunScriptAsync(SavedScript? script) => script is null ? Task.CompletedTask : ExecuteAsync(script.Command, isElevated: false);
+
+    /// <summary>Runs <paramref name="script"/> as an administrator, and leaves what was typed in the input as it is.</summary>
+    [RelayCommand(CanExecute = nameof(CanRunScript), AllowConcurrentExecutions = true)]
+    private Task RunScriptElevatedAsync(SavedScript? script) => script is null ? Task.CompletedTask : ExecuteAsync(script.Command, isElevated: true);
 
     /// <summary>Queues what was typed in the input, to be run once the commands running have ended, or right away if none are.</summary>
     [RelayCommand(CanExecute = nameof(CanRun))]
@@ -109,7 +119,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     {
         var command = Input.Trim();
         Input = string.Empty;
-        AddToQueue(command);
+        AddToQueue(command, isElevated: false);
     }
 
     /// <summary>Queues <paramref name="script"/>, and leaves what was typed in the input as it is.</summary>
@@ -121,12 +131,24 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
             return;
         }
 
-        AddToQueue(script.Command);
+        AddToQueue(script.Command, isElevated: false);
     }
 
-    private void AddToQueue(string command)
+    /// <summary>Queues <paramref name="script"/> to be run as an administrator, and leaves what was typed in the input as it is.</summary>
+    [RelayCommand(CanExecute = nameof(CanRunScript))]
+    private void EnqueueScriptElevated(SavedScript? script)
     {
-        Queue.Add(new(command));
+        if (script is null)
+        {
+            return;
+        }
+
+        AddToQueue(script.Command, isElevated: true);
+    }
+
+    private void AddToQueue(string command, bool isElevated)
+    {
+        Queue.Add(new(command, isElevated));
         HasQueue = true;
         RunNextQueued();
     }
@@ -156,7 +178,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         HasQueue = Queue.Count > 0;
 
         // it is added to those running before this returns, so the rest of the queue waits for it
-        _ = ExecuteAsync(next.Command);
+        _ = ExecuteAsync(next.Command, next.IsElevated);
     }
 
     /// <summary>Adds <paramref name="script"/>, or replaces the one with the same id, and saves the project.</summary>
@@ -192,14 +214,14 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         return store.UpdateAsync(Project, cancellationToken);
     }
 
-    private async Task ExecuteAsync(string command)
+    private async Task ExecuteAsync(string command, bool isElevated)
     {
         _history.Remove(command);
         _history.Add(command);
         _historyIndex = _history.Count;
 
         using var stopSource = new CancellationTokenSource();
-        var entry = new CommandEntryViewModel(command, stopSource.Cancel, () => ExecuteAsync(command));
+        var entry = new CommandEntryViewModel(command, isElevated, stopSource.Cancel, () => ExecuteAsync(command, isElevated));
         Entries.Add(entry);
         HasEntries = true;
         _running.Add(entry);
@@ -213,7 +235,8 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
 
         var output = new OutputBuffer();
         var project = Project;
-        var run = Task.Run(() => runner.RunAsync(project, command, output, stopSource.Token), CancellationToken.None);
+        ICommandRunner selected = isElevated ? elevatedRunner : runner;
+        var run = Task.Run(() => selected.RunAsync(project, command, output, stopSource.Token), CancellationToken.None);
 
         try
         {
@@ -226,6 +249,11 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
 
             var exitCode = await run;
             entry.Complete(exitCode, stopSource.IsCancellationRequested, stopwatch.Elapsed);
+        }
+        catch (OperationCanceledException) when (stopSource.IsCancellationRequested)
+        {
+            // stopped while the user was asked to allow it to run as an administrator
+            entry.Complete(null, wasStopped: true, stopwatch.Elapsed);
         }
         catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException)
         {

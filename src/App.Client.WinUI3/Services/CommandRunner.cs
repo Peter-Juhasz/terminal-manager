@@ -5,9 +5,9 @@ using App.Client.WinUI3.Models;
 namespace App.Client.WinUI3.Services;
 
 /// <summary>
-/// Runs commands by the terminal of their project, in its working folder.
+/// Runs commands by the terminal of their project, in its working folder, with the rights of the app.
 /// </summary>
-public sealed class CommandRunner
+public sealed class CommandRunner : ICommandRunner
 {
     // How long the output is still read after the process exits, as a process it started may keep the streams open.
     private static readonly TimeSpan OutputDrainTimeout = TimeSpan.FromSeconds(1);
@@ -15,12 +15,8 @@ public sealed class CommandRunner
     // As much as the pipe of a stream holds.
     private const int ReadBufferSize = 4096;
 
-    /// <summary>
-    /// Runs <paramref name="command"/>, writing its output to <paramref name="output"/> as it is read, which is completed when the command ends.
-    /// Canceling stops the process and all the processes it started.
-    /// </summary>
-    /// <returns>The exit code of the process.</returns>
-    public async Task<int> RunAsync(Project project, string command, OutputBuffer output, CancellationToken cancellationToken)
+    /// <inheritdoc/>
+    public async Task<int> RunAsync(Project project, string command, IOutputSink output, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(output);
@@ -70,12 +66,12 @@ public sealed class CommandRunner
 
     // On a thread of its own, as the pipe can only be read by blocking one, for as long as any process keeps it open,
     // which would hold up everything else run by the thread pool.
-    private static Task StartPump(Stream source, OutputStream stream, OutputBuffer output) =>
+    private static Task StartPump(Stream source, OutputStream stream, IOutputSink output) =>
         Task.Factory.StartNew(() => Pump(source, stream, output), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
     // Decodes what was read itself, as a StreamReader holds back what it decoded until it reads again whenever a read filled its buffer,
     // which waits for the command to write more.
-    private static void Pump(Stream source, OutputStream stream, OutputBuffer output)
+    private static void Pump(Stream source, OutputStream stream, IOutputSink output)
     {
         using (source)
         {

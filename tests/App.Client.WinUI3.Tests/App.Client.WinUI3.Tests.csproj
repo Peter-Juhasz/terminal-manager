@@ -18,6 +18,11 @@
     <Compile Include="$(AppDirectory)Models\Project.cs" Link="App\Models\Project.cs" />
     <Compile Include="$(AppDirectory)Models\SavedScript.cs" Link="App\Models\SavedScript.cs" />
     <Compile Include="$(AppDirectory)Services\CommandRunner.cs" Link="App\Services\CommandRunner.cs" />
+    <Compile Include="$(AppDirectory)Services\ElevationClient.cs" Link="App\Services\ElevationClient.cs" />
+    <Compile Include="$(AppDirectory)Services\ElevationProtocol.cs" Link="App\Services\ElevationProtocol.cs" />
+    <Compile Include="$(AppDirectory)Services\ElevationServer.cs" Link="App\Services\ElevationServer.cs" />
+    <Compile Include="$(AppDirectory)Services\ICommandRunner.cs" Link="App\Services\ICommandRunner.cs" />
+    <Compile Include="$(AppDirectory)Services\IOutputSink.cs" Link="App\Services\IOutputSink.cs" />
     <Compile Include="$(AppDirectory)Services\OutputBuffer.cs" Link="App\Services\OutputBuffer.cs" />
     <Compile Include="$(AppDirectory)Services\OutputChunk.cs" Link="App\Services\OutputChunk.cs" />
     <Compile Include="$(AppDirectory)Services\ProgressSequenceParser.cs" Link="App\Services\ProgressSequenceParser.cs" />

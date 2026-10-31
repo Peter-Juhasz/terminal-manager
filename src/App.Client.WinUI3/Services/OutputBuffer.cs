@@ -10,7 +10,7 @@ public readonly record struct OutputBatch(IReadOnlyList<OutputChunk> Chunks, Pro
 /// Collects the output of a command from the threads that read its streams, with the progress sequences taken out of its standard output,
 /// so everything written since it was last read can be shown at once, however small the pieces it was read in.
 /// </summary>
-public sealed class OutputBuffer
+public sealed class OutputBuffer : IOutputSink
 {
     /// <summary>The most text in a chunk, which keeps chunks off the large object heap, however much was written at once.</summary>
     public const int MaxChunkLength = 8 * 1024;

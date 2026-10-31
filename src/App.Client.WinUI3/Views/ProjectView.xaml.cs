@@ -185,6 +185,17 @@ public sealed partial class ProjectView : UserControl
         FocusInput();
     }
 
+    private void OnRunScriptElevatedClick(object sender, RoutedEventArgs e)
+    {
+        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not SavedScript script)
+        {
+            return;
+        }
+
+        session.RunScriptElevatedCommand.Execute(script);
+        FocusInput();
+    }
+
     private void OnCancelQueuedClick(object sender, RoutedEventArgs e)
     {
         if (Session is not { } session || (sender as FrameworkElement)?.Tag is not QueuedCommand queued)
@@ -233,7 +244,8 @@ public sealed partial class ProjectView : UserControl
     }
 
     /// <summary>
-    /// Enter runs the command, Ctrl+Enter queues it, and Shift+Enter starts a new line. The arrow keys recall the commands run before, from the first and last lines.
+    /// Enter runs the command, Ctrl+Enter queues it, Ctrl+Shift+Enter runs it as an administrator, and Shift+Enter starts a new line.
+    /// The arrow keys recall the commands run before, from the first and last lines.
     /// Ctrl+C stops the command started last of those running, unless there is text selected to copy.
     /// </summary>
     private void OnInputPreviewKeyDown(object sender, KeyRoutedEventArgs e)
@@ -245,6 +257,15 @@ public sealed partial class ProjectView : UserControl
 
         switch (e.Key)
         {
+            case VirtualKey.Enter when IsKeyDown(VirtualKey.Control) && IsKeyDown(VirtualKey.Shift):
+                e.Handled = true;
+                if (session.RunElevatedCommand.CanExecute(null))
+                {
+                    session.RunElevatedCommand.Execute(null);
+                }
+
+                break;
+
             case VirtualKey.Enter when IsKeyDown(VirtualKey.Control) && !IsKeyDown(VirtualKey.Shift):
                 e.Handled = true;
                 if (session.EnqueueCommand.CanExecute(null))

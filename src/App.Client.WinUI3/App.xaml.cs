@@ -88,6 +88,7 @@ public partial class App : Application
                 .AsJsonObjectRepository<AppSettings>(AppJsonSerializerContext.Default.AppSettings)));
 
         services.AddSingleton<CommandRunner>();
+        services.AddSingleton<ElevatedCommandRunner>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
 

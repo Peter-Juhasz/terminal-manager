@@ -7,11 +7,14 @@ using Windows.ApplicationModel.DataTransfer;
 namespace App.Client.WinUI3.ViewModels;
 
 /// <summary>
-/// A command that was run, with what it wrote, and how it ended.
+/// A command that was run, as an administrator if <paramref name="isElevated"/>, with what it wrote, and how it ended.
 /// </summary>
-public sealed partial class CommandEntryViewModel(string command, Action stop, Func<Task> rerun) : ObservableObject
+public sealed partial class CommandEntryViewModel(string command, bool isElevated, Action stop, Func<Task> rerun) : ObservableObject
 {
     public string Command { get; } = command;
+
+    /// <summary>Whether it was run as an administrator, as it is when it is run again.</summary>
+    public bool IsElevated { get; } = isElevated;
 
     /// <summary>When the command was started.</summary>
     public DateTimeOffset StartedAt { get; } = DateTimeOffset.Now;
