@@ -59,10 +59,17 @@ public partial class App : Application
     {
         var services = new ServiceCollection();
 
-        // Packaged apps have this redirected to their own per-package folder.
-        var dataFolderPath = Environment.GetEnvironmentVariable("TERMINAL_DATA_FOLDER") is { Length: > 0 } overridden
-            ? overridden
-            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Terminal");
+        // Defaults to OneDrive so data roams across machines; falls back to local app data (redirected per-package
+        // for packaged apps) when OneDrive isn't set up.
+        var dataFolderPath = Environment.GetEnvironmentVariable("TERMINAL_DATA_FOLDER") switch
+        {
+            { Length: > 0 } overridden => overridden,
+            _ => Environment.GetEnvironmentVariable("OneDrive") switch
+            {
+                { Length: > 0 } oneDrive => Path.Combine(oneDrive, "Apps", "Terminal"),
+                _ => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Terminal"),
+            },
+        };
         var dataFolder = new DirectoryInfo(Environment.ExpandEnvironmentVariables(dataFolderPath));
 
         // The type infos are passed in rather than the context, as getting them from the context isn't trim safe.
