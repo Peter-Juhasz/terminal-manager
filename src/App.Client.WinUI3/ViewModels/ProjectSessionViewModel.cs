@@ -14,7 +14,7 @@ namespace App.Client.WinUI3.ViewModels;
 public sealed partial class ProjectSessionViewModel(Project project, CommandRunner runner, ProjectStore store) : ObservableObject
 {
     // How often the time spent by the running command is updated.
-    private static readonly TimeSpan DurationRefreshInterval = TimeSpan.FromMilliseconds(100);
+    private static readonly TimeSpan DurationRefreshInterval = TimeSpan.FromSeconds(1);
 
     // How often more of the output of a running command is shown, as the text block showing it lays all of it out again each time.
     private static readonly TimeSpan OutputRefreshInterval = TimeSpan.FromMilliseconds(50);
