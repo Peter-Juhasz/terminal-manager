@@ -5,7 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace App.Client.WinUI3.ViewModels;
 
-public sealed partial class MainViewModel(ProjectStore store, CommandRunner runner, ElevatedCommandRunner elevatedRunner, PowerShellCompleter completer) : ObservableObject
+public sealed partial class MainViewModel(ProjectStore store, CommandRunner runner, ElevatedCommandRunner elevatedRunner, PowerShellCompleter completer, PowerShellHighlighter highlighter) : ObservableObject
 {
     public ObservableCollection<ProjectSessionViewModel> Sessions { get; } = [];
 
@@ -65,7 +65,7 @@ public sealed partial class MainViewModel(ProjectStore store, CommandRunner runn
         var projects = await store.ListAsync(cancellationToken);
         foreach (var project in projects.OrderBy(static project => project.DisplayName, StringComparer.CurrentCultureIgnoreCase))
         {
-            Attach(new ProjectSessionViewModel(project, runner, elevatedRunner, completer, store));
+            Attach(new ProjectSessionViewModel(project, runner, elevatedRunner, completer, highlighter, store));
         }
 
         HasProjects = Sessions.Count > 0;
@@ -76,7 +76,7 @@ public sealed partial class MainViewModel(ProjectStore store, CommandRunner runn
     {
         await store.AddAsync(project, cancellationToken);
 
-        var session = new ProjectSessionViewModel(project, runner, elevatedRunner, completer, store);
+        var session = new ProjectSessionViewModel(project, runner, elevatedRunner, completer, highlighter, store);
         Attach(session);
         HasProjects = true;
         SelectedSession = session;

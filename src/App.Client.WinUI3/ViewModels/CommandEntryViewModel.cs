@@ -13,6 +13,10 @@ public sealed partial class CommandEntryViewModel(string command, bool isElevate
 {
     public string Command { get; } = command;
 
+    /// <summary>The command, with what it is made of colored, once it was parsed; until then, or when it can't be parsed, it is shown as it is.</summary>
+    [ObservableProperty]
+    public partial HighlightedCode HighlightedCommand { get; set; } = HighlightedCode.Plain(command);
+
     /// <summary>Whether it was run as an administrator, as it is when it is run again.</summary>
     public bool IsElevated { get; } = isElevated;
 

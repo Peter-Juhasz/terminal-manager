@@ -10,6 +10,28 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
 
+            <!--  The colors of a script, as Visual Studio colors it; plain in high contrast, as the system colors of text are all there is.  -->
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="SyntaxKeywordBrush" Color="#0000FF" />
+                    <SolidColorBrush x:Key="SyntaxCommentBrush" Color="#008000" />
+                    <SolidColorBrush x:Key="SyntaxStringBrush" Color="#A31515" />
+                    <SolidColorBrush x:Key="SyntaxTypeNameBrush" Color="#2B91AF" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Default">
+                    <SolidColorBrush x:Key="SyntaxKeywordBrush" Color="#569CD6" />
+                    <SolidColorBrush x:Key="SyntaxCommentBrush" Color="#57A64A" />
+                    <SolidColorBrush x:Key="SyntaxStringBrush" Color="#D69D85" />
+                    <SolidColorBrush x:Key="SyntaxTypeNameBrush" Color="#4EC9B0" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="HighContrast">
+                    <SolidColorBrush x:Key="SyntaxKeywordBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+                    <SolidColorBrush x:Key="SyntaxCommentBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+                    <SolidColorBrush x:Key="SyntaxStringBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+                    <SolidColorBrush x:Key="SyntaxTypeNameBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+
             <FontFamily x:Key="MonospaceFontFamily">Cascadia Mono, Consolas, Courier New</FontFamily>
 
             <!--  A button of only an icon, which shows its background only while hovered or pressed.  -->

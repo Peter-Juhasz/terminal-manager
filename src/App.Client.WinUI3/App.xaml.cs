@@ -90,6 +90,7 @@ public partial class App : Application
         services.AddSingleton<CommandRunner>();
         services.AddSingleton<ElevatedCommandRunner>();
         services.AddSingleton<PowerShellCompleter>();
+        services.AddSingleton<PowerShellHighlighter>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
 

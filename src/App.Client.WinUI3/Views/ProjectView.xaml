@@ -31,11 +31,11 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock
+                        <RichTextBlock
                             Margin="0,4"
+                            controls:SyntaxHighlighting.Code="{x:Bind HighlightedCommand, Mode=OneWay}"
                             FontFamily="{StaticResource MonospaceFontFamily}"
                             IsTextSelectionEnabled="True"
-                            Text="{x:Bind Command}"
                             TextWrapping="Wrap" />
                         <StackPanel
                             Grid.Column="1"

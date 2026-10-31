@@ -1,6 +1,3 @@
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -11,9 +8,6 @@ namespace App.Client.WinUI3.Services;
 /// </summary>
 public sealed class PowerShellCompleter : IDisposable
 {
-    // How long an answer is waited for, after which the pwsh is stopped, and started again for the next one.
-    private static readonly TimeSpan ResponseTimeout = TimeSpan.FromSeconds(15);
-
     // Reads a request from each line it is given, and writes the answer on a line of its own.
     // The variables are private, so they aren't offered by the completion of variables.
     private const string Script = """
@@ -44,7 +38,7 @@ public sealed class PowerShellCompleter : IDisposable
         """;
 
     private readonly Lock _lock = new();
-    private readonly Dictionary<string, Host> _hosts = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, PowerShellHost> _hosts = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Starts the pwsh for <paramref name="workingFolder"/>, and has it load what completion needs, so the first completion is quick too.</summary>
     public void Prepare(string workingFolder) =>
@@ -59,25 +53,44 @@ public sealed class PowerShellCompleter : IDisposable
         ArgumentNullException.ThrowIfNull(workingFolder);
         ArgumentNullException.ThrowIfNull(input);
 
-        Host host;
+        PowerShellHost host;
         lock (_lock)
         {
             if (!_hosts.TryGetValue(workingFolder, out var existing) || existing.HasExited)
             {
                 existing?.Dispose();
-                existing = new Host(workingFolder);
+                existing = new PowerShellHost(Script, workingFolder);
                 _hosts[workingFolder] = existing;
             }
 
             host = existing;
         }
 
-        var completion = await host.CompleteAsync(input, cursor).WaitAsync(cancellationToken).ConfigureAwait(false);
+        var request = JsonSerializer.Serialize(new CompletionRequest(input, cursor), CompletionJsonSerializerContext.Default.CompletionRequest);
+        var line = await host.SendAsync(request).WaitAsync(cancellationToken).ConfigureAwait(false);
+        var completion = Deserialize(line);
 
         // what isn't within the input couldn't be put in its place
         return completion is { ReplacementIndex: >= 0, ReplacementLength: >= 0 } && completion.ReplacementIndex + completion.ReplacementLength <= input.Length
             ? completion
             : null;
+    }
+
+    private static CommandCompletion? Deserialize(string? line)
+    {
+        if (line is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize(line, CompletionJsonSerializerContext.Default.CommandCompletion);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     public void Dispose()
@@ -90,90 +103,6 @@ public sealed class PowerShellCompleter : IDisposable
             }
 
             _hosts.Clear();
-        }
-    }
-
-    // A pwsh that answers one request at a time.
-    private sealed class Host(string workingFolder) : IDisposable
-    {
-        private readonly SemaphoreSlim _gate = new(1, 1);
-        private Process? _process;
-        private bool _isDisposed;
-
-        public bool HasExited => _isDisposed || _process is { HasExited: true };
-
-        public async Task<CommandCompletion?> CompleteAsync(string input, int cursor)
-        {
-            await _gate.WaitAsync(CancellationToken.None).ConfigureAwait(false);
-            try
-            {
-                if (_isDisposed)
-                {
-                    return null;
-                }
-
-                _process ??= Start(workingFolder);
-                await _process.StandardInput.WriteLineAsync(JsonSerializer.Serialize(new CompletionRequest(input, cursor), CompletionJsonSerializerContext.Default.CompletionRequest)).ConfigureAwait(false);
-                await _process.StandardInput.FlushAsync(CancellationToken.None).ConfigureAwait(false);
-
-                // the pipe can't be canceled, so it is closed by stopping the pwsh, once the answer took too long
-                var line = await _process.StandardOutput.ReadLineAsync(CancellationToken.None).AsTask().WaitAsync(ResponseTimeout, CancellationToken.None).ConfigureAwait(false);
-                return line is null ? null : JsonSerializer.Deserialize(line, CompletionJsonSerializerContext.Default.CommandCompletion);
-            }
-            catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException or TimeoutException or JsonException or ObjectDisposedException)
-            {
-                // pwsh couldn't be started, or stopped answering; the next request starts it again
-                Stop();
-                return null;
-            }
-            finally
-            {
-                _gate.Release();
-            }
-        }
-
-        private static Process Start(string workingFolder)
-        {
-            var startInfo = new ProcessStartInfo("pwsh")
-            {
-                ArgumentList = { "-NoLogo", "-NoProfile", "-NonInteractive", "-Command", Script },
-                WorkingDirectory = workingFolder,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                StandardInputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
-                StandardOutputEncoding = Encoding.UTF8,
-            };
-
-            return Process.Start(startInfo) ?? throw new InvalidOperationException($"'{startInfo.FileName}' couldn't be started.");
-        }
-
-        private void Stop()
-        {
-            if (_process is null)
-            {
-                return;
-            }
-
-            try
-            {
-                _process.Kill(entireProcessTree: true);
-            }
-            catch (Exception ex) when (ex is InvalidOperationException or AggregateException or Win32Exception)
-            {
-                // it has already exited
-            }
-
-            _process.Dispose();
-            _process = null;
-        }
-
-        // When the app exits without this, its end of the input is closed, which ends the loop, so the pwsh exits too.
-        public void Dispose()
-        {
-            _isDisposed = true;
-            Stop();
         }
     }
 }

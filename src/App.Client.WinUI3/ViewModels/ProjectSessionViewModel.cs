@@ -11,7 +11,7 @@ namespace App.Client.WinUI3.ViewModels;
 /// <summary>
 /// A project, with the commands run in it since the app was started.
 /// </summary>
-public sealed partial class ProjectSessionViewModel(Project project, CommandRunner runner, ElevatedCommandRunner elevatedRunner, PowerShellCompleter completer, ProjectStore store) : ObservableObject
+public sealed partial class ProjectSessionViewModel(Project project, CommandRunner runner, ElevatedCommandRunner elevatedRunner, PowerShellCompleter completer, PowerShellHighlighter highlighter, ProjectStore store) : ObservableObject
 {
     // How often the time spent by the running command is updated.
     private static readonly TimeSpan DurationRefreshInterval = TimeSpan.FromSeconds(1);
@@ -228,6 +228,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         entry.PropertyChanged += OnRunningChanged;
         UpdateRunning();
         CommandStarted?.Invoke(this, entry);
+        _ = HighlightAsync(entry);
 
         using var tickSource = new CancellationTokenSource();
         var stopwatch = Stopwatch.StartNew();
@@ -378,6 +379,21 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     public Task<CommandCompletion?> CompleteAsync(string input, int cursor, CancellationToken cancellationToken) => CanComplete
         ? completer.CompleteAsync(Project.ExpandedWorkingFolder, input, cursor, cancellationToken)
         : Task.FromResult<CommandCompletion?>(null);
+
+    // Colors the command of entry, once it was parsed, which it is only by PowerShell; it is shown as it is in the meantime.
+    // Awaited on the UI thread, so the entry is changed on it.
+    private async Task HighlightAsync(CommandEntryViewModel entry)
+    {
+        if (Project is not PowerShellProject)
+        {
+            return;
+        }
+
+        if (await highlighter.HighlightAsync(entry.Command, CancellationToken.None) is { } highlighted)
+        {
+            entry.HighlightedCommand = highlighted;
+        }
+    }
 
     // Waits until more of the output can be shown, or it is complete, so its end is shown right away.
     // When laying out what was shown kept the UI thread busy past the interval, it is left as long to everything else,
