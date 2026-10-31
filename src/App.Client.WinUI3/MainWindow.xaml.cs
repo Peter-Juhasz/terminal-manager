@@ -8,7 +8,9 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
+using Windows.Storage;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.UI.WindowsAndMessaging;
@@ -167,9 +169,87 @@ public sealed partial class MainWindow : Window
 		}
 	}
 
-	private async Task AddProjectAsync()
+	// A folder dropped on the pane is added as a project, from the dialog filled in with it.
+	private async void OnNavigationDragOver(object sender, DragEventArgs e)
 	{
-		var dialog = new ProjectDialog(new ProjectEditorViewModel()) { XamlRoot = Content.XamlRoot };
+		if (!IsOverPane(e))
+		{
+			return;
+		}
+
+		var deferral = e.GetDeferral();
+		try
+		{
+			if (await GetDroppedFolderAsync(e.DataView) is not null)
+			{
+				e.AcceptedOperation = DataPackageOperation.Link;
+				e.DragUIOverride.Caption = "New project";
+			}
+		}
+		finally
+		{
+			deferral.Complete();
+		}
+	}
+
+	private async void OnNavigationDrop(object sender, DragEventArgs e)
+	{
+		if (!IsOverPane(e))
+		{
+			return;
+		}
+
+		// the drop is completed before the dialog is shown, so the source isn't kept waiting on it
+		var deferral = e.GetDeferral();
+		string? folder;
+		try
+		{
+			folder = await GetDroppedFolderAsync(e.DataView);
+		}
+		finally
+		{
+			deferral.Complete();
+		}
+
+		if (folder is null)
+		{
+			return;
+		}
+
+		await AddProjectAsync(new ProjectEditorViewModel
+		{
+			WorkingFolder = folder,
+			DisplayName = Path.GetFileName(Path.TrimEndingDirectorySeparator(folder)),
+		});
+	}
+
+	// The content of the navigation view is the project, which isn't a place to drop on.
+	private bool IsOverPane(DragEventArgs e) =>
+		e.GetPosition(NavView).X <= (NavView.IsPaneOpen ? NavView.OpenPaneLength : NavView.CompactPaneLength);
+
+	/// <summary>The folder dropped from the file explorer, or the path of one dropped as text.</summary>
+	private static async Task<string?> GetDroppedFolderAsync(DataPackageView data)
+	{
+		if (data.Contains(StandardDataFormats.StorageItems))
+		{
+			var items = await data.GetStorageItemsAsync();
+			return items.OfType<StorageFolder>().FirstOrDefault()?.Path;
+		}
+
+		if (data.Contains(StandardDataFormats.Text))
+		{
+			var text = (await data.GetTextAsync()).Trim().Trim('"');
+			return Directory.Exists(Environment.ExpandEnvironmentVariables(text)) ? text : null;
+		}
+
+		return null;
+	}
+
+	private async Task AddProjectAsync() => await AddProjectAsync(new ProjectEditorViewModel());
+
+	private async Task AddProjectAsync(ProjectEditorViewModel editor)
+	{
+		var dialog = new ProjectDialog(editor) { XamlRoot = Content.XamlRoot };
 		if (await Dialogs.ShowAsync(dialog) is ContentDialogResult.Primary)
 		{
 			await ViewModel.AddAsync(dialog.ViewModel.Build(), CancellationToken.None);

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using App.Client.WinUI3.Models;
 using App.Client.WinUI3.ViewModels;
@@ -44,11 +45,16 @@ public sealed partial class ProjectView : UserControl
         if (e.OldValue is ProjectSessionViewModel previous)
         {
             previous.CommandStarted -= view.OnCommandStarted;
+            previous.PropertyChanged -= view.OnSessionPropertyChanged;
         }
 
         if (e.NewValue is ProjectSessionViewModel session)
         {
             session.CommandStarted += view.OnCommandStarted;
+            session.PropertyChanged += view.OnSessionPropertyChanged;
+
+            // the pane is out of the way until there is a script to show in it
+            view.SetScriptsPaneVisible(session.HasScripts);
             view.ScrollToEnd();
             view.FocusInput();
         }
@@ -122,9 +128,20 @@ public sealed partial class ProjectView : UserControl
         }
     }
 
-    private void OnToggleScriptsClick(object sender, RoutedEventArgs e)
+    // The first script saved, such as from the history, is shown where it can be run.
+    private void OnSessionPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        var show = ScriptsPane.Visibility is Visibility.Collapsed;
+        if (e.PropertyName is nameof(ProjectSessionViewModel.HasScripts) && Session is { HasScripts: true })
+        {
+            SetScriptsPaneVisible(true);
+        }
+    }
+
+    private void OnToggleScriptsClick(object sender, RoutedEventArgs e) =>
+        SetScriptsPaneVisible(ScriptsPane.Visibility is Visibility.Collapsed);
+
+    private void SetScriptsPaneVisible(bool show)
+    {
         ScriptsPane.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
         ScriptsToggleIcon.Glyph = show ? "\uE89F" : "\uE8A0";
 
