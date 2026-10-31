@@ -27,6 +27,37 @@
                         TextWrapping="Wrap" />
                 </Border>
 
+                <!--  When it was started, and the command copied or run again.  -->
+                <StackPanel
+                    Margin="0,-2,0,0"
+                    HorizontalAlignment="Right"
+                    Orientation="Horizontal"
+                    Spacing="0">
+                    <TextBlock
+                        Margin="0,0,4,0"
+                        VerticalAlignment="Center"
+                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                        Style="{ThemeResource CaptionTextBlockStyle}"
+                        Text="{x:Bind StartedAtText}"
+                        ToolTipService.ToolTip="{x:Bind StartedAtToolTip}" />
+                    <Button
+                        VerticalAlignment="Center"
+                        AutomationProperties.Name="Copy command"
+                        Command="{x:Bind CopyInputCommand}"
+                        Style="{StaticResource IconButtonStyle}"
+                        ToolTipService.ToolTip="Copy command">
+                        <FontIcon FontSize="12" Glyph="&#xE8C8;" />
+                    </Button>
+                    <Button
+                        VerticalAlignment="Center"
+                        AutomationProperties.Name="Run again"
+                        Command="{x:Bind RerunCommand}"
+                        Style="{StaticResource IconButtonStyle}"
+                        ToolTipService.ToolTip="Run again">
+                        <FontIcon FontSize="12" Glyph="&#xE72C;" />
+                    </Button>
+                </StackPanel>
+
                 <!--  What it wrote, with the standard error in red, as it is written.  -->
                 <Border
                     Padding="14,10"

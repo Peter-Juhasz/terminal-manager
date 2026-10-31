@@ -9,9 +9,16 @@ namespace App.Client.WinUI3.ViewModels;
 /// <summary>
 /// A command that was run, with what it wrote, and how it ended.
 /// </summary>
-public sealed partial class CommandEntryViewModel(string command, Action stop) : ObservableObject
+public sealed partial class CommandEntryViewModel(string command, Action stop, Func<Task> rerun) : ObservableObject
 {
     public string Command { get; } = command;
+
+    /// <summary>When the command was started.</summary>
+    public DateTimeOffset StartedAt { get; } = DateTimeOffset.Now;
+
+    public string StartedAtText => StartedAt.ToLocalTime().ToString("T", CultureInfo.CurrentCulture);
+
+    public string StartedAtToolTip => StartedAt.ToLocalTime().ToString("F", CultureInfo.CurrentCulture);
 
     /// <summary>What the command wrote, in the order it was written.</summary>
     public CommandOutput Output { get; } = new();
@@ -125,10 +132,19 @@ public sealed partial class CommandEntryViewModel(string command, Action stop) :
     private void ToggleExpanded() => IsExpanded = !IsExpanded;
 
     [RelayCommand]
-    private void Copy()
+    private void Copy() => SetClipboardText(Output.ToString());
+
+    [RelayCommand]
+    private void CopyInput() => SetClipboardText(Command);
+
+    /// <summary>Runs the command again, as a new entry; this one is left as it is.</summary>
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private Task RerunAsync() => rerun();
+
+    private static void SetClipboardText(string text)
     {
         var package = new DataPackage { RequestedOperation = DataPackageOperation.Copy };
-        package.SetText(Output.ToString());
+        package.SetText(text);
         Clipboard.SetContent(package);
     }
 

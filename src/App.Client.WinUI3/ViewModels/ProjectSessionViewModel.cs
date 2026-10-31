@@ -137,7 +137,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         _historyIndex = _history.Count;
 
         using var stopSource = new CancellationTokenSource();
-        var entry = new CommandEntryViewModel(command, stopSource.Cancel);
+        var entry = new CommandEntryViewModel(command, stopSource.Cancel, () => ExecuteAsync(command));
         Entries.Add(entry);
         HasEntries = true;
         _running.Add(entry);
