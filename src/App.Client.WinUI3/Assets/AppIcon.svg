@@ -1,0 +1,21 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="body" x1="0" y1="32" x2="0" y2="224" gradientUnits="userSpaceOnUse">
+<stop stop-color="#3A3A3A"/>
+<stop offset="1" stop-color="#1C1C1C"/>
+</linearGradient>
+<linearGradient id="bar" x1="16" y1="0" x2="240" y2="0" gradientUnits="userSpaceOnUse">
+<stop stop-color="#3B82F6"/>
+<stop offset="1" stop-color="#7C5CF2"/>
+</linearGradient>
+<clipPath id="window">
+<rect x="16" y="32" width="224" height="192" rx="24"/>
+</clipPath>
+</defs>
+<g clip-path="url(#window)">
+<rect x="16" y="32" width="224" height="192" fill="url(#body)"/>
+<rect x="16" y="32" width="224" height="40" fill="url(#bar)"/>
+</g>
+<path d="M60 106L98 140L60 174" stroke="#F5F5F5" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M124 174H180" stroke="#F5F5F5" stroke-width="20" stroke-linecap="round"/>
+</svg>

@@ -6,6 +6,7 @@
     <RootNamespace>App.Client.WinUI3</RootNamespace>
     <AssemblyName>Terminal</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
     <Platforms>x86;x64;ARM64</Platforms>
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</RuntimeIdentifier>
     <UseWinUI>true</UseWinUI>
@@ -28,6 +29,8 @@
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
     <!-- Copied, so it is found unpackaged too. -->
     <Content Include="Assets\pwsh.svg" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\AppIcon.svg" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\AppIcon.ico" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

@@ -23,7 +23,11 @@
             IsPaneToggleButtonVisible="True"
             PaneToggleRequested="OnPaneToggleRequested">
             <TitleBar.IconSource>
-                <FontIconSource Glyph="&#xE756;" />
+                <ImageIconSource>
+                    <ImageIconSource.ImageSource>
+                        <SvgImageSource UriSource="ms-appx:///Assets/AppIcon.svg" />
+                    </ImageIconSource.ImageSource>
+                </ImageIconSource>
             </TitleBar.IconSource>
         </TitleBar>
 
