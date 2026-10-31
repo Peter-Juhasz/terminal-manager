@@ -36,7 +36,7 @@ public sealed partial class CommandEntryViewModel(string command, Action stop, F
     public string ExpandToolTip => IsExpanded ? "Collapse output" : "Expand output";
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsCompleted), nameof(IsSucceeded), nameof(IsFailed), nameof(StatusText), nameof(IsProgressVisible))]
+    [NotifyPropertyChangedFor(nameof(IsCompleted), nameof(IsSucceeded), nameof(IsFailed), nameof(StatusText), nameof(IsProgressVisible), nameof(DurationText))]
     [NotifyCanExecuteChangedFor(nameof(StopCommand))]
     public partial bool IsRunning { get; private set; } = true;
 
@@ -86,7 +86,8 @@ public sealed partial class CommandEntryViewModel(string command, Action stop, F
         _ => "Couldn't start",
     };
 
-    public string DurationText => FormatDuration(Duration);
+    /// <summary>The time spent so far in whole seconds, as it is updated once a second, and exactly once the command ended.</summary>
+    public string DurationText => FormatDuration(Duration, IsRunning);
 
     /// <summary>Shows what the command wrote since the last batch, and the progress it reported so far.</summary>
     public void Append(OutputBatch batch)
@@ -148,8 +149,9 @@ public sealed partial class CommandEntryViewModel(string command, Action stop, F
         Clipboard.SetContent(package);
     }
 
-    private static string FormatDuration(TimeSpan duration) => duration switch
+    private static string FormatDuration(TimeSpan duration, bool isRunning) => duration switch
     {
+        { TotalMinutes: < 1 } when isRunning => string.Create(CultureInfo.CurrentCulture, $"{duration.Seconds} s"),
         { TotalSeconds: < 1 } => string.Create(CultureInfo.CurrentCulture, $"{duration.TotalMilliseconds:0} ms"),
         { TotalMinutes: < 1 } => string.Create(CultureInfo.CurrentCulture, $"{duration.TotalSeconds:0.00} s"),
         { TotalHours: < 1 } => string.Create(CultureInfo.CurrentCulture, $"{duration.Minutes} min {duration.Seconds} s"),

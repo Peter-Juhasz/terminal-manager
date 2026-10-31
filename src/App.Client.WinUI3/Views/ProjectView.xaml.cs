@@ -160,6 +160,16 @@ public sealed partial class ProjectView : UserControl
         await File.WriteAllTextAsync(result.Path, output, CancellationToken.None);
     }
 
+    private void OnRunScriptClick(object sender, RoutedEventArgs e)
+    {
+        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not SavedScript script)
+        {
+            return;
+        }
+
+        session.RunScriptCommand.Execute(script);
+    }
+
     private async void OnEditScriptClick(object sender, RoutedEventArgs e)
     {
         if (Session is not { } session || (sender as FrameworkElement)?.Tag is not SavedScript script)

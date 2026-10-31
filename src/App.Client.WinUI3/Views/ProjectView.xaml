@@ -375,6 +375,15 @@
                                 <Grid.ContextFlyout>
                                     <MenuFlyout>
                                         <MenuFlyoutItem
+                                            Click="OnRunScriptClick"
+                                            Tag="{x:Bind}"
+                                            Text="Run">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE768;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutSeparator />
+                                        <MenuFlyoutItem
                                             Click="OnEditScriptClick"
                                             Tag="{x:Bind}"
                                             Text="Edit">
