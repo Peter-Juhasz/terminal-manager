@@ -27,9 +27,10 @@ public sealed partial class ProjectDialog : ContentDialog
             SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
         };
 
-        if (Directory.Exists(ViewModel.WorkingFolder))
+        var workingFolder = Environment.ExpandEnvironmentVariables(ViewModel.WorkingFolder.Trim());
+        if (Directory.Exists(workingFolder))
         {
-            picker.SuggestedFolder = ViewModel.WorkingFolder;
+            picker.SuggestedFolder = workingFolder;
         }
 
         if (await picker.PickSingleFolderAsync() is not { } result)

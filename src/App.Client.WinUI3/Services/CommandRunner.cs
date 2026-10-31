@@ -28,7 +28,7 @@ public sealed class CommandRunner
         try
         {
             var startInfo = project.CreateStartInfo(command);
-            startInfo.WorkingDirectory = project.WorkingFolder;
+            startInfo.WorkingDirectory = project.ExpandedWorkingFolder;
             startInfo.UseShellExecute = false;
             startInfo.CreateNoWindow = true;
             startInfo.RedirectStandardInput = true;

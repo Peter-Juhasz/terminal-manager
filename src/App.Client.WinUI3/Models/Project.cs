@@ -18,6 +18,10 @@ public abstract record class Project
     /// <summary>The folder commands are run in.</summary>
     public required string WorkingFolder { get; init; }
 
+    /// <summary>The folder commands are run in, with the environment variables in <see cref="WorkingFolder"/> expanded.</summary>
+    [JsonIgnore]
+    public string ExpandedWorkingFolder => Environment.ExpandEnvironmentVariables(WorkingFolder);
+
     /// <summary>The commands saved to the project, in the order they are shown.</summary>
     public IReadOnlyList<SavedScript> Scripts { get; init; } = Array.Empty<SavedScript>();
 

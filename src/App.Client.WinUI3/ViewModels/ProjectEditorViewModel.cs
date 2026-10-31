@@ -47,7 +47,10 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsValid), nameof(IsWorkingFolderMissing))]
     public partial string WorkingFolder { get; set; } = string.Empty;
 
-    public bool IsWorkingFolderMissing => !string.IsNullOrWhiteSpace(WorkingFolder) && !Directory.Exists(WorkingFolder.Trim());
+    public bool IsWorkingFolderMissing => !string.IsNullOrWhiteSpace(WorkingFolder) && !Directory.Exists(ExpandedWorkingFolder);
+
+    // the environment variables in it are expanded when it is used, so it is checked the same way.
+    private string ExpandedWorkingFolder => Environment.ExpandEnvironmentVariables(WorkingFolder.Trim());
 
     public bool IsValid => !string.IsNullOrWhiteSpace(DisplayName) && !string.IsNullOrWhiteSpace(WorkingFolder) && !IsWorkingFolderMissing;
 

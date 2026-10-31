@@ -60,7 +60,7 @@ public sealed partial class ProjectView : UserControl
 
     private void OnOpenFolderClick(object sender, RoutedEventArgs e)
     {
-        if (Session?.Project.WorkingFolder is { } folder && Directory.Exists(folder))
+        if (Session?.Project.ExpandedWorkingFolder is { } folder && Directory.Exists(folder))
         {
             Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true })?.Dispose();
         }
