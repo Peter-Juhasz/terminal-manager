@@ -66,6 +66,15 @@
                             </Button>
                             <Button
                                 VerticalAlignment="Center"
+                                AutomationProperties.Name="Save as script"
+                                Click="OnSaveAsScriptClick"
+                                Style="{StaticResource IconButtonStyle}"
+                                Tag="{x:Bind}"
+                                ToolTipService.ToolTip="Save as script">
+                                <FontIcon FontSize="12" Glyph="&#xE710;" />
+                            </Button>
+                            <Button
+                                VerticalAlignment="Center"
                                 AutomationProperties.Name="{x:Bind ExpandToolTip, Mode=OneWay}"
                                 Command="{x:Bind ToggleExpandedCommand}"
                                 Style="{StaticResource IconButtonStyle}"
@@ -159,6 +168,17 @@
                                 ToolTipService.ToolTip="Copy output"
                                 Visibility="{x:Bind HasOutput, Mode=OneWay}">
                                 <FontIcon FontSize="12" Glyph="&#xE8C8;" />
+                            </Button>
+                            <Button
+                                Margin="-8,0,0,0"
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="Save output to file"
+                                Click="OnSaveOutputClick"
+                                Style="{StaticResource IconButtonStyle}"
+                                Tag="{x:Bind}"
+                                ToolTipService.ToolTip="Save output to file"
+                                Visibility="{x:Bind HasOutput, Mode=OneWay}">
+                                <FontIcon FontSize="12" Glyph="&#xE74E;" />
                             </Button>
                         </StackPanel>
                     </StackPanel>

@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.Windows.Storage.Pickers;
 using Windows.System;
 using Windows.UI.Core;
 
@@ -16,7 +17,13 @@ namespace App.Client.WinUI3.Views;
 /// </summary>
 public sealed partial class ProjectView : UserControl
 {
-    public ProjectView() => InitializeComponent();
+    public ProjectView()
+    {
+        InitializeComponent();
+
+        // the session is set before the view is loaded at startup, when it can't be focused yet
+        Loaded += (_, _) => FocusInput();
+    }
 
     public static readonly DependencyProperty SessionProperty = DependencyProperty.Register(
         nameof(Session),
@@ -106,6 +113,51 @@ public sealed partial class ProjectView : UserControl
         {
             await session.SaveScriptAsync(dialog.ViewModel.Build(), CancellationToken.None);
         }
+    }
+
+    private async void OnSaveAsScriptClick(object sender, RoutedEventArgs e)
+    {
+        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not CommandEntryViewModel entry)
+        {
+            return;
+        }
+
+        var dialog = new ScriptDialog(new ScriptEditorViewModel(entry.Command)) { XamlRoot = XamlRoot };
+        if (await Dialogs.ShowAsync(dialog) is ContentDialogResult.Primary)
+        {
+            await session.SaveScriptAsync(dialog.ViewModel.Build(), CancellationToken.None);
+        }
+    }
+
+    // What it wrote so far, if it is still running.
+    private async void OnSaveOutputClick(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is not CommandEntryViewModel entry)
+        {
+            return;
+        }
+
+        var output = entry.Output.ToString();
+        var picker = new FileSavePicker(XamlRoot.ContentIslandEnvironment.AppWindowId)
+        {
+            SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
+            SuggestedFileName = "output",
+            DefaultFileExtension = ".txt",
+        };
+        picker.FileTypeChoices.Add("Text", [".txt"]);
+        picker.FileTypeChoices.Add("Log", [".log"]);
+
+        if (Session?.Project.ExpandedWorkingFolder is { } folder && Directory.Exists(folder))
+        {
+            picker.SuggestedFolder = folder;
+        }
+
+        if (await picker.PickSaveFileAsync() is not { } result)
+        {
+            return;
+        }
+
+        await File.WriteAllTextAsync(result.Path, output, CancellationToken.None);
     }
 
     private async void OnEditScriptClick(object sender, RoutedEventArgs e)
