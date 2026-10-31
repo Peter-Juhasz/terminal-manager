@@ -10,149 +10,160 @@
 
     <UserControl.Resources>
         <DataTemplate x:Key="CommandEntryTemplate" x:DataType="vm:CommandEntryViewModel">
-            <StackPanel Margin="0,10" Spacing="6">
+            <!--  As a cell of a notebook: the command, and below it what it wrote, on a single card.  -->
+            <Border
+                Margin="0,10"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
 
-                <!--  The command, on the right, as what the user said in a chat.  -->
-                <Border
-                    MaxWidth="720"
-                    Padding="14,10"
-                    HorizontalAlignment="Right"
-                    Background="{ThemeResource AccentFillColorDefaultBrush}"
-                    CornerRadius="14,14,4,14">
-                    <TextBlock
-                        FontFamily="{StaticResource MonospaceFontFamily}"
-                        Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
-                        IsTextSelectionEnabled="True"
-                        Text="{x:Bind Command}"
-                        TextWrapping="Wrap" />
-                </Border>
+                    <!--  The command, with when it was started, and the command copied or run again, and the output collapsed beside it.  -->
+                    <Grid Padding="14,6,6,6" ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            Margin="0,4"
+                            FontFamily="{StaticResource MonospaceFontFamily}"
+                            IsTextSelectionEnabled="True"
+                            Text="{x:Bind Command}"
+                            TextWrapping="Wrap" />
+                        <StackPanel
+                            Grid.Column="1"
+                            VerticalAlignment="Top"
+                            Orientation="Horizontal"
+                            Spacing="0">
+                            <TextBlock
+                                Margin="0,0,4,0"
+                                VerticalAlignment="Center"
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Style="{ThemeResource CaptionTextBlockStyle}"
+                                Text="{x:Bind StartedAtText}"
+                                ToolTipService.ToolTip="{x:Bind StartedAtToolTip}" />
+                            <Button
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="Copy command"
+                                Command="{x:Bind CopyInputCommand}"
+                                Style="{StaticResource IconButtonStyle}"
+                                ToolTipService.ToolTip="Copy command">
+                                <FontIcon FontSize="12" Glyph="&#xE8C8;" />
+                            </Button>
+                            <Button
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="Run again"
+                                Command="{x:Bind RerunCommand}"
+                                Style="{StaticResource IconButtonStyle}"
+                                ToolTipService.ToolTip="Run again">
+                                <FontIcon FontSize="12" Glyph="&#xE72C;" />
+                            </Button>
+                            <Button
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="{x:Bind ExpandToolTip, Mode=OneWay}"
+                                Command="{x:Bind ToggleExpandedCommand}"
+                                Style="{StaticResource IconButtonStyle}"
+                                ToolTipService.ToolTip="{x:Bind ExpandToolTip, Mode=OneWay}"
+                                Visibility="{x:Bind HasOutput, Mode=OneWay}">
+                                <FontIcon FontSize="12" Glyph="{x:Bind ExpandGlyph, Mode=OneWay}" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
 
-                <!--  When it was started, and the command copied or run again.  -->
-                <StackPanel
-                    Margin="0,-2,0,0"
-                    HorizontalAlignment="Right"
-                    Orientation="Horizontal"
-                    Spacing="0">
-                    <TextBlock
-                        Margin="0,0,4,0"
-                        VerticalAlignment="Center"
-                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                        Style="{ThemeResource CaptionTextBlockStyle}"
-                        Text="{x:Bind StartedAtText}"
-                        ToolTipService.ToolTip="{x:Bind StartedAtToolTip}" />
-                    <Button
-                        VerticalAlignment="Center"
-                        AutomationProperties.Name="Copy command"
-                        Command="{x:Bind CopyInputCommand}"
-                        Style="{StaticResource IconButtonStyle}"
-                        ToolTipService.ToolTip="Copy command">
-                        <FontIcon FontSize="12" Glyph="&#xE8C8;" />
-                    </Button>
-                    <Button
-                        VerticalAlignment="Center"
-                        AutomationProperties.Name="Run again"
-                        Command="{x:Bind RerunCommand}"
-                        Style="{StaticResource IconButtonStyle}"
-                        ToolTipService.ToolTip="Run again">
-                        <FontIcon FontSize="12" Glyph="&#xE72C;" />
-                    </Button>
-                </StackPanel>
+                    <Rectangle
+                        Grid.Row="1"
+                        Height="1"
+                        Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
 
-                <!--  What it wrote, with the standard error in red, as it is written.  -->
-                <Border
-                    Padding="14,10"
-                    HorizontalAlignment="Stretch"
-                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                    BorderThickness="1"
-                    CornerRadius="8"
-                    Visibility="{x:Bind IsOutputVisible, Mode=OneWay}">
-                    <RichTextBlock
-                        controls:TerminalOutput.Output="{x:Bind Output}"
-                        FontFamily="{StaticResource MonospaceFontFamily}"
-                        FontSize="13"
-                        IsTextSelectionEnabled="True"
-                        TextWrapping="Wrap" />
-                </Border>
+                    <!--  What it wrote, with the standard error in red, as it is written; and below it, how it ended.  -->
+                    <StackPanel
+                        Grid.Row="2"
+                        Padding="14,10,14,6"
+                        Spacing="8">
+                        <RichTextBlock
+                            controls:TerminalOutput.Output="{x:Bind Output}"
+                            FontFamily="{StaticResource MonospaceFontFamily}"
+                            FontSize="13"
+                            IsTextSelectionEnabled="True"
+                            TextWrapping="Wrap"
+                            Visibility="{x:Bind IsOutputVisible, Mode=OneWay}" />
 
-                <!--  How it ended, and how long it took.  -->
-                <StackPanel
-                    Orientation="Horizontal"
-                    Spacing="8">
-                    <ProgressRing
-                        Width="14"
-                        Height="14"
-                        IsActive="{x:Bind IsRunning, Mode=OneWay}"
-                        Visibility="{x:Bind IsRunning, Mode=OneWay}" />
-                    <FontIcon
-                        FontSize="14"
-                        Foreground="{ThemeResource SystemFillColorSuccessBrush}"
-                        Glyph="&#xE73E;"
-                        Visibility="{x:Bind IsSucceeded, Mode=OneWay}" />
-                    <FontIcon
-                        FontSize="14"
-                        Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                        Glyph="&#xE711;"
-                        Visibility="{x:Bind IsFailed, Mode=OneWay}" />
-                    <TextBlock
-                        VerticalAlignment="Center"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Style="{ThemeResource CaptionTextBlockStyle}"
-                        Text="{x:Bind StatusText, Mode=OneWay}" />
-                    <ProgressBar
-                        Width="120"
-                        VerticalAlignment="Center"
-                        IsIndeterminate="{x:Bind IsProgressIndeterminate, Mode=OneWay}"
-                        Maximum="100"
-                        ShowError="{x:Bind IsProgressError, Mode=OneWay}"
-                        ShowPaused="{x:Bind IsProgressPaused, Mode=OneWay}"
-                        Visibility="{x:Bind IsProgressVisible, Mode=OneWay}"
-                        Value="{x:Bind ProgressValue, Mode=OneWay}" />
-                    <TextBlock
-                        VerticalAlignment="Center"
-                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                        Style="{ThemeResource CaptionTextBlockStyle}"
-                        Text="·" />
-                    <TextBlock
-                        VerticalAlignment="Center"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Style="{ThemeResource CaptionTextBlockStyle}"
-                        Text="{x:Bind DurationText, Mode=OneWay}" />
-                    <Button
-                        Margin="4,0,0,0"
-                        VerticalAlignment="Center"
-                        AutomationProperties.Name="Stop"
-                        Command="{x:Bind StopCommand}"
-                        Style="{StaticResource IconButtonStyle}"
-                        ToolTipService.ToolTip="Stop"
-                        Visibility="{x:Bind IsRunning, Mode=OneWay}">
-                        <FontIcon
-                            FontSize="12"
-                            Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                            Glyph="&#xE71A;" />
-                    </Button>
-                    <Button
-                        Margin="4,0,0,0"
-                        VerticalAlignment="Center"
-                        AutomationProperties.Name="Copy output"
-                        Command="{x:Bind CopyCommand}"
-                        Style="{StaticResource IconButtonStyle}"
-                        ToolTipService.ToolTip="Copy output"
-                        Visibility="{x:Bind HasOutput, Mode=OneWay}">
-                        <FontIcon FontSize="12" Glyph="&#xE8C8;" />
-                    </Button>
-                    <Button
-                        Margin="-8,0,0,0"
-                        VerticalAlignment="Center"
-                        AutomationProperties.Name="{x:Bind ExpandToolTip, Mode=OneWay}"
-                        Command="{x:Bind ToggleExpandedCommand}"
-                        Style="{StaticResource IconButtonStyle}"
-                        ToolTipService.ToolTip="{x:Bind ExpandToolTip, Mode=OneWay}"
-                        Visibility="{x:Bind HasOutput, Mode=OneWay}">
-                        <FontIcon FontSize="12" Glyph="{x:Bind ExpandGlyph, Mode=OneWay}" />
-                    </Button>
-                </StackPanel>
-            </StackPanel>
+                        <!--  How it ended, and how long it took.  -->
+                        <StackPanel
+                            Orientation="Horizontal"
+                            Spacing="8">
+                            <ProgressRing
+                                Width="14"
+                                Height="14"
+                                IsActive="{x:Bind IsRunning, Mode=OneWay}"
+                                Visibility="{x:Bind IsRunning, Mode=OneWay}" />
+                            <FontIcon
+                                FontSize="14"
+                                Foreground="{ThemeResource SystemFillColorSuccessBrush}"
+                                Glyph="&#xE73E;"
+                                Visibility="{x:Bind IsSucceeded, Mode=OneWay}" />
+                            <FontIcon
+                                FontSize="14"
+                                Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                Glyph="&#xE711;"
+                                Visibility="{x:Bind IsFailed, Mode=OneWay}" />
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{ThemeResource CaptionTextBlockStyle}"
+                                Text="{x:Bind StatusText, Mode=OneWay}" />
+                            <ProgressBar
+                                Width="120"
+                                VerticalAlignment="Center"
+                                IsIndeterminate="{x:Bind IsProgressIndeterminate, Mode=OneWay}"
+                                Maximum="100"
+                                ShowError="{x:Bind IsProgressError, Mode=OneWay}"
+                                ShowPaused="{x:Bind IsProgressPaused, Mode=OneWay}"
+                                Visibility="{x:Bind IsProgressVisible, Mode=OneWay}"
+                                Value="{x:Bind ProgressValue, Mode=OneWay}" />
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Style="{ThemeResource CaptionTextBlockStyle}"
+                                Text="·" />
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{ThemeResource CaptionTextBlockStyle}"
+                                Text="{x:Bind DurationText, Mode=OneWay}" />
+                            <Button
+                                Margin="4,0,0,0"
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="Stop"
+                                Command="{x:Bind StopCommand}"
+                                Style="{StaticResource IconButtonStyle}"
+                                ToolTipService.ToolTip="Stop"
+                                Visibility="{x:Bind IsRunning, Mode=OneWay}">
+                                <FontIcon
+                                    FontSize="12"
+                                    Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                    Glyph="&#xE71A;" />
+                            </Button>
+                            <Button
+                                Margin="4,0,0,0"
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="Copy output"
+                                Command="{x:Bind CopyCommand}"
+                                Style="{StaticResource IconButtonStyle}"
+                                ToolTipService.ToolTip="Copy output"
+                                Visibility="{x:Bind HasOutput, Mode=OneWay}">
+                                <FontIcon FontSize="12" Glyph="&#xE8C8;" />
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </Border>
         </DataTemplate>
     </UserControl.Resources>
 
