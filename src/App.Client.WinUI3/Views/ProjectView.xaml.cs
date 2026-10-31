@@ -170,6 +170,26 @@ public sealed partial class ProjectView : UserControl
         session.RunScriptCommand.Execute(script);
     }
 
+    private void OnEnqueueScriptClick(object sender, RoutedEventArgs e)
+    {
+        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not SavedScript script)
+        {
+            return;
+        }
+
+        session.EnqueueScriptCommand.Execute(script);
+    }
+
+    private void OnCancelQueuedClick(object sender, RoutedEventArgs e)
+    {
+        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not QueuedCommand queued)
+        {
+            return;
+        }
+
+        session.CancelQueuedCommand.Execute(queued);
+    }
+
     private async void OnEditScriptClick(object sender, RoutedEventArgs e)
     {
         if (Session is not { } session || (sender as FrameworkElement)?.Tag is not SavedScript script)
@@ -208,7 +228,7 @@ public sealed partial class ProjectView : UserControl
     }
 
     /// <summary>
-    /// Enter runs the command, and Shift+Enter starts a new line. The arrow keys recall the commands run before, from the first and last lines.
+    /// Enter runs the command, Ctrl+Enter queues it, and Shift+Enter starts a new line. The arrow keys recall the commands run before, from the first and last lines.
     /// Ctrl+C stops the command started last of those running, unless there is text selected to copy.
     /// </summary>
     private void OnInputPreviewKeyDown(object sender, KeyRoutedEventArgs e)
@@ -220,6 +240,15 @@ public sealed partial class ProjectView : UserControl
 
         switch (e.Key)
         {
+            case VirtualKey.Enter when IsKeyDown(VirtualKey.Control) && !IsKeyDown(VirtualKey.Shift):
+                e.Handled = true;
+                if (session.EnqueueCommand.CanExecute(null))
+                {
+                    session.EnqueueCommand.Execute(null);
+                }
+
+                break;
+
             case VirtualKey.Enter when !IsKeyDown(VirtualKey.Shift):
                 e.Handled = true;
                 if (session.RunCommand.CanExecute(null))

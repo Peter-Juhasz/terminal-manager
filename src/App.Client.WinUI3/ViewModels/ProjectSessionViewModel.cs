@@ -37,8 +37,14 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     public partial bool HasEntries { get; private set; }
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(RunCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RunCommand), nameof(EnqueueCommand))]
     public partial string Input { get; set; } = string.Empty;
+
+    /// <summary>The commands waiting to be run, one at a time, each once all the commands running have ended.</summary>
+    public ObservableCollection<QueuedCommand> Queue { get; } = [];
+
+    [ObservableProperty]
+    public partial bool HasQueue { get; private set; }
 
     // The commands that are running, in the order they were started.
     private readonly List<CommandEntryViewModel> _running = [];
@@ -96,6 +102,62 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     /// <summary>Runs <paramref name="script"/>, and leaves what was typed in the input as it is.</summary>
     [RelayCommand(CanExecute = nameof(CanRunScript), AllowConcurrentExecutions = true)]
     private Task RunScriptAsync(SavedScript? script) => script is null ? Task.CompletedTask : ExecuteAsync(script.Command);
+
+    /// <summary>Queues what was typed in the input, to be run once the commands running have ended, or right away if none are.</summary>
+    [RelayCommand(CanExecute = nameof(CanRun))]
+    private void Enqueue()
+    {
+        var command = Input.Trim();
+        Input = string.Empty;
+        AddToQueue(command);
+    }
+
+    /// <summary>Queues <paramref name="script"/>, and leaves what was typed in the input as it is.</summary>
+    [RelayCommand(CanExecute = nameof(CanRunScript))]
+    private void EnqueueScript(SavedScript? script)
+    {
+        if (script is null)
+        {
+            return;
+        }
+
+        AddToQueue(script.Command);
+    }
+
+    private void AddToQueue(string command)
+    {
+        Queue.Add(new(command));
+        HasQueue = true;
+        RunNextQueued();
+    }
+
+    [RelayCommand]
+    private void CancelQueued(QueuedCommand? queued)
+    {
+        if (queued is null)
+        {
+            return;
+        }
+
+        Queue.Remove(queued);
+        HasQueue = Queue.Count > 0;
+    }
+
+    // Starts the first command of the queue, unless there are commands running, in which case it is started once they have all ended.
+    private void RunNextQueued()
+    {
+        if (_running.Count > 0 || Queue.Count == 0)
+        {
+            return;
+        }
+
+        var next = Queue[0];
+        Queue.RemoveAt(0);
+        HasQueue = Queue.Count > 0;
+
+        // it is added to those running before this returns, so the rest of the queue waits for it
+        _ = ExecuteAsync(next.Command);
+    }
 
     /// <summary>Adds <paramref name="script"/>, or replaces the one with the same id, and saves the project.</summary>
     public Task SaveScriptAsync(SavedScript script, CancellationToken cancellationToken)
@@ -178,6 +240,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
             _running.Remove(entry);
             UpdateRunning();
             CommandCompleted?.Invoke(this, entry);
+            RunNextQueued();
         }
     }
 
@@ -217,9 +280,13 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         return true;
     }
 
-    /// <summary>Stops all the commands that are running.</summary>
+    /// <summary>Stops all the commands that are running, and cancels those queued, so none is started as the others end.</summary>
     public void StopAll()
     {
+        Queue.Clear();
+        HasQueue = false;
+
+
         foreach (var entry in Entries.Where(static entry => entry.IsRunning).ToList())
         {
             entry.StopCommand.Execute(null);

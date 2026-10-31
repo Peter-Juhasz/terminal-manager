@@ -300,9 +300,72 @@
                 TextWrapping="Wrap" />
         </StackPanel>
 
-        <!--  Composer; the text box carries the border, and the buttons sit on top of it.  -->
-        <Grid Grid.Row="2" Padding="32,8,32,20">
+        <!--  Composer; the text box carries the border, and the buttons sit on top of it. The commands queued are listed above it.  -->
+        <Grid
+            Grid.Row="2"
+            Padding="32,8,32,20"
+            RowSpacing="8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <StackPanel Spacing="4" Visibility="{x:Bind Session.HasQueue, Mode=OneWay}">
+                <TextBlock
+                    Margin="4,0,0,0"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{ThemeResource CaptionTextBlockStyle}"
+                    Text="Queued — each is run once the commands running have ended" />
+                <ScrollViewer MaxHeight="160" VerticalScrollBarVisibility="Auto">
+                    <ItemsRepeater ItemsSource="{x:Bind Session.Queue, Mode=OneWay}">
+                        <ItemsRepeater.Layout>
+                            <StackLayout Spacing="4" />
+                        </ItemsRepeater.Layout>
+                        <ItemsRepeater.ItemTemplate>
+                            <DataTemplate x:DataType="vm:QueuedCommand">
+                                <Grid
+                                    Padding="12,2,4,2"
+                                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                    BorderThickness="1"
+                                    ColumnSpacing="10"
+                                    CornerRadius="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon
+                                        VerticalAlignment="Center"
+                                        FontSize="12"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Glyph="&#xE823;" />
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        FontFamily="{StaticResource MonospaceFontFamily}"
+                                        Text="{x:Bind Command}"
+                                        TextTrimming="CharacterEllipsis"
+                                        ToolTipService.ToolTip="{x:Bind Command}" />
+                                    <Button
+                                        Grid.Column="2"
+                                        VerticalAlignment="Center"
+                                        AutomationProperties.Name="Cancel"
+                                        Click="OnCancelQueuedClick"
+                                        Style="{StaticResource IconButtonStyle}"
+                                        Tag="{x:Bind}"
+                                        ToolTipService.ToolTip="Cancel">
+                                        <FontIcon FontSize="12" Glyph="&#xE711;" />
+                                    </Button>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsRepeater.ItemTemplate>
+                    </ItemsRepeater>
+                </ScrollViewer>
+            </StackPanel>
+
             <TextBox
+                Grid.Row="1"
                 x:Name="InputBox"
                 MinHeight="56"
                 MaxHeight="200"
@@ -313,13 +376,14 @@
                 FontFamily="{StaticResource MonospaceFontFamily}"
                 IsSpellCheckEnabled="False"
                 IsTextPredictionEnabled="False"
-                PlaceholderText="Type a command — Enter to run, Shift+Enter for a new line"
+                PlaceholderText="Type a command — Enter to run, Ctrl+Enter to queue, Shift+Enter for a new line"
                 PreviewKeyDown="OnInputPreviewKeyDown"
                 Text="{x:Bind Session.Input, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                 TextWrapping="Wrap" />
 
             <!--  Commands can be run while others are running; each is stopped from its own item.  -->
             <Button
+                Grid.Row="1"
                 Width="40"
                 Height="40"
                 Margin="0,0,8,8"
@@ -380,6 +444,14 @@
                                             Text="Run">
                                             <MenuFlyoutItem.Icon>
                                                 <FontIcon Glyph="&#xE768;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem
+                                            Click="OnEnqueueScriptClick"
+                                            Tag="{x:Bind}"
+                                            Text="Queue">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE823;" />
                                             </MenuFlyoutItem.Icon>
                                         </MenuFlyoutItem>
                                         <MenuFlyoutSeparator />
