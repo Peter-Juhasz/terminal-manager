@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.Windows.Storage.Pickers;
 using Windows.System;
 using Windows.UI.Core;
@@ -51,6 +52,54 @@ public sealed partial class ProjectView : UserControl
             view.ScrollToEnd();
             view.FocusInput();
         }
+    }
+
+    public static readonly DependencyProperty WrapOutputProperty = DependencyProperty.Register(
+        nameof(WrapOutput),
+        typeof(bool),
+        typeof(ProjectView),
+        new PropertyMetadata(true, OnWrapOutputChanged));
+
+    /// <summary>Whether the long lines a command writes are wrapped, rather than scrolled horizontally.</summary>
+    public bool WrapOutput
+    {
+        get => (bool)GetValue(WrapOutputProperty);
+        set => SetValue(WrapOutputProperty, value);
+    }
+
+    private static void OnWrapOutputChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
+    {
+        var view = (ProjectView)sender;
+
+        // the entries laid out already; the others get it when they are prepared
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(view.HistoryRepeater); i++)
+        {
+            if (VisualTreeHelper.GetChild(view.HistoryRepeater, i) is FrameworkElement element)
+            {
+                view.ApplyWrapOutput(element);
+            }
+        }
+    }
+
+    // The setting is out of reach of the template.
+    private void OnEntryElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
+    {
+        if (args.Element is FrameworkElement element)
+        {
+            ApplyWrapOutput(element);
+        }
+    }
+
+    private void ApplyWrapOutput(FrameworkElement element)
+    {
+        if (element.FindName("OutputScroller") is not ScrollViewer scroller || element.FindName("OutputText") is not RichTextBlock text)
+        {
+            return;
+        }
+
+        text.TextWrapping = WrapOutput ? TextWrapping.Wrap : TextWrapping.NoWrap;
+        scroller.HorizontalScrollMode = WrapOutput ? ScrollMode.Disabled : ScrollMode.Enabled;
+        scroller.HorizontalScrollBarVisibility = WrapOutput ? ScrollBarVisibility.Disabled : ScrollBarVisibility.Auto;
     }
 
     private void OnCommandStarted(object? sender, CommandEntryViewModel e) => ScrollToEnd();

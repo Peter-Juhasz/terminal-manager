@@ -25,6 +25,11 @@
             Style="{ThemeResource CaptionTextBlockStyle}"
             Text="The theme applies to the whole app as soon as you save."
             TextWrapping="Wrap" />
+        <ToggleSwitch
+            x:Name="WrapOutputSwitch"
+            Header="Wrap long lines of output"
+            OffContent="Off, scroll horizontally"
+            OnContent="On" />
         <InfoBar
             x:Name="SaveError"
             IsClosable="False"

@@ -14,6 +14,7 @@ public sealed partial class SettingsDialog : ContentDialog
         _settingsService = settingsService;
         InitializeComponent();
         ThemeBox.SelectedIndex = (int)settingsService.Settings.Theme;
+        WrapOutputSwitch.IsOn = settingsService.Settings.WrapOutput;
     }
 
     private async void OnSaveClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
@@ -24,7 +25,11 @@ public sealed partial class SettingsDialog : ContentDialog
         SaveError.IsOpen = false;
         try
         {
-            await _settingsService.SaveAsync(_settingsService.Settings with { Theme = (AppTheme)ThemeBox.SelectedIndex });
+            await _settingsService.SaveAsync(_settingsService.Settings with
+            {
+                Theme = (AppTheme)ThemeBox.SelectedIndex,
+                WrapOutput = WrapOutputSwitch.IsOn,
+            });
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {

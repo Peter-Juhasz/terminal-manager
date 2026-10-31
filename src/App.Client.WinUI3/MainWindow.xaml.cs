@@ -40,7 +40,7 @@ public sealed partial class MainWindow : Window
 		ExtendsContentIntoTitleBar = true;
 		SetTitleBar(AppTitleBar);
 		AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico"));
-		ApplyTheme();
+		ApplySettings();
 
 		var window = new HWND(Win32Interop.GetWindowFromWindowId(AppWindow.Id));
 		var scale = PInvoke.GetDpiForWindow(window) / 96d;
@@ -84,8 +84,10 @@ public sealed partial class MainWindow : Window
 
 	public MainViewModel ViewModel { get; }
 
-	private void ApplyTheme()
+	private void ApplySettings()
 	{
+		ProjectView.WrapOutput = _settingsService.Settings.WrapOutput;
+
 		((FrameworkElement)Content).RequestedTheme = _settingsService.Settings.Theme switch
 		{
 			AppTheme.Dark => ElementTheme.Dark,
@@ -117,7 +119,7 @@ public sealed partial class MainWindow : Window
 			var dialog = new SettingsDialog(_settingsService) { XamlRoot = Content.XamlRoot };
 			if (await Dialogs.ShowAsync(dialog) is ContentDialogResult.Primary)
 			{
-				ApplyTheme();
+				ApplySettings();
 			}
 		}
 		else if (args.InvokedItemContainer?.DataContext is NewProjectMenuItem)
