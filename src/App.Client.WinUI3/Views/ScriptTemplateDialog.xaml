@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="App.Client.WinUI3.Views.ScriptTemplateDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:viewModels="using:App.Client.WinUI3.ViewModels"
+    Title="{x:Bind ViewModel.Title}"
+    CloseButtonText="Cancel"
+    DefaultButton="Primary"
+    PrimaryButtonText="{x:Bind ViewModel.PrimaryButtonText}"
+    Style="{StaticResource DefaultContentDialogStyle}">
+
+    <ScrollViewer MaxHeight="400">
+        <ItemsControl MinWidth="440" ItemsSource="{x:Bind ViewModel.Variables}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Spacing="16" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="viewModels:TemplateVariableViewModel">
+                    <TextBox
+                        FontFamily="{StaticResource MonospaceFontFamily}"
+                        Header="{x:Bind Name}"
+                        IsSpellCheckEnabled="False"
+                        IsTextPredictionEnabled="False"
+                        Loaded="OnVariableBoxLoaded"
+                        Text="{x:Bind Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </ScrollViewer>
+</ContentDialog>

@@ -228,12 +228,45 @@ public sealed partial class ProjectView : UserControl
     {
         if (args.Element is Panel { Children: [Button run, ..] })
         {
-            run.Command = Session?.RunScriptCommand;
+            // a template is run by the click, once its variables are filled in
+            run.Command = sender.ItemsSourceView.GetAt(args.Index) is SavedScript { IsTemplate: true } ? null : Session?.RunScriptCommand;
         }
     }
 
     // The command runs the script, and the input is focused to type the next one.
-    private void OnScriptButtonClick(object sender, RoutedEventArgs e) => FocusInput();
+    private async void OnScriptButtonClick(object sender, RoutedEventArgs e)
+    {
+        if (Session is { } session && (sender as Button)?.CommandParameter is SavedScript { IsTemplate: true } template
+            && await ExpandTemplateAsync(template, "Run", CancellationToken.None) is { } script)
+        {
+            session.RunScriptCommand.Execute(script);
+        }
+
+        FocusInput();
+    }
+
+    /// <summary>Asks for the values of the variables of <paramref name="script"/> if it is a template, and returns it with them filled in; <see langword="null"/> when that is cancelled.</summary>
+    private async Task<SavedScript?> ExpandTemplateAsync(SavedScript script, string primaryButtonText, CancellationToken cancellationToken)
+    {
+        if (!script.IsTemplate)
+        {
+            return script;
+        }
+
+        var viewModel = new ScriptTemplateViewModel(script, primaryButtonText);
+        if (viewModel.Variables is [])
+        {
+            return viewModel.Build();
+        }
+
+        var dialog = new ScriptTemplateDialog(viewModel) { XamlRoot = XamlRoot };
+        if (await Dialogs.ShowAsync(dialog) is not ContentDialogResult.Primary || cancellationToken.IsCancellationRequested)
+        {
+            return null;
+        }
+
+        return viewModel.Build();
+    }
 
     private void OnScriptMoreClick(object sender, RoutedEventArgs e)
     {
@@ -302,9 +335,10 @@ public sealed partial class ProjectView : UserControl
         await File.WriteAllTextAsync(result.Path, output, CancellationToken.None);
     }
 
-    private void OnRunScriptClick(object sender, RoutedEventArgs e)
+    private async void OnRunScriptClick(object sender, RoutedEventArgs e)
     {
-        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not SavedScript script)
+        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not SavedScript template
+            || await ExpandTemplateAsync(template, "Run", CancellationToken.None) is not { } script)
         {
             return;
         }
@@ -313,9 +347,10 @@ public sealed partial class ProjectView : UserControl
         FocusInput();
     }
 
-    private void OnEnqueueScriptClick(object sender, RoutedEventArgs e)
+    private async void OnEnqueueScriptClick(object sender, RoutedEventArgs e)
     {
-        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not SavedScript script)
+        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not SavedScript template
+            || await ExpandTemplateAsync(template, "Queue", CancellationToken.None) is not { } script)
         {
             return;
         }
@@ -324,9 +359,10 @@ public sealed partial class ProjectView : UserControl
         FocusInput();
     }
 
-    private void OnRunScriptElevatedClick(object sender, RoutedEventArgs e)
+    private async void OnRunScriptElevatedClick(object sender, RoutedEventArgs e)
     {
-        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not SavedScript script)
+        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not SavedScript template
+            || await ExpandTemplateAsync(template, "Run as administrator", CancellationToken.None) is not { } script)
         {
             return;
         }

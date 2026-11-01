@@ -28,5 +28,9 @@
             PlaceholderText="dotnet build"
             Text="{x:Bind ViewModel.Command, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
             TextWrapping="Wrap" />
+
+        <CheckBox IsChecked="{x:Bind ViewModel.IsTemplate, Mode=TwoWay}">
+            <TextBlock Text="Template: ask for the values of the variables written as {{ name }} each time it is run." TextWrapping="Wrap" />
+        </CheckBox>
     </StackPanel>
 </ContentDialog>

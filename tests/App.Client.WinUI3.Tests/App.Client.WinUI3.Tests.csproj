@@ -32,6 +32,7 @@
     <Compile Include="$(AppDirectory)Services\PowerShellHighlighter.cs" Link="App\Services\PowerShellHighlighter.cs" />
     <Compile Include="$(AppDirectory)Services\PowerShellHost.cs" Link="App\Services\PowerShellHost.cs" />
     <Compile Include="$(AppDirectory)Services\ProgressSequenceParser.cs" Link="App\Services\ProgressSequenceParser.cs" />
+    <Compile Include="$(AppDirectory)Services\ScriptTemplate.cs" Link="App\Services\ScriptTemplate.cs" />
     <Compile Include="$(AppDirectory)Services\SettingsService.cs" Link="App\Services\SettingsService.cs" />
     <Compile Include="$(AppDirectory)ViewModels\CommandOutput.cs" Link="App\ViewModels\CommandOutput.cs" />
   </ItemGroup>

@@ -24,6 +24,7 @@ public sealed partial class ScriptEditorViewModel : ObservableObject
         _script = script;
         Name = script.Name;
         Command = script.Command;
+        IsTemplate = script.IsTemplate;
     }
 
     public bool IsNew => _script is null;
@@ -40,11 +41,15 @@ public sealed partial class ScriptEditorViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsValid))]
     public partial string Command { get; set; } = string.Empty;
 
+    /// <summary>Whether the command has variables, written as <c>{{ name }}</c>, which are asked for each time it is run.</summary>
+    [ObservableProperty]
+    public partial bool IsTemplate { get; set; }
+
     public bool IsValid => !string.IsNullOrWhiteSpace(Name) && !string.IsNullOrWhiteSpace(Command);
 
     public SavedScript Build() => _script switch
     {
-        null => new SavedScript { Id = Guid.NewGuid(), Name = Name.Trim(), Command = Command.Trim() },
-        { } script => script with { Name = Name.Trim(), Command = Command.Trim() },
+        null => new SavedScript { Id = Guid.NewGuid(), Name = Name.Trim(), Command = Command.Trim(), IsTemplate = IsTemplate },
+        { } script => script with { Name = Name.Trim(), Command = Command.Trim(), IsTemplate = IsTemplate },
     };
 }

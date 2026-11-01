@@ -10,4 +10,7 @@ public sealed record class SavedScript
     public required string Name { get; init; }
 
     public required string Command { get; init; }
+
+    /// <summary>Whether <see cref="Command"/> has variables, written as <c>{{ name }}</c>, which are asked for each time it is run.</summary>
+    public bool IsTemplate { get; init; }
 }
