@@ -433,6 +433,7 @@
                         IsItemClickEnabled="True"
                         IsTabStop="False"
                         ItemClick="OnCompletionItemClick"
+                        Loaded="OnCompletionListLoaded"
                         SelectionChanged="OnCompletionSelectionChanged"
                         SelectionMode="Single">
                         <ListView.ItemTemplate>

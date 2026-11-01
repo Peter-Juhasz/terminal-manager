@@ -7,6 +7,7 @@ using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.Windows.Storage.Pickers;
@@ -642,6 +643,32 @@ public sealed partial class ProjectView : UserControl
         }
 
         TakeListedCompletion(listed.Completion.Matches.IndexOf(clicked));
+    }
+
+    // Scrolled by whole matches, so none is left cut off at the top; set on the scroll viewer of its template, which doesn't pass the snap points through.
+    private void OnCompletionListLoaded(object sender, RoutedEventArgs e)
+    {
+        if (FindDescendant<ScrollViewer>(CompletionList) is not { } scrollViewer)
+        {
+            return;
+        }
+
+        scrollViewer.VerticalSnapPointsType = SnapPointsType.Mandatory;
+        scrollViewer.VerticalSnapPointsAlignment = SnapPointsAlignment.Near;
+    }
+
+    private static T? FindDescendant<T>(DependencyObject parent) where T : DependencyObject
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if ((child as T ?? FindDescendant<T>(child)) is { } found)
+            {
+                return found;
+            }
+        }
+
+        return null;
     }
 
     private void OnCompletionSelectionChanged(object sender, SelectionChangedEventArgs e)
