@@ -10,25 +10,31 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
 
-            <!--  The colors of a script, as Visual Studio colors it; plain in high contrast, as the system colors of text are all there is.  -->
+            <!--  The colors of a script, as Visual Studio colors it; plain in high contrast, as the system colors of text are all there is. And the colors of what is found by a search, as a browser marks it.  -->
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
                     <SolidColorBrush x:Key="SyntaxKeywordBrush" Color="#0000FF" />
                     <SolidColorBrush x:Key="SyntaxCommentBrush" Color="#008000" />
                     <SolidColorBrush x:Key="SyntaxStringBrush" Color="#A31515" />
                     <SolidColorBrush x:Key="SyntaxTypeNameBrush" Color="#2B91AF" />
+                    <SolidColorBrush x:Key="SearchHighlightBackgroundBrush" Color="#FFE066" />
+                    <SolidColorBrush x:Key="SearchHighlightForegroundBrush" Color="#000000" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Default">
                     <SolidColorBrush x:Key="SyntaxKeywordBrush" Color="#569CD6" />
                     <SolidColorBrush x:Key="SyntaxCommentBrush" Color="#57A64A" />
                     <SolidColorBrush x:Key="SyntaxStringBrush" Color="#D69D85" />
                     <SolidColorBrush x:Key="SyntaxTypeNameBrush" Color="#4EC9B0" />
+                    <SolidColorBrush x:Key="SearchHighlightBackgroundBrush" Color="#F2CC60" />
+                    <SolidColorBrush x:Key="SearchHighlightForegroundBrush" Color="#000000" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="HighContrast">
                     <SolidColorBrush x:Key="SyntaxKeywordBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
                     <SolidColorBrush x:Key="SyntaxCommentBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
                     <SolidColorBrush x:Key="SyntaxStringBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
                     <SolidColorBrush x:Key="SyntaxTypeNameBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+                    <SolidColorBrush x:Key="SearchHighlightBackgroundBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="SearchHighlightForegroundBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
 
@@ -39,6 +45,19 @@
                 x:Key="IconButtonStyle"
                 BasedOn="{StaticResource DefaultButtonStyle}"
                 TargetType="Button">
+                <Setter Property="Background" Value="{ThemeResource SubtleFillColorTransparentBrush}" />
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Padding" Value="6" />
+                <Setter Property="MinWidth" Value="0" />
+                <Setter Property="MinHeight" Value="0" />
+            </Style>
+
+            <!--  The same, for a button that stays pressed, which shows the accent color while it is.  -->
+            <Style
+                x:Key="IconToggleButtonStyle"
+                BasedOn="{StaticResource DefaultToggleButtonStyle}"
+                TargetType="ToggleButton">
                 <Setter Property="Background" Value="{ThemeResource SubtleFillColorTransparentBrush}" />
                 <Setter Property="BorderBrush" Value="Transparent" />
                 <Setter Property="BorderThickness" Value="0" />

@@ -52,16 +52,23 @@ public static class SyntaxHighlighting
         Show(block, GetCode(block));
     }
 
+    /// <summary>The resources of the app for the theme <paramref name="element"/> is shown in.</summary>
+    internal static ResourceDictionary GetThemeResources(FrameworkElement element)
+    {
+        var theme = Accessibility.HighContrast ? "HighContrast" : element.ActualTheme is ElementTheme.Light ? "Light" : "Default";
+        return (ResourceDictionary)Application.Current.Resources.ThemeDictionaries[theme];
+    }
+
     private static void Show(RichTextBlock block, HighlightedCode? code)
     {
         block.Blocks.Clear();
         if (code is null)
         {
+            SearchHighlighting.Update(block);
             return;
         }
 
-        var theme = Accessibility.HighContrast ? "HighContrast" : block.ActualTheme is ElementTheme.Light ? "Light" : "Default";
-        var resources = (ResourceDictionary)Application.Current.Resources.ThemeDictionaries[theme];
+        var resources = GetThemeResources(block);
         var paragraph = new Paragraph();
         foreach (var run in code.GetRuns())
         {
@@ -82,5 +89,6 @@ public static class SyntaxHighlighting
         }
 
         block.Blocks.Add(paragraph);
+        SearchHighlighting.Update(block);
     }
 }

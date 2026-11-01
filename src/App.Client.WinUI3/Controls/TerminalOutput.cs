@@ -53,10 +53,14 @@ public static class TerminalOutput
         {
             Subscriptions.Add(block, new Subscription(block, output));
         }
+
+        // what the previous output was highlighted in is gone
+        SearchHighlighting.Update(block);
     }
 
     private sealed class Subscription : IDisposable
     {
+        private readonly RichTextBlock _block;
         private readonly Paragraph _paragraph = new();
         private readonly CommandOutput _output;
         private readonly OutputRunBuilder _builder = new();
@@ -71,6 +75,7 @@ public static class TerminalOutput
 
         public Subscription(RichTextBlock block, CommandOutput output)
         {
+            _block = block;
             _output = output;
             block.Blocks.Add(_paragraph);
             Show();
@@ -111,6 +116,11 @@ public static class TerminalOutput
 
                 _paragraph.Inlines.Add(_last);
                 _runCount++;
+            }
+
+            if (_updates.Count > 0)
+            {
+                SearchHighlighting.Update(_block);
             }
 
             _updates.Clear();

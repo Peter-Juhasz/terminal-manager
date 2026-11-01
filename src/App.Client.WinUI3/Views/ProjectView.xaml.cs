@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using App.Client.WinUI3.Controls;
 using App.Client.WinUI3.Models;
 using App.Client.WinUI3.Services;
 using App.Client.WinUI3.ViewModels;
@@ -93,12 +94,72 @@ public sealed partial class ProjectView : UserControl
         }
     }
 
-    // The setting is out of reach of the template.
+    // The setting and the search are out of reach of the template.
     private void OnEntryElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
     {
         if (args.Element is FrameworkElement element)
         {
             ApplyWrapOutput(element);
+            ApplySearchQuery(element);
+        }
+    }
+
+    /// <summary>What is searched for in the history, highlighted where it is found; nothing while the search is off.</summary>
+    private string? SearchQuery => SearchToggleButton.IsChecked is true && SearchBox.Text is { Length: > 0 } text ? text : null;
+
+    private void OnToggleSearchClick(object sender, RoutedEventArgs e)
+    {
+        var isOn = SearchToggleButton.IsChecked is true;
+        SearchBox.Visibility = isOn ? Visibility.Visible : Visibility.Collapsed;
+        if (isOn)
+        {
+            SearchBox.Focus(FocusState.Programmatic);
+            SearchBox.SelectAll();
+        }
+
+        ApplySearchQuery();
+    }
+
+    private void OnSearchTextChanged(object sender, TextChangedEventArgs e) => ApplySearchQuery();
+
+    // escape ends the search, as it does in a browser
+    private void OnSearchBoxKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key is not VirtualKey.Escape)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        SearchToggleButton.IsChecked = false;
+        SearchBox.Visibility = Visibility.Collapsed;
+        ApplySearchQuery();
+        FocusInput();
+    }
+
+    // The entries laid out already; the others get it when they are prepared.
+    private void ApplySearchQuery()
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(HistoryRepeater); i++)
+        {
+            if (VisualTreeHelper.GetChild(HistoryRepeater, i) is FrameworkElement element)
+            {
+                ApplySearchQuery(element);
+            }
+        }
+    }
+
+    private void ApplySearchQuery(FrameworkElement element)
+    {
+        var query = SearchQuery;
+        if (element.FindName("CommandText") is RichTextBlock command)
+        {
+            SearchHighlighting.SetQuery(command, query);
+        }
+
+        if (element.FindName("OutputText") is RichTextBlock output)
+        {
+            SearchHighlighting.SetQuery(output, query);
         }
     }
 

@@ -32,6 +32,7 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <RichTextBlock
+                            x:Name="CommandText"
                             Margin="0,4"
                             controls:SyntaxHighlighting.Code="{x:Bind HighlightedCommand, Mode=OneWay}"
                             FontFamily="{StaticResource MonospaceFontFamily}"
@@ -277,6 +278,25 @@
                 VerticalAlignment="Center"
                 Orientation="Horizontal"
                 Spacing="4">
+                <!--  What is searched for in the history, while the search is on.  -->
+                <TextBox
+                    x:Name="SearchBox"
+                    Width="240"
+                    Margin="0,0,4,0"
+                    VerticalAlignment="Center"
+                    AutomationProperties.Name="Search history"
+                    KeyDown="OnSearchBoxKeyDown"
+                    PlaceholderText="Search history"
+                    TextChanged="OnSearchTextChanged"
+                    Visibility="Collapsed" />
+                <ToggleButton
+                    x:Name="SearchToggleButton"
+                    AutomationProperties.Name="Search history"
+                    Click="OnToggleSearchClick"
+                    Style="{StaticResource IconToggleButtonStyle}"
+                    ToolTipService.ToolTip="Search history">
+                    <FontIcon FontSize="16" Glyph="&#xE721;" />
+                </ToggleButton>
                 <Button
                     AutomationProperties.Name="Open working folder"
                     Click="OnOpenFolderClick"
