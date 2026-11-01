@@ -58,7 +58,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     /// <summary>The number of commands that are running; any number of them can run at the same time.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsRunning), nameof(RunningBadgeValue), nameof(IsRunningBadgeVisible))]
-    [NotifyCanExecuteChangedFor(nameof(ClearCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ClearCommand), nameof(ClearUnpinnedCommand))]
     public partial int RunningCount { get; private set; }
 
     public bool IsRunning => RunningCount > 0;
@@ -224,6 +224,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         var entry = new CommandEntryViewModel(command, isElevated, stopSource.Cancel, () => ExecuteAsync(command, isElevated));
         Entries.Add(entry);
         HasEntries = true;
+        entry.PropertyChanged += OnEntryChanged;
         _running.Add(entry);
         entry.PropertyChanged += OnRunningChanged;
         UpdateRunning();
@@ -329,16 +330,35 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
 
     private bool CanClear => Entries.Any(static entry => !entry.IsRunning);
 
-    /// <summary>Removes the commands that have ended; those still running are kept.</summary>
+    /// <summary>Removes the commands that have ended, pinned or not; those still running are kept.</summary>
     [RelayCommand(CanExecute = nameof(CanClear))]
-    private void Clear()
+    private void Clear() => Remove(static entry => !entry.IsRunning);
+
+    private bool CanClearUnpinned => Entries.Any(static entry => entry is { IsRunning: false, IsPinned: false });
+
+    /// <summary>Removes the commands that have ended, except those pinned; those still running are kept.</summary>
+    [RelayCommand(CanExecute = nameof(CanClearUnpinned))]
+    private void ClearUnpinned() => Remove(static entry => entry is { IsRunning: false, IsPinned: false });
+
+    private void Remove(Func<CommandEntryViewModel, bool> predicate)
     {
-        foreach (var entry in Entries.Where(static entry => !entry.IsRunning).ToList())
+        foreach (var entry in Entries.Where(predicate).ToList())
         {
+            entry.PropertyChanged -= OnEntryChanged;
             Entries.Remove(entry);
         }
 
         HasEntries = Entries.Count > 0;
+        ClearCommand.NotifyCanExecuteChanged();
+        ClearUnpinnedCommand.NotifyCanExecuteChanged();
+    }
+
+    private void OnEntryChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(CommandEntryViewModel.IsPinned))
+        {
+            ClearUnpinnedCommand.NotifyCanExecuteChanged();
+        }
     }
 
     /// <summary>Puts the command run before the one recalled into the input, if there is one.</summary>

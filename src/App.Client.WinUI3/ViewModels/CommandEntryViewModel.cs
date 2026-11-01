@@ -42,6 +42,15 @@ public sealed partial class CommandEntryViewModel(string command, bool isElevate
 
     public string ExpandToolTip => IsExpanded ? "Collapse output" : "Expand output";
 
+    /// <summary>Whether it is kept when the history is cleared of those that aren't.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNotPinned), nameof(PinToolTip))]
+    public partial bool IsPinned { get; set; }
+
+    public bool IsNotPinned => !IsPinned;
+
+    public string PinToolTip => IsPinned ? "Unpin" : "Pin";
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCompleted), nameof(IsSucceeded), nameof(IsFailed), nameof(StatusText), nameof(IsProgressVisible), nameof(DurationText))]
     [NotifyCanExecuteChangedFor(nameof(StopCommand))]
@@ -138,6 +147,9 @@ public sealed partial class CommandEntryViewModel(string command, bool isElevate
 
     [RelayCommand]
     private void ToggleExpanded() => IsExpanded = !IsExpanded;
+
+    [RelayCommand]
+    private void TogglePinned() => IsPinned = !IsPinned;
 
     [RelayCommand]
     private void Copy() => SetClipboardText(Output.ToString());
