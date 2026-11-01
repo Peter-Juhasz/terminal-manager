@@ -84,7 +84,7 @@ public sealed class PowerShellCompleter : IDisposable
         // what isn't within the input couldn't be put in its place
         completion = completion with { ReplacementIndex = completion.ReplacementIndex - prefix.Length };
         return completion is { ReplacementIndex: >= 0, ReplacementLength: >= 0 } && completion.ReplacementIndex + completion.ReplacementLength <= input.Length
-            ? completion
+            ? completion.WithMatchedLengths(input, cursor)
             : null;
     }
 

@@ -444,8 +444,8 @@
                                         Height="16"
                                         Source="{x:Bind local:Bind.CompletionIcon(ResultType)}" />
                                     <TextBlock
+                                        controls:CompletionHighlighting.Match="{x:Bind}"
                                         FontFamily="{StaticResource MonospaceFontFamily}"
-                                        Text="{x:Bind ListItemText}"
                                         TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
                             </DataTemplate>

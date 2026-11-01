@@ -104,5 +104,30 @@ public sealed class PowerShellCompleterTests(TestContext testContext)
         Assert.AreEqual(10, completion.GetCaret(1));
     }
 
+    [TestMethod]
+    [DataRow("Get-ChildItem", "get-chi", 7)]
+    [DataRow("Recurse", "-Rec", 3)]
+    [DataRow("HOME", "$ho", 2)]
+    [DataRow("Path", "$env:Pa", 2)]
+    [DataRow("src", ".\\sr", 2)]
+    [DataRow("alpha one.txt", "'.\\alpha o", 7)]
+    [DataRow("ChildItem", "Get-*Item", 0)]
+    [DataRow("Get-ChildItem", "Get-*Item", 4)]
+    [DataRow("Get-ChildItem", "ChildItem", 0)]
+    [DataRow("Get-Date", "", 0)]
+    public void GetMatchedLengthIsWhatWasTypedOfListItemText(string listItemText, string typed, int expected) =>
+        Assert.AreEqual(expected, CompletionMatch.GetMatchedLength(listItemText, typed));
+
+    [TestMethod]
+    public async Task CompleteAsyncSetsMatchedLengths()
+    {
+        using var completer = new PowerShellCompleter();
+
+        var completion = await completer.CompleteAsync(Environment.CurrentDirectory, "Get-ChildItem -Rec", 18, testContext.CancellationToken);
+
+        Assert.IsNotNull(completion);
+        Assert.AreEqual(3, completion.Matches.Single(static match => match.ListItemText == "Recurse").MatchedLength);
+    }
+
     private static CompletionMatch Match(string text) => new(CompletionText: text, ListItemText: text, ResultType: "ProviderItem", ToolTip: null);
 }
