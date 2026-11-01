@@ -15,6 +15,38 @@ public sealed class ProjectSerializationTests
 
         Assert.IsNotNull(project);
         Assert.IsEmpty(project.EnvironmentVariables);
+        var powerShell = Assert.IsInstanceOfType<PowerShellProject>(project);
+        Assert.AreEqual(string.Empty, powerShell.PrependScript);
+        Assert.AreEqual(string.Empty, powerShell.AppendScript);
+    }
+
+    [TestMethod]
+    public void ScriptsRoundTrip()
+    {
+        var project = new PowerShellProject
+        {
+            Id = Guid.NewGuid(),
+            DisplayName = "A",
+            WorkingFolder = @"C:\",
+            PrependScript = "Import-Module ./build.psm1",
+            AppendScript = "Write-Host done",
+        };
+
+        var json = JsonSerializer.Serialize<Project>(project, AppJsonSerializerContext.Default.Project);
+        var deserialized = Assert.IsInstanceOfType<PowerShellProject>(JsonSerializer.Deserialize(json, AppJsonSerializerContext.Default.Project));
+
+        Assert.AreEqual("Import-Module ./build.psm1", deserialized.PrependScript);
+        Assert.AreEqual("Write-Host done", deserialized.AppendScript);
+    }
+
+    [TestMethod]
+    public void WrapPutsScriptsOnLinesOfTheirOwn()
+    {
+        var project = new PowerShellProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\", PrependScript = "$a = 1", AppendScript = "$b = 2" };
+
+        Assert.AreEqual("$a = 1\nGet-Item .\n$b = 2", project.Wrap("Get-Item ."));
+        Assert.AreEqual("$a = 1\n", project.EditorPrefix);
+        Assert.AreEqual("Get-Item .", (project with { PrependScript = string.Empty, AppendScript = string.Empty }).Wrap("Get-Item ."));
     }
 
     [TestMethod]

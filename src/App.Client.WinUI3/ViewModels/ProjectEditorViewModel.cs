@@ -35,6 +35,12 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         {
             EnvironmentVariables.Add(new(Remove) { Name = name, Value = value });
         }
+
+        if (project is PowerShellProject powerShell)
+        {
+            PrependScript = powerShell.PrependScript;
+            AppendScript = powerShell.AppendScript;
+        }
     }
 
     public bool IsNew => _project is null;
@@ -46,7 +52,30 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     public IReadOnlyList<ProjectKind> Kinds { get; } = ProjectKind.All;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsPowerShell))]
     public partial ProjectKind Kind { get; set; }
+
+    // the kind is told by what it creates, as that of a project being edited creates the project itself.
+    public bool IsPowerShell => Kind.Create(Guid.Empty, string.Empty, string.Empty) is PowerShellProject;
+
+    /// <summary>The script run before each command, which only projects run by PowerShell have.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ScriptsHeader))]
+    public partial string PrependScript { get; set; } = string.Empty;
+
+    /// <summary>The script run after each command, which only projects run by PowerShell have.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ScriptsHeader))]
+    public partial string AppendScript { get; set; } = string.Empty;
+
+    /// <summary>The header of the scripts run around each command, with which of them are set, as they are hidden until it is expanded.</summary>
+    public string ScriptsHeader => (string.IsNullOrWhiteSpace(PrependScript), string.IsNullOrWhiteSpace(AppendScript)) switch
+    {
+        (true, true) => "Prepend and append scripts",
+        (false, true) => "Prepend and append scripts (prepend)",
+        (true, false) => "Prepend and append scripts (append)",
+        (false, false) => "Prepend and append scripts (both)",
+    };
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsValid))]
@@ -135,10 +164,17 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     public Project Build()
     {
         var environmentVariables = FilledEnvironmentVariables.ToDictionary(static variable => variable.Name.Trim(), static variable => variable.Value, StringComparer.OrdinalIgnoreCase);
-        return _project switch
+        var built = _project switch
         {
             null => Kind.Create(Guid.NewGuid(), DisplayName.Trim(), WorkingFolder.Trim()) with { EnvironmentVariables = environmentVariables },
             { } project => project with { DisplayName = DisplayName.Trim(), WorkingFolder = WorkingFolder.Trim(), EnvironmentVariables = environmentVariables },
+        };
+
+        // a script of only blank lines would still move what is typed down in the script that is run
+        return built switch
+        {
+            PowerShellProject powerShell => powerShell with { PrependScript = PrependScript.TrimEnd(), AppendScript = AppendScript.TrimEnd() },
+            _ => built,
         };
     }
 }

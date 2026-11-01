@@ -27,6 +27,30 @@ public sealed class PowerShellHighlighterTests(TestContext testContext)
     }
 
     [TestMethod]
+    public async Task HighlightAsyncColorsInputAfterPrefix()
+    {
+        using var highlighter = new PowerShellHighlighter();
+
+        var code = await highlighter.HighlightAsync("# setup\n", "if ($true) { 'x' }", testContext.CancellationToken);
+
+        Assert.IsNotNull(code);
+        Assert.AreEqual("if ($true) { 'x' }", code.Text);
+        Assert.AreSequenceEqual([("if", SyntaxKind.Keyword), ("'x'", SyntaxKind.String)], Colored(code));
+    }
+
+    [TestMethod]
+    public async Task HighlightAsyncCutsSpansOpenedByPrefix()
+    {
+        using var highlighter = new PowerShellHighlighter();
+
+        // the here-string the prefix opens is closed by the input, so all of it before the end is part of the string
+        var code = await highlighter.HighlightAsync("$text = @'\n", "if\n'@", testContext.CancellationToken);
+
+        Assert.IsNotNull(code);
+        Assert.AreSequenceEqual([("if\n'@", SyntaxKind.String)], Colored(code));
+    }
+
+    [TestMethod]
     public async Task HighlightAsyncLeavesCommandNamesAndArgumentsPlain()
     {
         using var highlighter = new PowerShellHighlighter();

@@ -67,8 +67,16 @@ public sealed class PowerShellHighlighter : IDisposable
     /// The spans to color in <paramref name="input"/>, or <see langword="null"/> when it couldn't be parsed, such as when pwsh isn't installed.
     /// The pwsh is left to answer when <paramref name="cancellationToken"/> is canceled, so it doesn't have to be started again.
     /// </summary>
-    public async Task<HighlightedCode?> HighlightAsync(string input, CancellationToken cancellationToken)
+    public Task<HighlightedCode?> HighlightAsync(string input, CancellationToken cancellationToken) =>
+        HighlightAsync(prefix: string.Empty, input, cancellationToken);
+
+    /// <summary>
+    /// The spans to color in <paramref name="input"/>, parsed as if <paramref name="prefix"/> was before it, as what that leaves open, such as a here-string, changes what it means;
+    /// a span that starts in <paramref name="prefix"/> is colored from the start of <paramref name="input"/>.
+    /// </summary>
+    public async Task<HighlightedCode?> HighlightAsync(string prefix, string input, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(prefix);
         ArgumentNullException.ThrowIfNull(input);
 
         PowerShellHost host;
@@ -83,7 +91,7 @@ public sealed class PowerShellHighlighter : IDisposable
             host = _host;
         }
 
-        var request = JsonSerializer.Serialize(new HighlightRequest(input), HighlightJsonSerializerContext.Default.HighlightRequest);
+        var request = JsonSerializer.Serialize(new HighlightRequest(Input: prefix + input), HighlightJsonSerializerContext.Default.HighlightRequest);
         var line = await host.SendAsync(request).WaitAsync(cancellationToken).ConfigureAwait(false);
         if (line is null)
         {
@@ -93,12 +101,26 @@ public sealed class PowerShellHighlighter : IDisposable
         try
         {
             return JsonSerializer.Deserialize(line, HighlightJsonSerializerContext.Default.HighlightResponse) is { Spans: { } spans }
-                ? HighlightedCode.Create(input, spans)
+                ? HighlightedCode.Create(input, Shift(spans, prefix.Length))
                 : null;
         }
         catch (JsonException)
         {
             return null;
+        }
+    }
+
+    // Moves spans back by offset, cutting off the part of those that start before it, and leaving out those that end before it.
+    private static IEnumerable<SyntaxSpan> Shift(IEnumerable<SyntaxSpan> spans, int offset)
+    {
+        foreach (var span in spans)
+        {
+            var start = Math.Max(span.Start - offset, 0);
+            var end = span.Start + span.Length - offset;
+            if (end > start)
+            {
+                yield return span with { Start = start, Length = end - start };
+            }
         }
     }
 

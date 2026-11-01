@@ -48,9 +48,17 @@ public sealed class PowerShellCompleter : IDisposable
     /// Completes the text before <paramref name="cursor"/> in <paramref name="input"/>, or returns <see langword="null"/> when it can't be completed, such as when pwsh isn't installed.
     /// The pwsh is left to answer when <paramref name="cancellationToken"/> is canceled, so it doesn't have to be started again.
     /// </summary>
-    public async Task<CommandCompletion?> CompleteAsync(string workingFolder, string input, int cursor, CancellationToken cancellationToken)
+    public Task<CommandCompletion?> CompleteAsync(string workingFolder, string input, int cursor, CancellationToken cancellationToken) =>
+        CompleteAsync(workingFolder, prefix: string.Empty, input, cursor, cancellationToken);
+
+    /// <summary>
+    /// Completes the text before <paramref name="cursor"/> in <paramref name="input"/>, as if <paramref name="prefix"/> was before it, so what that defines is offered too;
+    /// the completion is of <paramref name="input"/> alone, and <see langword="null"/> when it would replace text of <paramref name="prefix"/>.
+    /// </summary>
+    public async Task<CommandCompletion?> CompleteAsync(string workingFolder, string prefix, string input, int cursor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(workingFolder);
+        ArgumentNullException.ThrowIfNull(prefix);
         ArgumentNullException.ThrowIfNull(input);
 
         PowerShellHost host;
@@ -66,11 +74,15 @@ public sealed class PowerShellCompleter : IDisposable
             host = existing;
         }
 
-        var request = JsonSerializer.Serialize(new CompletionRequest(input, cursor), CompletionJsonSerializerContext.Default.CompletionRequest);
+        var request = JsonSerializer.Serialize(new CompletionRequest(Input: prefix + input, Cursor: prefix.Length + cursor), CompletionJsonSerializerContext.Default.CompletionRequest);
         var line = await host.SendAsync(request).WaitAsync(cancellationToken).ConfigureAwait(false);
-        var completion = Deserialize(line);
+        if (Deserialize(line) is not { } completion)
+        {
+            return null;
+        }
 
         // what isn't within the input couldn't be put in its place
+        completion = completion with { ReplacementIndex = completion.ReplacementIndex - prefix.Length };
         return completion is { ReplacementIndex: >= 0, ReplacementLength: >= 0 } && completion.ReplacementIndex + completion.ReplacementLength <= input.Length
             ? completion
             : null;

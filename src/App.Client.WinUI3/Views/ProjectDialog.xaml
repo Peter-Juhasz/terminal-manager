@@ -116,5 +116,40 @@
                 </Button>
             </StackPanel>
         </Expander>
+
+        <Expander
+            HorizontalAlignment="Stretch"
+            HorizontalContentAlignment="Stretch"
+            Header="{x:Bind ViewModel.ScriptsHeader, Mode=OneWay}"
+            IsExpanded="False"
+            Visibility="{x:Bind ViewModel.IsPowerShell, Mode=OneWay}">
+            <StackPanel Spacing="8">
+                <TextBlock
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{ThemeResource CaptionTextBlockStyle}"
+                    Text="Run before and after each command, in the same scope, so what the prepend script defines can be used by commands, and is offered by completion."
+                    TextWrapping="Wrap" />
+                <TextBox
+                    MaxHeight="200"
+                    AcceptsReturn="True"
+                    FontFamily="{StaticResource MonospaceFontFamily}"
+                    Header="Prepend script"
+                    IsSpellCheckEnabled="False"
+                    PlaceholderText="Import-Module ./build.psm1"
+                    ScrollViewer.VerticalScrollBarVisibility="Auto"
+                    Text="{x:Bind ViewModel.PrependScript, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    TextWrapping="Wrap" />
+                <TextBox
+                    MaxHeight="200"
+                    AcceptsReturn="True"
+                    FontFamily="{StaticResource MonospaceFontFamily}"
+                    Header="Append script"
+                    IsSpellCheckEnabled="False"
+                    PlaceholderText="Write-Host &quot;Exit code: $LASTEXITCODE&quot;"
+                    ScrollViewer.VerticalScrollBarVisibility="Auto"
+                    Text="{x:Bind ViewModel.AppendScript, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    TextWrapping="Wrap" />
+            </StackPanel>
+        </Expander>
     </StackPanel>
 </ContentDialog>

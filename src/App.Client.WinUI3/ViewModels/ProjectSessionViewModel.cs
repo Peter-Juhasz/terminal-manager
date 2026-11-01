@@ -228,14 +228,19 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         entry.PropertyChanged += OnRunningChanged;
         UpdateRunning();
         CommandStarted?.Invoke(this, entry);
-        _ = HighlightAsync(entry);
+
+        // the project as it is when the command is started, which it is run by, whatever it is changed to while it runs
+        var project = Project;
+        if (project is PowerShellProject powerShell)
+        {
+            _ = HighlightAsync(entry, powerShell);
+        }
 
         using var tickSource = new CancellationTokenSource();
         var stopwatch = Stopwatch.StartNew();
         var ticking = TickAsync(entry, stopwatch, tickSource.Token);
 
         var output = new OutputBuffer();
-        var project = Project;
         ICommandRunner selected = isElevated ? elevatedRunner : runner;
         var run = Task.Run(() => selected.RunAsync(project, command, output, stopSource.Token), CancellationToken.None);
 
@@ -376,20 +381,19 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     }
 
     /// <summary>Completes the text before <paramref name="cursor"/> in <paramref name="input"/>, or returns <see langword="null"/> when it can't be completed.</summary>
-    public Task<CommandCompletion?> CompleteAsync(string input, int cursor, CancellationToken cancellationToken) => CanComplete
-        ? completer.CompleteAsync(Project.ExpandedWorkingFolder, input, cursor, cancellationToken)
-        : Task.FromResult<CommandCompletion?>(null);
+    /// <remarks>The prepend script of the project is taken into account, as it can define what is typed, or change what it means.</remarks>
+    public Task<CommandCompletion?> CompleteAsync(string input, int cursor, CancellationToken cancellationToken) => Project switch
+    {
+        PowerShellProject powerShell => completer.CompleteAsync(powerShell.ExpandedWorkingFolder, powerShell.EditorPrefix, input, cursor, cancellationToken),
+        _ => Task.FromResult<CommandCompletion?>(null),
+    };
 
     // Colors the command of entry, once it was parsed, which it is only by PowerShell; it is shown as it is in the meantime.
+    // It is parsed after the prepend script of the project, as it is run, though only the command is shown.
     // Awaited on the UI thread, so the entry is changed on it.
-    private async Task HighlightAsync(CommandEntryViewModel entry)
+    private async Task HighlightAsync(CommandEntryViewModel entry, PowerShellProject project)
     {
-        if (Project is not PowerShellProject)
-        {
-            return;
-        }
-
-        if (await highlighter.HighlightAsync(entry.Command, CancellationToken.None) is { } highlighted)
+        if (await highlighter.HighlightAsync(project.EditorPrefix, entry.Command, CancellationToken.None) is { } highlighted)
         {
             entry.HighlightedCommand = highlighted;
         }

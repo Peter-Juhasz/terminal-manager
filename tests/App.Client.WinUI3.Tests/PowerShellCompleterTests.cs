@@ -21,6 +21,19 @@ public sealed class PowerShellCompleterTests(TestContext testContext)
     }
 
     [TestMethod]
+    public async Task CompleteAsyncCompletesWhatPrefixDefines()
+    {
+        using var completer = new PowerShellCompleter();
+
+        var completion = await completer.CompleteAsync(Environment.CurrentDirectory, "$projectRoot = 'C:\\'\n", "$projectR", 9, testContext.CancellationToken);
+
+        Assert.IsNotNull(completion);
+        Assert.AreEqual(0, completion.ReplacementIndex);
+        Assert.AreEqual(9, completion.ReplacementLength);
+        Assert.Contains("$projectRoot", completion.Matches.Select(static match => match.CompletionText));
+    }
+
+    [TestMethod]
     public async Task CompleteAsyncCompletesPathsInWorkingFolder()
     {
         var folder = Directory.CreateTempSubdirectory();
