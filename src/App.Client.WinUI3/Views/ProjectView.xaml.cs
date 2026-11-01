@@ -411,7 +411,7 @@ public sealed partial class ProjectView : UserControl
     private InputCompletion? _listed;
 
     // The completion being asked for, which is canceled when it is asked for again.
-    private CancellationTokenSource? _completing;
+    private readonly CancellationSeries _completing = new(CancellationToken.None);
 
     // Whether a match is being put in the input, so the list isn't refreshed for it.
     private bool _isPutting;
@@ -512,26 +512,18 @@ public sealed partial class ProjectView : UserControl
     // or returns null when it was asked for again, or the input was changed, or another project selected, while waiting for it.
     private async Task<InputCompletion?> RequestCompletionAsync(ProjectSessionViewModel session)
     {
-        _completing?.Cancel();
-        using var completing = _completing = new CancellationTokenSource();
+        var cancellationToken = _completing.GetNext();
         var input = InputBox.Text;
         var cursor = InputBox.SelectionStart;
 
         CommandCompletion? completion;
         try
         {
-            completion = await session.CompleteAsync(input, cursor, completing.Token);
+            completion = await session.CompleteAsync(input, cursor, cancellationToken);
         }
         catch (OperationCanceledException)
         {
             return null;
-        }
-        finally
-        {
-            if (_completing == completing)
-            {
-                _completing = null;
-            }
         }
 
         if (InputBox.Text != input || InputBox.SelectionStart != cursor || Session != session)
