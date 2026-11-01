@@ -596,6 +596,14 @@
                                         </MenuFlyoutItem>
                                         <MenuFlyoutSeparator />
                                         <MenuFlyoutItem
+                                            Click="OnCopyScriptClick"
+                                            Tag="{x:Bind}"
+                                            Text="Copy">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE8C8;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem
                                             Click="OnEditScriptClick"
                                             Tag="{x:Bind}"
                                             Text="Edit">

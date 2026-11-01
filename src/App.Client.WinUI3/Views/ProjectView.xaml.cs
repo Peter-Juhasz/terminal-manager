@@ -11,6 +11,7 @@ using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.Windows.Storage.Pickers;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
 using Windows.UI.Core;
 
@@ -281,6 +282,18 @@ public sealed partial class ProjectView : UserControl
         }
 
         session.CancelQueuedCommand.Execute(queued);
+    }
+
+    private void OnCopyScriptClick(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is not SavedScript script)
+        {
+            return;
+        }
+
+        var package = new DataPackage { RequestedOperation = DataPackageOperation.Copy };
+        package.SetText(script.Command);
+        Clipboard.SetContent(package);
     }
 
     private async void OnEditScriptClick(object sender, RoutedEventArgs e)
