@@ -420,7 +420,11 @@
                     BackgroundSizing="InnerBorderEdge"
                     BorderBrush="{ThemeResource SurfaceStrokeColorFlyoutBrush}"
                     BorderThickness="1"
-                    CornerRadius="{ThemeResource OverlayCornerRadius}">
+                    CornerRadius="{ThemeResource OverlayCornerRadius}"
+                    Translation="0,0,32">
+                    <Border.Shadow>
+                        <ThemeShadow />
+                    </Border.Shadow>
                     <ListView
                         x:Name="CompletionList"
                         MaxHeight="280"
@@ -459,7 +463,11 @@
                     BackgroundSizing="InnerBorderEdge"
                     BorderBrush="{ThemeResource SurfaceStrokeColorFlyoutBrush}"
                     BorderThickness="1"
-                    CornerRadius="{ThemeResource OverlayCornerRadius}">
+                    CornerRadius="{ThemeResource OverlayCornerRadius}"
+                    Translation="0,0,32">
+                    <Border.Shadow>
+                        <ThemeShadow />
+                    </Border.Shadow>
                     <TextBlock
                         x:Name="CompletionToolTip"
                         FontFamily="{StaticResource MonospaceFontFamily}"

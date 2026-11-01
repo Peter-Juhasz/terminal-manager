@@ -663,7 +663,7 @@ public sealed partial class ProjectView : UserControl
         CompletionInfoPopup.IsOpen = false;
         if (!CompletionPopup.IsOpen
             || !ReferenceEquals(CompletionList.SelectedItem, match)
-            || match is not { ToolTip: { Length: > 0 } toolTip }
+            || match?.ToolTip?.Trim() is not { Length: > 0 } toolTip
             || toolTip == match.ListItemText
             || CompletionList.ContainerFromItem(match) is not FrameworkElement container)
         {
