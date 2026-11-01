@@ -19,6 +19,7 @@
     <Compile Include="$(AppDirectory)Models\SavedScript.cs" Link="App\Models\SavedScript.cs" />
     <Compile Include="$(AppDirectory)Services\CommandCompletion.cs" Link="App\Services\CommandCompletion.cs" />
     <Compile Include="$(AppDirectory)Services\CommandRunner.cs" Link="App\Services\CommandRunner.cs" />
+    <Compile Include="$(AppDirectory)Services\DotEnvFile.cs" Link="App\Services\DotEnvFile.cs" />
     <Compile Include="$(AppDirectory)Services\ElevationClient.cs" Link="App\Services\ElevationClient.cs" />
     <Compile Include="$(AppDirectory)Services\ElevationProtocol.cs" Link="App\Services\ElevationProtocol.cs" />
     <Compile Include="$(AppDirectory)Services\ElevationServer.cs" Link="App\Services\ElevationServer.cs" />

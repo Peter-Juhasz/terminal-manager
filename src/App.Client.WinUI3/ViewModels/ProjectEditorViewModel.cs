@@ -31,6 +31,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         Kinds = (ProjectKind[])[Kind];
         DisplayName = project.DisplayName;
         WorkingFolder = project.WorkingFolder;
+        LoadEnvFile = project.LoadEnvFile;
         foreach (var (name, value) in project.EnvironmentVariables)
         {
             EnvironmentVariables.Add(new(Remove) { Name = name, Value = value });
@@ -93,11 +94,18 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     /// <summary>The environment variables commands are run with, in the order they were added.</summary>
     public ObservableCollection<EnvironmentVariableEditorViewModel> EnvironmentVariables { get; } = [];
 
-    /// <summary>The header of the environment variables, with how many there are, as they are hidden until it is expanded.</summary>
-    public string EnvironmentVariablesHeader => FilledEnvironmentVariables.Count() switch
+    /// <summary>Whether commands are also run with the variables in the .env file in the working folder.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EnvironmentVariablesHeader))]
+    public partial bool LoadEnvFile { get; set; }
+
+    /// <summary>The header of the environment variables, with how many there are and whether the .env file is loaded, as they are hidden until it is expanded.</summary>
+    public string EnvironmentVariablesHeader => (FilledEnvironmentVariables.Count(), LoadEnvFile) switch
     {
-        0 => "Environment variables",
-        var count => $"Environment variables ({count})",
+        (0, false) => "Environment variables",
+        (0, true) => "Environment variables (.env)",
+        (var count, false) => $"Environment variables ({count})",
+        (var count, true) => $"Environment variables ({count} + .env)",
     };
 
     /// <summary>Why the environment variables can't be saved, or <see langword="null"/> when they can.</summary>
@@ -166,8 +174,8 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         var environmentVariables = FilledEnvironmentVariables.ToDictionary(static variable => variable.Name.Trim(), static variable => variable.Value, StringComparer.OrdinalIgnoreCase);
         var built = _project switch
         {
-            null => Kind.Create(Guid.NewGuid(), DisplayName.Trim(), WorkingFolder.Trim()) with { EnvironmentVariables = environmentVariables },
-            { } project => project with { DisplayName = DisplayName.Trim(), WorkingFolder = WorkingFolder.Trim(), EnvironmentVariables = environmentVariables },
+            null => Kind.Create(Guid.NewGuid(), DisplayName.Trim(), WorkingFolder.Trim()) with { EnvironmentVariables = environmentVariables, LoadEnvFile = LoadEnvFile },
+            { } project => project with { DisplayName = DisplayName.Trim(), WorkingFolder = WorkingFolder.Trim(), EnvironmentVariables = environmentVariables, LoadEnvFile = LoadEnvFile },
         };
 
         // a script of only blank lines would still move what is typed down in the script that is run

@@ -15,6 +15,7 @@ public sealed class ProjectSerializationTests
 
         Assert.IsNotNull(project);
         Assert.IsEmpty(project.EnvironmentVariables);
+        Assert.IsFalse(project.LoadEnvFile);
         var powerShell = Assert.IsInstanceOfType<PowerShellProject>(project);
         Assert.AreEqual(string.Empty, powerShell.PrependScript);
         Assert.AreEqual(string.Empty, powerShell.AppendScript);
@@ -58,6 +59,7 @@ public sealed class ProjectSerializationTests
             DisplayName = "A",
             WorkingFolder = @"C:\",
             EnvironmentVariables = new Dictionary<string, string> { ["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1" },
+            LoadEnvFile = true,
         };
 
         var json = JsonSerializer.Serialize<Project>(project, AppJsonSerializerContext.Default.Project);
@@ -65,5 +67,6 @@ public sealed class ProjectSerializationTests
 
         Assert.IsNotNull(deserialized);
         Assert.AreEqual("1", deserialized.EnvironmentVariables["DOTNET_CLI_TELEMETRY_OPTOUT"]);
+        Assert.IsTrue(deserialized.LoadEnvFile);
     }
 }

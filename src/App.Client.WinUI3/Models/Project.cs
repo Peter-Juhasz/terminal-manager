@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
+using App.Client.WinUI3.Services;
 
 namespace App.Client.WinUI3.Models;
 
@@ -31,6 +32,29 @@ public abstract record class Project
     [JsonIgnore]
     public IReadOnlyDictionary<string, string> ExpandedEnvironmentVariables =>
         EnvironmentVariables.ToDictionary(static pair => pair.Key, static pair => Environment.ExpandEnvironmentVariables(pair.Value), StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Whether commands are also run with the variables in the .env file in the working folder, which those in <see cref="EnvironmentVariables"/> replace by the same name.</summary>
+    public bool LoadEnvFile { get; init; }
+
+    /// <summary>
+    /// The environment variables commands are run with: those in the .env file in the working folder, as it is when they are run, if <see cref="LoadEnvFile"/> is set,
+    /// then those in <see cref="ExpandedEnvironmentVariables"/>.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> ResolveEnvironmentVariables()
+    {
+        if (!LoadEnvFile)
+        {
+            return ExpandedEnvironmentVariables;
+        }
+
+        var variables = new Dictionary<string, string>(DotEnvFile.Read(Path.Combine(ExpandedWorkingFolder, DotEnvFile.FileName)), StringComparer.OrdinalIgnoreCase);
+        foreach (var (name, value) in ExpandedEnvironmentVariables)
+        {
+            variables[name] = value;
+        }
+
+        return variables;
+    }
 
     /// <summary>The commands saved to the project, in the order they are shown.</summary>
     public IReadOnlyList<SavedScript> Scripts { get; init; } = Array.Empty<SavedScript>();

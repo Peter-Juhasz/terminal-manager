@@ -25,7 +25,7 @@ public sealed class CommandRunner : ICommandRunner
         {
             var startInfo = project.CreateStartInfo(command);
             startInfo.WorkingDirectory = project.ExpandedWorkingFolder;
-            foreach (var (name, value) in project.ExpandedEnvironmentVariables)
+            foreach (var (name, value) in project.ResolveEnvironmentVariables())
             {
                 startInfo.Environment[name] = value;
             }

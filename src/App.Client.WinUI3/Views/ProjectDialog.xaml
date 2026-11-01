@@ -67,6 +67,9 @@
                     Style="{ThemeResource CaptionTextBlockStyle}"
                     Text="Commands are run with these, in addition to the variables of the app. Use %NAME% in a value to include another variable."
                     TextWrapping="Wrap" />
+                <CheckBox IsChecked="{x:Bind ViewModel.LoadEnvFile, Mode=TwoWay}">
+                    <TextBlock Text="Also load the .env file in the working folder, each time a command is run. The variables above replace those in it by the same name." TextWrapping="Wrap" />
+                </CheckBox>
                 <ItemsControl ItemsSource="{x:Bind ViewModel.EnvironmentVariables}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>

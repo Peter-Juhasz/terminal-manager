@@ -35,8 +35,9 @@ public sealed class ElevatedCommandRunner(CommandRunner runner) : ICommandRunner
             throw;
         }
 
-        // Expanded here, so they are the variables of the user, even if the host is run by another one, who allowed it with their own credentials.
-        var expanded = project with { WorkingFolder = project.ExpandedWorkingFolder, EnvironmentVariables = project.ExpandedEnvironmentVariables };
+        // Expanded here, so they are the variables of the user, even if the host is run by another one, who allowed it with their own credentials;
+        // the .env file is read here too, as that user may not be allowed to read it.
+        var expanded = project with { WorkingFolder = project.ExpandedWorkingFolder, EnvironmentVariables = project.ResolveEnvironmentVariables(), LoadEnvFile = false };
         return await client.RunAsync(expanded, command, output, cancellationToken).ConfigureAwait(false);
     }
 
