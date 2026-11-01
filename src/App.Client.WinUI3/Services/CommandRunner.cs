@@ -25,6 +25,11 @@ public sealed class CommandRunner : ICommandRunner
         {
             var startInfo = project.CreateStartInfo(command);
             startInfo.WorkingDirectory = project.ExpandedWorkingFolder;
+            foreach (var (name, value) in project.ExpandedEnvironmentVariables)
+            {
+                startInfo.Environment[name] = value;
+            }
+
             startInfo.UseShellExecute = false;
             startInfo.CreateNoWindow = true;
             startInfo.RedirectStandardInput = true;

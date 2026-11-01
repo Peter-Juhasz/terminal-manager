@@ -36,7 +36,8 @@ public sealed class ElevatedCommandRunner(CommandRunner runner) : ICommandRunner
         }
 
         // Expanded here, so they are the variables of the user, even if the host is run by another one, who allowed it with their own credentials.
-        return await client.RunAsync(project with { WorkingFolder = project.ExpandedWorkingFolder }, command, output, cancellationToken).ConfigureAwait(false);
+        var expanded = project with { WorkingFolder = project.ExpandedWorkingFolder, EnvironmentVariables = project.ExpandedEnvironmentVariables };
+        return await client.RunAsync(expanded, command, output, cancellationToken).ConfigureAwait(false);
     }
 
     // Shared by the commands run while it is started, so the user is only asked once; started on a thread of its own, as it blocks until the user answered.

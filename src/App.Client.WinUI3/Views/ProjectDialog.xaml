@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:App.Client.WinUI3.Views"
     xmlns:models="using:App.Client.WinUI3.Models"
+    xmlns:viewModels="using:App.Client.WinUI3.ViewModels"
     Title="{x:Bind ViewModel.Title}"
     CloseButtonText="Cancel"
     DefaultButton="Primary"
@@ -54,5 +55,66 @@
                 Text="The folder doesn't exist."
                 Visibility="{x:Bind ViewModel.IsWorkingFolderMissing, Mode=OneWay}" />
         </StackPanel>
+
+        <Expander
+            HorizontalAlignment="Stretch"
+            HorizontalContentAlignment="Stretch"
+            Header="{x:Bind ViewModel.EnvironmentVariablesHeader, Mode=OneWay}"
+            IsExpanded="False">
+            <StackPanel Spacing="8">
+                <TextBlock
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{ThemeResource CaptionTextBlockStyle}"
+                    Text="Commands are run with these, in addition to the variables of the app. Use %NAME% in a value to include another variable."
+                    TextWrapping="Wrap" />
+                <ItemsControl ItemsSource="{x:Bind ViewModel.EnvironmentVariables}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="8" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="viewModels:EnvironmentVariableEditorViewModel">
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2*" />
+                                    <ColumnDefinition Width="3*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox
+                                    AutomationProperties.Name="Name"
+                                    FontFamily="{StaticResource MonospaceFontFamily}"
+                                    PlaceholderText="NAME"
+                                    Text="{x:Bind Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBox
+                                    Grid.Column="1"
+                                    AutomationProperties.Name="Value"
+                                    FontFamily="{StaticResource MonospaceFontFamily}"
+                                    PlaceholderText="Value"
+                                    Text="{x:Bind Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <Button
+                                    Grid.Column="2"
+                                    AutomationProperties.Name="Remove"
+                                    Command="{x:Bind RemoveCommand}"
+                                    ToolTipService.ToolTip="Remove">
+                                    <FontIcon FontSize="16" Glyph="&#xE74D;" />
+                                </Button>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock
+                    Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                    Style="{ThemeResource CaptionTextBlockStyle}"
+                    Text="{x:Bind ViewModel.EnvironmentVariablesError, Mode=OneWay}"
+                    Visibility="{x:Bind ViewModel.HasEnvironmentVariablesError, Mode=OneWay}" />
+                <Button Command="{x:Bind ViewModel.AddEnvironmentVariableCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontSize="16" Glyph="&#xE710;" />
+                        <TextBlock Text="Add variable" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Expander>
     </StackPanel>
 </ContentDialog>

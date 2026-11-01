@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 
@@ -21,6 +22,15 @@ public abstract record class Project
     /// <summary>The folder commands are run in, with the environment variables in <see cref="WorkingFolder"/> expanded.</summary>
     [JsonIgnore]
     public string ExpandedWorkingFolder => Environment.ExpandEnvironmentVariables(WorkingFolder);
+
+    /// <summary>The environment variables commands are run with, in addition to those of the app, or in place of them by the same name.</summary>
+    // the source generated deserializer sets it to null when it is missing, as projects saved before it was added are.
+    public IReadOnlyDictionary<string, string> EnvironmentVariables { get; init => field = value ?? ReadOnlyDictionary<string, string>.Empty; } = ReadOnlyDictionary<string, string>.Empty;
+
+    /// <summary>The environment variables commands are run with, with the environment variables in their values expanded.</summary>
+    [JsonIgnore]
+    public IReadOnlyDictionary<string, string> ExpandedEnvironmentVariables =>
+        EnvironmentVariables.ToDictionary(static pair => pair.Key, static pair => Environment.ExpandEnvironmentVariables(pair.Value), StringComparer.OrdinalIgnoreCase);
 
     /// <summary>The commands saved to the project, in the order they are shown.</summary>
     public IReadOnlyList<SavedScript> Scripts { get; init; } = Array.Empty<SavedScript>();

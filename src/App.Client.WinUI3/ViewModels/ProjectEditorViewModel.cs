@@ -1,5 +1,8 @@
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using App.Client.WinUI3.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 namespace App.Client.WinUI3.ViewModels;
 
@@ -14,10 +17,12 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     public ProjectEditorViewModel()
     {
         Kind = Kinds[0];
+        EnvironmentVariables.CollectionChanged += OnEnvironmentVariablesChanged;
     }
 
     /// <summary>Starts editing <paramref name="project"/>, whose kind can't be changed.</summary>
     public ProjectEditorViewModel(Project project)
+        : this()
     {
         ArgumentNullException.ThrowIfNull(project);
 
@@ -26,6 +31,10 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         Kinds = (ProjectKind[])[Kind];
         DisplayName = project.DisplayName;
         WorkingFolder = project.WorkingFolder;
+        foreach (var (name, value) in project.EnvironmentVariables)
+        {
+            EnvironmentVariables.Add(new(Remove) { Name = name, Value = value });
+        }
     }
 
     public bool IsNew => _project is null;
@@ -52,11 +61,84 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     // the environment variables in it are expanded when it is used, so it is checked the same way.
     private string ExpandedWorkingFolder => Environment.ExpandEnvironmentVariables(WorkingFolder.Trim());
 
-    public bool IsValid => !string.IsNullOrWhiteSpace(DisplayName) && !string.IsNullOrWhiteSpace(WorkingFolder) && !IsWorkingFolderMissing;
+    /// <summary>The environment variables commands are run with, in the order they were added.</summary>
+    public ObservableCollection<EnvironmentVariableEditorViewModel> EnvironmentVariables { get; } = [];
 
-    public Project Build() => _project switch
+    /// <summary>The header of the environment variables, with how many there are, as they are hidden until it is expanded.</summary>
+    public string EnvironmentVariablesHeader => FilledEnvironmentVariables.Count() switch
     {
-        null => Kind.Create(Guid.NewGuid(), DisplayName.Trim(), WorkingFolder.Trim()),
-        { } project => project with { DisplayName = DisplayName.Trim(), WorkingFolder = WorkingFolder.Trim() },
+        0 => "Environment variables",
+        var count => $"Environment variables ({count})",
     };
+
+    /// <summary>Why the environment variables can't be saved, or <see langword="null"/> when they can.</summary>
+    public string? EnvironmentVariablesError
+    {
+        get
+        {
+            var names = FilledEnvironmentVariables.Select(static variable => variable.Name.Trim()).ToList();
+            if (names.Any(string.IsNullOrEmpty))
+            {
+                return "Each variable needs a name.";
+            }
+
+            // the system can't tell a name with one apart from its value
+            if (names.Any(static name => name.Contains('=')))
+            {
+                return "A name can't contain '='.";
+            }
+
+            // names of environment variables are case insensitive on Windows
+            if (names.Distinct(StringComparer.OrdinalIgnoreCase).Count() != names.Count)
+            {
+                return "Each variable needs a name of its own.";
+            }
+
+            return null;
+        }
+    }
+
+    public bool HasEnvironmentVariablesError => EnvironmentVariablesError is not null;
+
+    public bool IsValid => !string.IsNullOrWhiteSpace(DisplayName) && !string.IsNullOrWhiteSpace(WorkingFolder) && !IsWorkingFolderMissing && !HasEnvironmentVariablesError;
+
+    private IEnumerable<EnvironmentVariableEditorViewModel> FilledEnvironmentVariables => EnvironmentVariables.Where(static variable => !variable.IsEmpty);
+
+    [RelayCommand]
+    private void AddEnvironmentVariable() => EnvironmentVariables.Add(new(Remove));
+
+    private void Remove(EnvironmentVariableEditorViewModel variable) => EnvironmentVariables.Remove(variable);
+
+    private void OnEnvironmentVariablesChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        foreach (EnvironmentVariableEditorViewModel variable in e.OldItems ?? Array.Empty<object>())
+        {
+            variable.PropertyChanged -= OnEnvironmentVariableChanged;
+        }
+
+        foreach (EnvironmentVariableEditorViewModel variable in e.NewItems ?? Array.Empty<object>())
+        {
+            variable.PropertyChanged += OnEnvironmentVariableChanged;
+        }
+
+        OnEnvironmentVariableChanged(sender, e);
+    }
+
+    private void OnEnvironmentVariableChanged(object? sender, EventArgs e)
+    {
+        OnPropertyChanged(nameof(EnvironmentVariablesHeader));
+        OnPropertyChanged(nameof(EnvironmentVariablesError));
+        OnPropertyChanged(nameof(HasEnvironmentVariablesError));
+        OnPropertyChanged(nameof(IsValid));
+    }
+
+    public Project Build()
+    {
+        var environmentVariables = FilledEnvironmentVariables.ToDictionary(static variable => variable.Name.Trim(), static variable => variable.Value, StringComparer.OrdinalIgnoreCase);
+        return _project switch
+        {
+            null => Kind.Create(Guid.NewGuid(), DisplayName.Trim(), WorkingFolder.Trim()) with { EnvironmentVariables = environmentVariables },
+            { } project => project with { DisplayName = DisplayName.Trim(), WorkingFolder = WorkingFolder.Trim(), EnvironmentVariables = environmentVariables },
+        };
+    }
 }
