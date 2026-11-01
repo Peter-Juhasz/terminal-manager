@@ -436,6 +436,10 @@
                         Loaded="OnCompletionListLoaded"
                         SelectionChanged="OnCompletionSelectionChanged"
                         SelectionMode="Single">
+                        <!--  refreshed on each key typed, so the matches are replaced at once, not animated in  -->
+                        <ListView.ItemContainerTransitions>
+                            <TransitionCollection />
+                        </ListView.ItemContainerTransitions>
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="services:CompletionMatch">
                                 <StackPanel Orientation="Horizontal" Spacing="10">
