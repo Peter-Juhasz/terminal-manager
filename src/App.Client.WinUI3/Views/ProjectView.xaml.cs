@@ -274,6 +274,37 @@ public sealed partial class ProjectView : UserControl
         FocusInput();
     }
 
+    /// <summary>Puts the script into the input without running it, so it can be changed first.</summary>
+    private async void OnLoadScriptClick(object sender, RoutedEventArgs e)
+    {
+        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not SavedScript script)
+        {
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(session.Input) && session.Input != script.Command)
+        {
+            var dialog = new ContentDialog
+            {
+                XamlRoot = XamlRoot,
+                Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"],
+                Title = "Replace input?",
+                Content = $"What is typed in the input is replaced by '{script.Name}'.",
+                PrimaryButtonText = "Replace",
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Close,
+            };
+            if (await Dialogs.ShowAsync(dialog) is not ContentDialogResult.Primary)
+            {
+                return;
+            }
+        }
+
+        session.Input = script.Command;
+        FocusInput();
+        MoveCaretToEnd();
+    }
+
     private void OnCancelQueuedClick(object sender, RoutedEventArgs e)
     {
         if (Session is not { } session || (sender as FrameworkElement)?.Tag is not QueuedCommand queued)

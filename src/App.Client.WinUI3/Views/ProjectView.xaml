@@ -594,6 +594,14 @@
                                                 <FontIcon Glyph="&#xE823;" />
                                             </MenuFlyoutItem.Icon>
                                         </MenuFlyoutItem>
+                                        <MenuFlyoutItem
+                                            Click="OnLoadScriptClick"
+                                            Tag="{x:Bind}"
+                                            Text="Load">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE77F;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
                                         <MenuFlyoutSeparator />
                                         <MenuFlyoutItem
                                             Click="OnCopyScriptClick"
