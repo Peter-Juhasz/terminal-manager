@@ -324,7 +324,7 @@ public sealed partial class ProjectView : UserControl
     /// The arrow keys recall the commands run before, from the first and last lines.
     /// Ctrl+C stops the command started last of those running, unless there is text selected to copy.
     /// Tab completes the text before the caret, and goes on to the next match when pressed again, Shift+Tab to the one before.
-    /// Ctrl+Space lists the matches, which the arrow keys move through, Enter or Tab takes, and Escape closes.
+    /// Ctrl+Space lists the matches, which the arrow keys move through, Enter or Tab takes, and Escape closes; typing -, $ or : lists them too.
     /// </summary>
     private void OnInputPreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
@@ -463,7 +463,8 @@ public sealed partial class ProjectView : UserControl
         PutCompletion(requested with { Match = isBackward ? requested.Completion.Matches.Count - 1 : 0 });
     }
 
-    private async Task ListCompletionAsync(ProjectSessionViewModel session)
+    // When it is listed for a character typed, a single match is listed too, as what is typed on may not be it.
+    private async Task ListCompletionAsync(ProjectSessionViewModel session, bool isTyped = false)
     {
         _cycling = null;
         if (await RequestCompletionAsync(session) is not { } requested)
@@ -478,7 +479,7 @@ public sealed partial class ProjectView : UserControl
                 break;
 
             // there is nothing to choose from, so it is put in right away, as PSReadLine does
-            case 1:
+            case 1 when !isTyped:
                 CloseCompletionList();
                 PutCompletion(requested);
                 break;
@@ -675,14 +676,42 @@ public sealed partial class ProjectView : UserControl
         CompletionInfoPopup.IsOpen = true;
     }
 
+    // The input as it was when the caret last moved, to tell a character typed from other changes.
+    private string _lastInput = "";
+
     private void OnInputSelectionChanged(object sender, RoutedEventArgs e)
     {
-        if (!CompletionPopup.IsOpen || _isPutting || Session is not { } session)
+        var lastInput = _lastInput;
+        _lastInput = InputBox.Text;
+        if (_isPutting || Session is not { } session)
         {
             return;
         }
 
-        _ = RefreshCompletionListAsync(session);
+        if (CompletionPopup.IsOpen)
+        {
+            _ = RefreshCompletionListAsync(session);
+            return;
+        }
+
+        // a parameter, a variable, or a drive, scope or static member is listed as soon as it is started, as Visual Studio does
+        if (session.CanComplete && IsCompletionTriggerTyped(lastInput))
+        {
+            _ = ListCompletionAsync(session, isTyped: true);
+        }
+    }
+
+    // Whether the input is the one before with only a character that starts a completion typed before the caret.
+    private bool IsCompletionTriggerTyped(string lastInput)
+    {
+        var input = InputBox.Text;
+        var caret = InputBox.SelectionStart;
+        return InputBox.SelectionLength == 0
+            && caret > 0
+            && input.Length == lastInput.Length + 1
+            && input[caret - 1] is '-' or '$' or ':'
+            && string.CompareOrdinal(input, 0, lastInput, 0, caret - 1) == 0
+            && string.CompareOrdinal(input, caret, lastInput, caret - 1, lastInput.Length - caret + 1) == 0;
     }
 
     // The list is never focused, so the focus leaving the input means it is done with.
