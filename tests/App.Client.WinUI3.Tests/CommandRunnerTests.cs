@@ -113,6 +113,28 @@ public sealed class CommandRunnerTests(TestContext testContext)
         Assert.AreEqual(string.Empty, result.Error);
     }
 
+    // Needs Visual Studio or its Build Tools, so it is skipped where neither is installed.
+    [TestMethod]
+    public async Task RunAsyncRunsInDeveloperEnvironment()
+    {
+        if (!File.Exists(Environment.ExpandEnvironmentVariables(@"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe")))
+        {
+            Assert.Inconclusive("Visual Studio isn't installed.");
+        }
+
+        var project = new DeveloperPowerShellProject
+        {
+            Id = Guid.NewGuid(),
+            DisplayName = "Test",
+            WorkingFolder = Path.GetTempPath(),
+        };
+
+        var result = await RunAsync(project, "[bool]$env:VSINSTALLDIR; [bool](Get-Variable vs -ErrorAction Ignore); (Get-Location).Path");
+
+        Assert.AreEqual($"True\r\nFalse\r\n{Path.TrimEndingDirectorySeparator(Path.GetTempPath())}\r\n", result.Output);
+        Assert.AreEqual(string.Empty, result.Error);
+    }
+
     private async Task<CommandResult> RunWithFileAsync(string command, byte[] file)
     {
         var folder = Directory.CreateTempSubdirectory();
