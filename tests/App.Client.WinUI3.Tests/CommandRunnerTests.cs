@@ -95,6 +95,24 @@ public sealed class CommandRunnerTests(TestContext testContext)
         Assert.Contains("started", result.Output);
     }
 
+    // The prelude must not fail on what only pwsh has, and the output must still be read as UTF-8.
+    [TestMethod]
+    public async Task RunAsyncRunsWindowsPowerShell()
+    {
+        var project = new WindowsPowerShellProject
+        {
+            Id = Guid.NewGuid(),
+            DisplayName = "Test",
+            WorkingFolder = Path.GetTempPath(),
+        };
+
+        var result = await RunAsync(project, "$PSVersionTable.PSVersion.Major; 'aé€'; exit 3");
+
+        Assert.AreEqual(3, result.ExitCode);
+        Assert.AreEqual("5\r\naé€\r\n", result.Output);
+        Assert.AreEqual(string.Empty, result.Error);
+    }
+
     private async Task<CommandResult> RunWithFileAsync(string command, byte[] file)
     {
         var folder = Directory.CreateTempSubdirectory();
@@ -109,15 +127,16 @@ public sealed class CommandRunnerTests(TestContext testContext)
         }
     }
 
-    private async Task<CommandResult> RunAsync(string command, string? workingFolder = null, TimeSpan? cancelAfter = null)
-    {
-        var project = new CmdProject
+    private Task<CommandResult> RunAsync(string command, string? workingFolder = null, TimeSpan? cancelAfter = null) =>
+        RunAsync(new CmdProject
         {
             Id = Guid.NewGuid(),
             DisplayName = "Test",
             WorkingFolder = workingFolder ?? Path.GetTempPath(),
-        };
+        }, command, cancelAfter);
 
+    private async Task<CommandResult> RunAsync(Project project, string command, TimeSpan? cancelAfter = null)
+    {
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(testContext.CancellationToken);
         if (cancelAfter is { } delay)
         {

@@ -41,6 +41,20 @@ public sealed class ProjectSerializationTests
     }
 
     [TestMethod]
+    public void WindowsPowerShellRoundTrips()
+    {
+        var project = new WindowsPowerShellProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\", PrependScript = "$a = 1" };
+
+        var json = JsonSerializer.Serialize<Project>(project, AppJsonSerializerContext.Default.Project);
+        var deserialized = Assert.IsInstanceOfType<WindowsPowerShellProject>(JsonSerializer.Deserialize(json, AppJsonSerializerContext.Default.Project));
+
+        Assert.Contains("\"$type\": \"powershell\"", json);
+        Assert.AreEqual("$a = 1", deserialized.PrependScript);
+        // the editor changes the scripts through the base type, which must keep the terminal.
+        Assert.IsInstanceOfType<WindowsPowerShellProject>((PowerShellProject)deserialized with { AppendScript = "$b = 2" });
+    }
+
+    [TestMethod]
     public void WrapPutsScriptsOnLinesOfTheirOwn()
     {
         var project = new PowerShellProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\", PrependScript = "$a = 1", AppendScript = "$b = 2" };

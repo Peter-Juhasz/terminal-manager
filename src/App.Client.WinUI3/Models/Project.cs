@@ -10,6 +10,7 @@ namespace App.Client.WinUI3.Models;
 /// </summary>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
 [JsonDerivedType(typeof(PowerShellProject), "pwsh")]
+[JsonDerivedType(typeof(WindowsPowerShellProject), "powershell")]
 [JsonDerivedType(typeof(CmdProject), "cmd")]
 public abstract record class Project
 {

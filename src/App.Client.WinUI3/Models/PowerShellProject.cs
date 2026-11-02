@@ -4,18 +4,29 @@ using System.Text.Json.Serialization;
 namespace App.Client.WinUI3.Models;
 
 /// <summary>
-/// A project whose commands are run by PowerShell (pwsh).
+/// A project whose commands are run by PowerShell (pwsh), or by Windows PowerShell for <see cref="WindowsPowerShellProject"/>.
 /// </summary>
-public sealed record class PowerShellProject : Project
+public record class PowerShellProject : Project
 {
-    // The output is read as UTF-8 without colors or progress bars, which are only meant for a console.
-    private const string Prelude = """
+    // The output is read as UTF-8 without progress bars, which are only meant for a console.
+    private protected const string EncodingPrelude = """
         [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
         $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
-        $PSStyle.OutputRendering = 'PlainText'
         $ProgressPreference = 'SilentlyContinue'
 
         """;
+
+    // nor colors, which are only meant for a console too.
+    private const string PlainTextPrelude = EncodingPrelude + """
+        $PSStyle.OutputRendering = 'PlainText'
+
+        """;
+
+    /// <summary>The script run before everything else, so the output can be read.</summary>
+    private protected virtual string Prelude => PlainTextPrelude;
+
+    /// <summary>The executable the commands are run by.</summary>
+    private protected virtual string FileName => "pwsh";
 
     /// <summary>The script run before each command, in the same scope, so what it defines can be used by the command.</summary>
     // the source generated deserializer sets it to null when it is missing, as projects saved before it was added are.
@@ -53,7 +64,7 @@ public sealed record class PowerShellProject : Project
 
         // A single argument, which is quoted for the command line as needed, so the command reaches PowerShell as it was typed.
         // Not encoded, as errors would be written as CLIXML then.
-        return new ProcessStartInfo("pwsh")
+        return new ProcessStartInfo(FileName)
         {
             ArgumentList = { "-NoLogo", "-NoProfile", "-NonInteractive", "-OutputFormat", "Text", "-Command", Prelude + Wrap(command) },
         };
