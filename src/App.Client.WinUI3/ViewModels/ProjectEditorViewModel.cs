@@ -61,22 +61,11 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
 
     /// <summary>The script run before each command, which only projects run by PowerShell have.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ScriptsHeader))]
     public partial string PrependScript { get; set; } = string.Empty;
 
     /// <summary>The script run after each command, which only projects run by PowerShell have.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ScriptsHeader))]
     public partial string AppendScript { get; set; } = string.Empty;
-
-    /// <summary>The header of the scripts run around each command, with which of them are set, as they are hidden until it is expanded.</summary>
-    public string ScriptsHeader => (string.IsNullOrWhiteSpace(PrependScript), string.IsNullOrWhiteSpace(AppendScript)) switch
-    {
-        (true, true) => "Prepend and append scripts",
-        (false, true) => "Prepend and append scripts (prepend)",
-        (true, false) => "Prepend and append scripts (append)",
-        (false, false) => "Prepend and append scripts (both)",
-    };
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsValid))]
@@ -96,17 +85,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
 
     /// <summary>Whether commands are also run with the variables in the .env file in the working folder.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(EnvironmentVariablesHeader))]
     public partial bool LoadEnvFile { get; set; }
-
-    /// <summary>The header of the environment variables, with how many there are and whether the .env file is loaded, as they are hidden until it is expanded.</summary>
-    public string EnvironmentVariablesHeader => (FilledEnvironmentVariables.Count(), LoadEnvFile) switch
-    {
-        (0, false) => "Environment variables",
-        (0, true) => "Environment variables (.env)",
-        (var count, false) => $"Environment variables ({count})",
-        (var count, true) => $"Environment variables ({count} + .env)",
-    };
 
     /// <summary>Why the environment variables can't be saved, or <see langword="null"/> when they can.</summary>
     public string? EnvironmentVariablesError
@@ -163,7 +142,6 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
 
     private void OnEnvironmentVariableChanged(object? sender, EventArgs e)
     {
-        OnPropertyChanged(nameof(EnvironmentVariablesHeader));
         OnPropertyChanged(nameof(EnvironmentVariablesError));
         OnPropertyChanged(nameof(HasEnvironmentVariablesError));
         OnPropertyChanged(nameof(IsValid));

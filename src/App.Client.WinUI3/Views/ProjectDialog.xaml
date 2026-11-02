@@ -13,146 +13,194 @@
     PrimaryButtonText="{x:Bind ViewModel.PrimaryButtonText}"
     Style="{StaticResource DefaultContentDialogStyle}">
 
-    <StackPanel MinWidth="440" Spacing="16">
-        <ComboBox
-            HorizontalAlignment="Stretch"
-            Header="Terminal"
-            IsEnabled="{x:Bind ViewModel.IsNew}"
-            ItemsSource="{x:Bind ViewModel.Kinds}"
-            SelectedItem="{x:Bind ViewModel.Kind, Mode=TwoWay}">
-            <ComboBox.ItemTemplate>
-                <DataTemplate x:DataType="models:ProjectKind">
-                    <TextBlock Text="{x:Bind DisplayName}" />
-                </DataTemplate>
-            </ComboBox.ItemTemplate>
-        </ComboBox>
+    <ContentDialog.Resources>
+        <!-- Wide enough for the navigation pane next to the page. -->
+        <x:Double x:Key="ContentDialogMaxWidth">800</x:Double>
+    </ContentDialog.Resources>
 
-        <TextBox
-            x:Name="DisplayNameBox"
-            Header="Name"
-            PlaceholderText="My project"
-            Text="{x:Bind ViewModel.DisplayName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+    <Grid Width="640">
+        <!--
+            Asks for the height the pages are shown at, but gives way to a window too short for it, where the pane and the page
+            then each scroll on their own, rather than the dialog as a whole.
+        -->
+        <Border Height="360" />
 
-        <StackPanel Spacing="4">
-            <Grid ColumnSpacing="8">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBox
-                    Header="Working folder"
-                    PlaceholderText="C:\src\my-project"
-                    Text="{x:Bind ViewModel.WorkingFolder, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                <Button
-                    Grid.Column="1"
-                    VerticalAlignment="Bottom"
-                    Click="OnBrowseClick"
-                    Content="Browse…" />
-            </Grid>
-            <TextBlock
-                Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                Style="{ThemeResource CaptionTextBlockStyle}"
-                Text="The folder doesn't exist."
-                Visibility="{x:Bind ViewModel.IsWorkingFolderMissing, Mode=OneWay}" />
-        </StackPanel>
+        <!-- The selected page is set in code. -->
+        <NavigationView
+            x:Name="PageNavigation"
+            IsBackButtonVisible="Collapsed"
+            IsPaneToggleButtonVisible="False"
+            IsSettingsVisible="False"
+            OpenPaneLength="200"
+            PaneDisplayMode="Left">
+            <NavigationView.Resources>
+                <!-- The dialog is the surface, so the page doesn't need a layer of its own. -->
+                <SolidColorBrush x:Key="NavigationViewContentBackground" Color="Transparent" />
+                <Thickness x:Key="NavigationViewContentGridBorderThickness">0</Thickness>
+                <Thickness x:Key="NavigationViewContentMargin">0</Thickness>
+            </NavigationView.Resources>
 
-        <Expander
-            HorizontalAlignment="Stretch"
-            HorizontalContentAlignment="Stretch"
-            Header="{x:Bind ViewModel.EnvironmentVariablesHeader, Mode=OneWay}"
-            IsExpanded="False">
-            <StackPanel Spacing="8">
-                <TextBlock
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Style="{ThemeResource CaptionTextBlockStyle}"
-                    Text="Commands are run with these, in addition to the variables of the app. Use %NAME% in a value to include another variable."
-                    TextWrapping="Wrap" />
-                <CheckBox IsChecked="{x:Bind ViewModel.LoadEnvFile, Mode=TwoWay}">
-                    <TextBlock Text="Load from .env file" TextWrapping="Wrap" />
-                </CheckBox>
-                <ItemsControl ItemsSource="{x:Bind ViewModel.EnvironmentVariables}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Spacing="8" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="viewModels:EnvironmentVariableEditorViewModel">
+            <NavigationView.MenuItems>
+                <NavigationViewItem x:Name="GeneralPageItem" Content="General">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Setting" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Name="EnvironmentVariablesPageItem" Content="Environment variables">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE943;" />
+                    </NavigationViewItem.Icon>
+                    <!-- Tells why the project can't be saved while another page is shown. -->
+                    <NavigationViewItem.InfoBadge>
+                        <InfoBadge Style="{ThemeResource CriticalIconInfoBadgeStyle}" Visibility="{x:Bind ViewModel.HasEnvironmentVariablesError, Mode=OneWay}" />
+                    </NavigationViewItem.InfoBadge>
+                </NavigationViewItem>
+                <!-- Only projects run by PowerShell have them, and the terminal can't be changed from this page. -->
+                <NavigationViewItem
+                    x:Name="ScriptsPageItem"
+                    Content="Prepend and append"
+                    Visibility="{x:Bind ViewModel.IsPowerShell, Mode=OneWay}">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE756;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+
+            <ScrollViewer Margin="24,0,0,0" Padding="0,0,16,0">
+                <Grid>
+                    <StackPanel Spacing="16" Visibility="{x:Bind GeneralPageItem.IsSelected, Mode=OneWay}">
+                        <ComboBox
+                            HorizontalAlignment="Stretch"
+                            Header="Terminal"
+                            IsEnabled="{x:Bind ViewModel.IsNew}"
+                            ItemsSource="{x:Bind ViewModel.Kinds}"
+                            SelectedItem="{x:Bind ViewModel.Kind, Mode=TwoWay}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="models:ProjectKind">
+                                    <TextBlock Text="{x:Bind DisplayName}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+
+                        <TextBox
+                            x:Name="DisplayNameBox"
+                            Header="Name"
+                            PlaceholderText="My project"
+                            Text="{x:Bind ViewModel.DisplayName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                        <StackPanel Spacing="4">
                             <Grid ColumnSpacing="8">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="2*" />
-                                    <ColumnDefinition Width="3*" />
+                                    <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBox
-                                    AutomationProperties.Name="Name"
-                                    FontFamily="{StaticResource MonospaceFontFamily}"
-                                    PlaceholderText="NAME"
-                                    Text="{x:Bind Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBox
-                                    Grid.Column="1"
-                                    AutomationProperties.Name="Value"
-                                    FontFamily="{StaticResource MonospaceFontFamily}"
-                                    PlaceholderText="Value"
-                                    Text="{x:Bind Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    Header="Working folder"
+                                    PlaceholderText="C:\src\my-project"
+                                    Text="{x:Bind ViewModel.WorkingFolder, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 <Button
-                                    Grid.Column="2"
-                                    AutomationProperties.Name="Remove"
-                                    Command="{x:Bind RemoveCommand}"
-                                    ToolTipService.ToolTip="Remove">
-                                    <FontIcon FontSize="16" Glyph="&#xE74D;" />
-                                </Button>
+                                    Grid.Column="1"
+                                    VerticalAlignment="Bottom"
+                                    Click="OnBrowseClick"
+                                    Content="Browse…" />
                             </Grid>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                <TextBlock
-                    Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                    Style="{ThemeResource CaptionTextBlockStyle}"
-                    Text="{x:Bind ViewModel.EnvironmentVariablesError, Mode=OneWay}"
-                    Visibility="{x:Bind ViewModel.HasEnvironmentVariablesError, Mode=OneWay}" />
-                <Button Command="{x:Bind ViewModel.AddEnvironmentVariableCommand}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon FontSize="16" Glyph="&#xE710;" />
-                        <TextBlock Text="Add variable" />
+                            <TextBlock
+                                Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                Style="{ThemeResource CaptionTextBlockStyle}"
+                                Text="The folder doesn't exist."
+                                Visibility="{x:Bind ViewModel.IsWorkingFolderMissing, Mode=OneWay}" />
+                        </StackPanel>
                     </StackPanel>
-                </Button>
-            </StackPanel>
-        </Expander>
 
-        <Expander
-            HorizontalAlignment="Stretch"
-            HorizontalContentAlignment="Stretch"
-            Header="{x:Bind ViewModel.ScriptsHeader, Mode=OneWay}"
-            IsExpanded="False"
-            Visibility="{x:Bind ViewModel.IsPowerShell, Mode=OneWay}">
-            <StackPanel Spacing="8">
-                <TextBlock
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Style="{ThemeResource CaptionTextBlockStyle}"
-                    Text="Run before and after each command, in the same scope, so what the prepend script defines can be used by commands, and is offered by completion."
-                    TextWrapping="Wrap" />
-                <TextBox
-                    MaxHeight="200"
-                    AcceptsReturn="True"
-                    FontFamily="{StaticResource MonospaceFontFamily}"
-                    Header="Prepend script"
-                    IsSpellCheckEnabled="False"
-                    PlaceholderText="Import-Module ./build.psm1"
-                    ScrollViewer.VerticalScrollBarVisibility="Auto"
-                    Text="{x:Bind ViewModel.PrependScript, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                    TextWrapping="Wrap" />
-                <TextBox
-                    MaxHeight="200"
-                    AcceptsReturn="True"
-                    FontFamily="{StaticResource MonospaceFontFamily}"
-                    Header="Append script"
-                    IsSpellCheckEnabled="False"
-                    PlaceholderText="Write-Host &quot;Exit code: $LASTEXITCODE&quot;"
-                    ScrollViewer.VerticalScrollBarVisibility="Auto"
-                    Text="{x:Bind ViewModel.AppendScript, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                    TextWrapping="Wrap" />
-            </StackPanel>
-        </Expander>
-    </StackPanel>
+                    <StackPanel Spacing="8" Visibility="{x:Bind EnvironmentVariablesPageItem.IsSelected, Mode=OneWay}">
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{ThemeResource CaptionTextBlockStyle}"
+                            Text="Commands are run with these, in addition to the variables of the app. Use %NAME% in a value to include another variable."
+                            TextWrapping="Wrap" />
+                        <CheckBox IsChecked="{x:Bind ViewModel.LoadEnvFile, Mode=TwoWay}">
+                            <TextBlock Text="Load from .env file" TextWrapping="Wrap" />
+                        </CheckBox>
+                        <ItemsControl ItemsSource="{x:Bind ViewModel.EnvironmentVariables}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Spacing="8" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="viewModels:EnvironmentVariableEditorViewModel">
+                                    <Grid ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="2*" />
+                                            <ColumnDefinition Width="3*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox
+                                            AutomationProperties.Name="Name"
+                                            FontFamily="{StaticResource MonospaceFontFamily}"
+                                            PlaceholderText="NAME"
+                                            Text="{x:Bind Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBox
+                                            Grid.Column="1"
+                                            AutomationProperties.Name="Value"
+                                            FontFamily="{StaticResource MonospaceFontFamily}"
+                                            PlaceholderText="Value"
+                                            Text="{x:Bind Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                        <Button
+                                            Grid.Column="2"
+                                            AutomationProperties.Name="Remove"
+                                            Command="{x:Bind RemoveCommand}"
+                                            ToolTipService.ToolTip="Remove">
+                                            <FontIcon FontSize="16" Glyph="&#xE74D;" />
+                                        </Button>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock
+                            Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                            Style="{ThemeResource CaptionTextBlockStyle}"
+                            Text="{x:Bind ViewModel.EnvironmentVariablesError, Mode=OneWay}"
+                            Visibility="{x:Bind ViewModel.HasEnvironmentVariablesError, Mode=OneWay}" />
+                        <Button Command="{x:Bind ViewModel.AddEnvironmentVariableCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon FontSize="16" Glyph="&#xE710;" />
+                                <TextBlock Text="Add variable" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <StackPanel Spacing="16" Visibility="{x:Bind ScriptsPageItem.IsSelected, Mode=OneWay}">
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{ThemeResource CaptionTextBlockStyle}"
+                            Text="Run before and after each command, in the same scope, so what the prepend script defines can be used by commands, and is offered by completion."
+                            TextWrapping="Wrap" />
+                        <TextBox
+                            MinHeight="96"
+                            MaxHeight="200"
+                            AcceptsReturn="True"
+                            FontFamily="{StaticResource MonospaceFontFamily}"
+                            Header="Prepend script"
+                            IsSpellCheckEnabled="False"
+                            PlaceholderText="Import-Module ./build.psm1"
+                            ScrollViewer.VerticalScrollBarVisibility="Auto"
+                            Text="{x:Bind ViewModel.PrependScript, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            TextWrapping="Wrap" />
+                        <TextBox
+                            MinHeight="96"
+                            MaxHeight="200"
+                            AcceptsReturn="True"
+                            FontFamily="{StaticResource MonospaceFontFamily}"
+                            Header="Append script"
+                            IsSpellCheckEnabled="False"
+                            PlaceholderText="Write-Host &quot;Exit code: $LASTEXITCODE&quot;"
+                            ScrollViewer.VerticalScrollBarVisibility="Auto"
+                            Text="{x:Bind ViewModel.AppendScript, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
+        </NavigationView>
+    </Grid>
 </ContentDialog>

@@ -14,6 +14,7 @@ public sealed partial class ProjectDialog : ContentDialog
     {
         ViewModel = viewModel;
         InitializeComponent();
+        PageNavigation.SelectedItem = GeneralPageItem;
         Opened += (_, _) => DisplayNameBox.Focus(FocusState.Programmatic);
     }
 
