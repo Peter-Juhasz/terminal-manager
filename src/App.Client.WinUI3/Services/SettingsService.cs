@@ -33,5 +33,10 @@ public sealed class SettingsService(IObjectRepository<AppSettings> repository)
         {
             throw new JsonException("The saved theme must be System, Dark, or Light.");
         }
+
+        if (settings.MaxOutputHeight is <= 0)
+        {
+            throw new JsonException("The maximum height of output must be more than zero.");
+        }
     }
 }

@@ -30,6 +30,25 @@
             Header="Wrap long lines of output"
             OffContent="Off, scroll horizontally"
             OnContent="On" />
+        <NumberBox
+            x:Name="MaxOutputHeightBox"
+            Header="Maximum height of output (pixels)"
+            Minimum="40"
+            PlaceholderText="No limit"
+            SmallChange="50"
+            LargeChange="200"
+            SpinButtonPlacementMode="Compact" />
+        <TextBlock
+            Margin="0,-8,0,0"
+            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+            Style="{ThemeResource CaptionTextBlockStyle}"
+            Text="Longer output scrolls, and follows what is written last unless you scroll up. Leave it empty for no limit."
+            TextWrapping="Wrap" />
+        <ToggleSwitch
+            x:Name="ConfirmTemplateScriptsSwitch"
+            Header="Review script templates before running"
+            OffContent="Off"
+            OnContent="On, show the filled in command to confirm" />
         <InfoBar
             x:Name="SaveError"
             IsClosable="False"

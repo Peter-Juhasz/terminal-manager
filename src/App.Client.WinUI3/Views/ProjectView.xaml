@@ -124,7 +124,7 @@
                         Grid.Row="2"
                         Padding="14,10,14,6"
                         Spacing="8">
-                        <!--  Scrolled horizontally only when long lines aren't wrapped, as set by the view.  -->
+                        <!--  Scrolled horizontally only when long lines aren't wrapped, and vertically only when its height is limited, as set by the view.  -->
                         <ScrollViewer
                             x:Name="OutputScroller"
                             HorizontalScrollBarVisibility="Disabled"
@@ -138,6 +138,7 @@
                                 FontFamily="{StaticResource MonospaceFontFamily}"
                                 FontSize="13"
                                 IsTextSelectionEnabled="True"
+                                SizeChanged="OnOutputTextSizeChanged"
                                 TextWrapping="Wrap" />
                         </ScrollViewer>
 

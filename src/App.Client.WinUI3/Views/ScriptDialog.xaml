@@ -30,7 +30,7 @@
             TextWrapping="Wrap" />
 
         <CheckBox IsChecked="{x:Bind ViewModel.IsTemplate, Mode=TwoWay}">
-            <TextBlock Text="Template: ask for the values of the variables written as {{ name }} each time it is run." TextWrapping="Wrap" />
+            <TextBlock Text="Expand template variables" TextWrapping="Wrap" />
         </CheckBox>
     </StackPanel>
 </ContentDialog>

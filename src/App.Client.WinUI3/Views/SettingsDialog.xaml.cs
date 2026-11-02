@@ -15,6 +15,8 @@ public sealed partial class SettingsDialog : ContentDialog
         InitializeComponent();
         ThemeBox.SelectedIndex = (int)settingsService.Settings.Theme;
         WrapOutputSwitch.IsOn = settingsService.Settings.WrapOutput;
+        MaxOutputHeightBox.Value = settingsService.Settings.MaxOutputHeight ?? double.NaN;
+        ConfirmTemplateScriptsSwitch.IsOn = settingsService.Settings.ConfirmTemplateScripts;
     }
 
     private async void OnSaveClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
@@ -29,6 +31,10 @@ public sealed partial class SettingsDialog : ContentDialog
             {
                 Theme = (AppTheme)ThemeBox.SelectedIndex,
                 WrapOutput = WrapOutputSwitch.IsOn,
+                ConfirmTemplateScripts = ConfirmTemplateScriptsSwitch.IsOn,
+
+                // an empty box is NaN
+                MaxOutputHeight = double.IsNaN(MaxOutputHeightBox.Value) ? null : (int)Math.Round(MaxOutputHeightBox.Value),
             });
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)

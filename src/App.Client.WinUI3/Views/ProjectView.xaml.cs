@@ -94,12 +94,43 @@ public sealed partial class ProjectView : UserControl
         }
     }
 
-    // The setting and the search are out of reach of the template.
+    public static readonly DependencyProperty MaxOutputHeightProperty = DependencyProperty.Register(
+        nameof(MaxOutputHeight),
+        typeof(double),
+        typeof(ProjectView),
+        new PropertyMetadata(double.PositiveInfinity, OnMaxOutputHeightChanged));
+
+    /// <summary>How tall the output of a command grows before it is scrolled, following what is written last; infinity for as tall as it is.</summary>
+    public double MaxOutputHeight
+    {
+        get => (double)GetValue(MaxOutputHeightProperty);
+        set => SetValue(MaxOutputHeightProperty, value);
+    }
+
+    private static void OnMaxOutputHeightChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
+    {
+        var view = (ProjectView)sender;
+
+        // the entries laid out already; the others get it when they are prepared
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(view.HistoryRepeater); i++)
+        {
+            if (VisualTreeHelper.GetChild(view.HistoryRepeater, i) is FrameworkElement element)
+            {
+                view.ApplyMaxOutputHeight(element);
+            }
+        }
+    }
+
+    /// <summary>Whether the command of a script template, with its variables filled in, is shown to be confirmed before it is run.</summary>
+    public bool ConfirmTemplateScripts { get; set; }
+
+    // The settings and the search are out of reach of the template.
     private void OnEntryElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
     {
         if (args.Element is FrameworkElement element)
         {
             ApplyWrapOutput(element);
+            ApplyMaxOutputHeight(element);
             ApplySearchQuery(element);
         }
     }
@@ -174,6 +205,41 @@ public sealed partial class ProjectView : UserControl
         scroller.HorizontalScrollMode = WrapOutput ? ScrollMode.Disabled : ScrollMode.Enabled;
         scroller.HorizontalScrollBarVisibility = WrapOutput ? ScrollBarVisibility.Disabled : ScrollBarVisibility.Auto;
     }
+
+    private void ApplyMaxOutputHeight(FrameworkElement element)
+    {
+        if (element.FindName("OutputScroller") is not ScrollViewer scroller)
+        {
+            return;
+        }
+
+        var isLimited = double.IsFinite(MaxOutputHeight);
+        scroller.MaxHeight = MaxOutputHeight;
+        scroller.VerticalScrollMode = isLimited ? ScrollMode.Enabled : ScrollMode.Disabled;
+        scroller.VerticalScrollBarVisibility = isLimited ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled;
+
+        // the entry may have been recycled from one scrolled elsewhere
+        ScrollOutputToEnd(scroller);
+    }
+
+    // The output follows what is written last, unless it was scrolled up from the end to read what came before.
+    private void OnOutputTextSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (sender is not FrameworkElement { Parent: ScrollViewer scroller } || !double.IsFinite(MaxOutputHeight))
+        {
+            return;
+        }
+
+        var wasAtEnd = scroller.VerticalOffset >= e.PreviousSize.Height - scroller.ViewportHeight - 1;
+        if (wasAtEnd)
+        {
+            ScrollOutputToEnd(scroller);
+        }
+    }
+
+    // Deferred, so the scroller is laid out with the output as it is now first.
+    private void ScrollOutputToEnd(ScrollViewer scroller) => DispatcherQueue.TryEnqueue(() =>
+        scroller.ChangeView(null, scroller.ScrollableHeight, null, disableAnimation: true));
 
     private void OnCommandStarted(object? sender, CommandEntryViewModel e) => ScrollToEnd();
 
@@ -254,18 +320,52 @@ public sealed partial class ProjectView : UserControl
         }
 
         var viewModel = new ScriptTemplateViewModel(script, primaryButtonText);
-        if (viewModel.Variables is [])
+        if (viewModel.Variables is not [])
         {
-            return viewModel.Build();
+            var dialog = new ScriptTemplateDialog(viewModel) { XamlRoot = XamlRoot };
+            if (await Dialogs.ShowAsync(dialog) is not ContentDialogResult.Primary || cancellationToken.IsCancellationRequested)
+            {
+                return null;
+            }
         }
 
-        var dialog = new ScriptTemplateDialog(viewModel) { XamlRoot = XamlRoot };
-        if (await Dialogs.ShowAsync(dialog) is not ContentDialogResult.Primary || cancellationToken.IsCancellationRequested)
+        var expanded = viewModel.Build();
+        if (!ConfirmTemplateScripts)
         {
-            return null;
+            return expanded;
         }
 
-        return viewModel.Build();
+        return await ConfirmScriptAsync(expanded, primaryButtonText, cancellationToken) ? expanded : null;
+    }
+
+    /// <summary>Shows the command of <paramref name="script"/> as it is going to be run, and returns whether it is confirmed.</summary>
+    private async Task<bool> ConfirmScriptAsync(SavedScript script, string primaryButtonText, CancellationToken cancellationToken)
+    {
+        var command = new TextBox
+        {
+            Header = "Review the command before it is run",
+            Text = script.Command,
+            IsReadOnly = true,
+            AcceptsReturn = true,
+            TextWrapping = TextWrapping.Wrap,
+            FontFamily = (FontFamily)Application.Current.Resources["MonospaceFontFamily"],
+            MinWidth = 440,
+            MinHeight = 96,
+            MaxHeight = 400,
+        };
+        ScrollViewer.SetVerticalScrollBarVisibility(command, ScrollBarVisibility.Auto);
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"],
+            Title = script.Name,
+            Content = command,
+            PrimaryButtonText = primaryButtonText,
+            CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Primary,
+        };
+        return await Dialogs.ShowAsync(dialog) is ContentDialogResult.Primary && !cancellationToken.IsCancellationRequested;
     }
 
     private void OnScriptMoreClick(object sender, RoutedEventArgs e)
