@@ -11,6 +11,8 @@
   <ItemGroup>
     <Compile Include="$(AppDirectory)Controls\OutputRunBuilder.cs" Link="App\Controls\OutputRunBuilder.cs" />
     <Compile Include="$(AppDirectory)Models\CmdProject.cs" Link="App\Models\CmdProject.cs" />
+    <Compile Include="$(AppDirectory)Models\DeveloperCmdProject.cs" Link="App\Models\DeveloperCmdProject.cs" />
+    <Compile Include="$(AppDirectory)Models\VisualStudioEnvironment.cs" Link="App\Models\VisualStudioEnvironment.cs" />
     <Compile Include="$(AppDirectory)Models\AppJsonSerializerContext.cs" Link="App\Models\AppJsonSerializerContext.cs" />
     <Compile Include="$(AppDirectory)Models\AppSettings.cs" Link="App\Models\AppSettings.cs" />
     <Compile Include="$(AppDirectory)Models\AppTheme.cs" Link="App\Models\AppTheme.cs" />

@@ -4,10 +4,13 @@ using System.Text.Json.Serialization;
 namespace App.Client.WinUI3.Models;
 
 /// <summary>
-/// A project whose commands are run by the Command Prompt (cmd).
+/// A project whose commands are run by the Command Prompt (cmd), or in the developer environment of Visual Studio for <see cref="DeveloperCmdProject"/>.
 /// </summary>
-public sealed record class CmdProject : Project
+public record class CmdProject : Project
 {
+    /// <summary>What is run before each command, ending with an <c>&amp;</c>; the code page is switched, as the output is read as UTF-8.</summary>
+    private protected virtual string Prelude => "chcp 65001 >nul & ";
+
     [JsonIgnore]
     public override string TerminalDisplayName => "Command Prompt";
 
@@ -20,10 +23,10 @@ public sealed record class CmdProject : Project
 
         // The command line is built by hand, as cmd doesn't unescape quotes the way ArgumentList escapes them.
         // With /s, only the outermost quotes are stripped, so the command reaches cmd as it was typed.
-        // The code page is switched first, as the output is read as UTF-8; AutoRun commands are skipped by /d.
+        // AutoRun commands are skipped by /d.
         return new ProcessStartInfo("cmd")
         {
-            Arguments = $"/d /s /c \"chcp 65001 >nul & {command}\"",
+            Arguments = $"/d /s /c \"{Prelude}{command}\"",
         };
     }
 }

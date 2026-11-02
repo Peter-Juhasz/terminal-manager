@@ -31,5 +31,11 @@ public sealed record class ProjectKind(string DisplayName, Func<Guid, string, st
             DisplayName = displayName,
             WorkingFolder = workingFolder,
         }),
+        new("Developer Command Prompt for VS (cmd)", static (id, displayName, workingFolder) => new DeveloperCmdProject
+        {
+            Id = id,
+            DisplayName = displayName,
+            WorkingFolder = workingFolder,
+        }),
     ];
 }

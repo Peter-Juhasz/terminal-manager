@@ -135,6 +135,48 @@ public sealed class CommandRunnerTests(TestContext testContext)
         Assert.AreEqual(string.Empty, result.Error);
     }
 
+    // Needs Visual Studio or its Build Tools, so it is skipped where neither is installed.
+    [TestMethod]
+    public async Task RunAsyncRunsInDeveloperCommandPrompt()
+    {
+        if (!File.Exists(Environment.ExpandEnvironmentVariables(@"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe")))
+        {
+            Assert.Inconclusive("Visual Studio isn't installed.");
+        }
+
+        var project = new DeveloperCmdProject
+        {
+            Id = Guid.NewGuid(),
+            DisplayName = "Test",
+            WorkingFolder = Path.GetTempPath(),
+        };
+
+        var result = await RunAsync(project, "if defined VSINSTALLDIR (echo yes) & cd & exit /b 3");
+
+        Assert.AreEqual(3, result.ExitCode);
+        Assert.AreEqual($"yes\r\n{Path.TrimEndingDirectorySeparator(Path.GetTempPath())}\r\n", result.Output);
+        Assert.AreEqual(string.Empty, result.Error);
+    }
+
+    // Where vswhere can't be found, the command isn't run outside the developer environment.
+    [TestMethod]
+    public async Task RunAsyncFailsWithoutVisualStudio()
+    {
+        var project = new DeveloperCmdProject
+        {
+            Id = Guid.NewGuid(),
+            DisplayName = "Test",
+            WorkingFolder = Path.GetTempPath(),
+            EnvironmentVariables = new Dictionary<string, string> { ["ProgramFiles(x86)"] = @"C:\nowhere" },
+        };
+
+        var result = await RunAsync(project, "echo ran");
+
+        Assert.AreEqual(1, result.ExitCode);
+        Assert.AreEqual(string.Empty, result.Output);
+        Assert.AreEqual("Visual Studio was not found.\r\n", result.Error);
+    }
+
     private async Task<CommandResult> RunWithFileAsync(string command, byte[] file)
     {
         var folder = Directory.CreateTempSubdirectory();

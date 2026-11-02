@@ -66,6 +66,17 @@ public sealed class ProjectSerializationTests
     }
 
     [TestMethod]
+    public void DeveloperCmdRoundTrips()
+    {
+        var project = new DeveloperCmdProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\" };
+
+        var json = JsonSerializer.Serialize<Project>(project, AppJsonSerializerContext.Default.Project);
+
+        Assert.Contains("\"$type\": \"devcmd\"", json);
+        Assert.IsInstanceOfType<DeveloperCmdProject>(JsonSerializer.Deserialize(json, AppJsonSerializerContext.Default.Project));
+    }
+
+    [TestMethod]
     public void WrapPutsScriptsOnLinesOfTheirOwn()
     {
         var project = new PowerShellProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\", PrependScript = "$a = 1", AppendScript = "$b = 2" };
