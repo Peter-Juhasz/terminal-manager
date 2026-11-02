@@ -13,6 +13,7 @@ public sealed partial class SettingsDialog : ContentDialog
     {
         _settingsService = settingsService;
         InitializeComponent();
+        PageNavigation.SelectedItem = ViewPageItem;
         ThemeBox.SelectedIndex = (int)settingsService.Settings.Theme;
         WrapOutputSwitch.IsOn = settingsService.Settings.WrapOutput;
         MaxOutputHeightBox.Value = settingsService.Settings.MaxOutputHeight ?? double.NaN;

@@ -10,49 +10,106 @@
     PrimaryButtonText="Save"
     Style="{StaticResource DefaultContentDialogStyle}">
 
-    <StackPanel MinWidth="320" Spacing="16">
-        <ComboBox
-            x:Name="ThemeBox"
-            HorizontalAlignment="Stretch"
-            Header="Theme">
-            <!-- In the order of the AppTheme enum. -->
-            <ComboBoxItem Content="Use system setting" />
-            <ComboBoxItem Content="Dark" />
-            <ComboBoxItem Content="Light" />
-        </ComboBox>
-        <TextBlock
-            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-            Style="{ThemeResource CaptionTextBlockStyle}"
-            Text="The theme applies to the whole app as soon as you save."
-            TextWrapping="Wrap" />
-        <ToggleSwitch
-            x:Name="WrapOutputSwitch"
-            Header="Wrap long lines of output"
-            OffContent="Off, scroll horizontally"
-            OnContent="On" />
-        <NumberBox
-            x:Name="MaxOutputHeightBox"
-            Header="Maximum height of output (pixels)"
-            Minimum="40"
-            PlaceholderText="No limit"
-            SmallChange="50"
-            LargeChange="200"
-            SpinButtonPlacementMode="Compact" />
-        <TextBlock
-            Margin="0,-8,0,0"
-            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-            Style="{ThemeResource CaptionTextBlockStyle}"
-            Text="Longer output scrolls, and follows what is written last unless you scroll up. Leave it empty for no limit."
-            TextWrapping="Wrap" />
-        <ToggleSwitch
-            x:Name="ConfirmTemplateScriptsSwitch"
-            Header="Review script templates before running"
-            OffContent="Off"
-            OnContent="On, show the filled in command to confirm" />
+    <ContentDialog.Resources>
+        <!-- Wide enough for the navigation pane next to the page. -->
+        <x:Double x:Key="ContentDialogMaxWidth">800</x:Double>
+    </ContentDialog.Resources>
+
+    <Grid Width="640" RowSpacing="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!--
+            Asks for the height the pages are shown at, but gives way to a window too short for it, where the pane and the page
+            then each scroll on their own, rather than the dialog as a whole.
+        -->
+        <Border Height="320" />
+
+        <!-- The selected page is set in code. -->
+        <NavigationView
+            x:Name="PageNavigation"
+            IsBackButtonVisible="Collapsed"
+            IsPaneToggleButtonVisible="False"
+            IsSettingsVisible="False"
+            OpenPaneLength="200"
+            PaneDisplayMode="Left">
+            <NavigationView.Resources>
+                <!-- The dialog is the surface, so the page doesn't need a layer of its own. -->
+                <SolidColorBrush x:Key="NavigationViewContentBackground" Color="Transparent" />
+                <Thickness x:Key="NavigationViewContentGridBorderThickness">0</Thickness>
+                <Thickness x:Key="NavigationViewContentMargin">0</Thickness>
+            </NavigationView.Resources>
+
+            <NavigationView.MenuItems>
+                <NavigationViewItem x:Name="ViewPageItem" Content="View">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="ViewAll" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Name="SavedScriptsPageItem" Content="Saved scripts">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Save" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+
+            <ScrollViewer Margin="24,0,0,0" Padding="0,0,16,0">
+                <Grid>
+                    <StackPanel Spacing="16" Visibility="{x:Bind ViewPageItem.IsSelected, Mode=OneWay}">
+                        <ComboBox
+                            x:Name="ThemeBox"
+                            HorizontalAlignment="Stretch"
+                            Header="Theme">
+                            <!-- In the order of the AppTheme enum. -->
+                            <ComboBoxItem Content="Use system setting" />
+                            <ComboBoxItem Content="Dark" />
+                            <ComboBoxItem Content="Light" />
+                        </ComboBox>
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{ThemeResource CaptionTextBlockStyle}"
+                            Text="The theme applies to the whole app as soon as you save."
+                            TextWrapping="Wrap" />
+                        <ToggleSwitch
+                            x:Name="WrapOutputSwitch"
+                            Header="Wrap long lines of output"
+                            OffContent="Off, scroll horizontally"
+                            OnContent="On" />
+                        <NumberBox
+                            x:Name="MaxOutputHeightBox"
+                            Header="Maximum height of output (pixels)"
+                            Minimum="40"
+                            PlaceholderText="No limit"
+                            SmallChange="50"
+                            LargeChange="200"
+                            SpinButtonPlacementMode="Compact" />
+                        <TextBlock
+                            Margin="0,-8,0,0"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{ThemeResource CaptionTextBlockStyle}"
+                            Text="Longer output scrolls, and follows what is written last unless you scroll up. Leave it empty for no limit."
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="16" Visibility="{x:Bind SavedScriptsPageItem.IsSelected, Mode=OneWay}">
+                        <ToggleSwitch
+                            x:Name="ConfirmTemplateScriptsSwitch"
+                            Header="Review script templates before running"
+                            OffContent="Off"
+                            OnContent="On, show the filled in command to confirm" />
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
+        </NavigationView>
+
+        <!-- Outside the pages, so it is seen from either one. -->
         <InfoBar
             x:Name="SaveError"
+            Grid.Row="1"
             IsClosable="False"
             Severity="Error"
             Title="Couldn't save settings" />
-    </StackPanel>
+    </Grid>
 </ContentDialog>
