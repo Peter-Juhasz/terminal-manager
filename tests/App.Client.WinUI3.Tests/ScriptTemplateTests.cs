@@ -10,7 +10,33 @@ public sealed class ScriptTemplateTests
     {
         var variables = ScriptTemplate.GetVariables("git checkout {{ branch }} && git push {{remote}} {{  branch  }} {{ Branch }} {{ }} {{ two words }}");
 
-        Assert.AreSequenceEqual(["branch", "remote", "Branch", "two words"], variables);
+        Assert.AreSequenceEqual(["branch", "remote", "Branch", "two words"], variables.Select(variable => variable.Name));
+    }
+
+    [TestMethod]
+    public void TakesFirstDefaultValue()
+    {
+        var variables = ScriptTemplate.GetVariables("{{ a }} {{ a = 1 }} {{a=2}} {{ b= x = y }} {{ c = }} {{ d }} {{ = e }}");
+
+        Assert.AreSequenceEqual(
+            [
+                new TemplateVariable(Name: "a", DefaultValue: "1"),
+                new TemplateVariable(Name: "b", DefaultValue: "x = y"),
+                new TemplateVariable(Name: "c", DefaultValue: ""),
+                new TemplateVariable(Name: "d", DefaultValue: null),
+            ],
+            variables);
+    }
+
+    [TestMethod]
+    public void ExpandsOccurrencesWithDefaultValue()
+    {
+        var command = ScriptTemplate.Expand("echo {{ a = 1 }} {{ a }} {{ b = 2 }}", new Dictionary<string, string>
+        {
+            ["a"] = "3",
+        });
+
+        Assert.AreEqual("echo 3 3 {{ b = 2 }}", command);
     }
 
     [TestMethod]

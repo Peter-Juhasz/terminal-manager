@@ -18,7 +18,7 @@ public sealed class ScriptTemplateViewModel
 
         _script = script;
         PrimaryButtonText = primaryButtonText;
-        Variables = [.. ScriptTemplate.GetVariables(script.Command).Select(name => new TemplateVariableViewModel(name))];
+        Variables = [.. ScriptTemplate.GetVariables(script.Command).Select(variable => new TemplateVariableViewModel(variable.Name) { Value = variable.DefaultValue ?? string.Empty })];
     }
 
     public string Title => _script.Name;

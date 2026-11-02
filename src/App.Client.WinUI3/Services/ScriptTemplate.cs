@@ -3,33 +3,42 @@ using System.Text.RegularExpressions;
 namespace App.Client.WinUI3.Services;
 
 /// <summary>
-/// Expands the variables of a script template, each written as <c>{{ name }}</c>.
+/// Expands the variables of a script template, each written as <c>{{ name }}</c>, or <c>{{ name = value }}</c> to give it a default value.
 /// </summary>
 /// <remarks>
-/// Spaces around a name are not part of it. Names are told apart by case, and an empty one is not a variable.
+/// Spaces around a name or a default value are not part of it. Names are told apart by case, and an empty one is not a variable.
 /// </remarks>
 public static partial class ScriptTemplate
 {
-    [GeneratedRegex(@"\{\{\s*([^{}\s](?:[^{}]*[^{}\s])?)\s*\}\}")]
+    [GeneratedRegex(@"\{\{\s*([^{}=\s](?:[^{}=]*[^{}=\s])?)\s*(?:=\s*([^{}]*?)\s*)?\}\}")]
     private static partial Regex VariableRegex();
 
-    /// <summary>The names of the variables in <paramref name="template"/>, each once, in the order they first appear.</summary>
-    public static IReadOnlyList<string> GetVariables(string template)
+    /// <summary>The variables in <paramref name="template"/>, each once, in the order they first appear.</summary>
+    /// <remarks>A variable given more than one default value takes the first.</remarks>
+    public static IReadOnlyList<TemplateVariable> GetVariables(string template)
     {
         ArgumentNullException.ThrowIfNull(template);
 
-        var names = new List<string>();
-        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var variables = new List<TemplateVariable>();
+        var indexes = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (Match match in VariableRegex().Matches(template))
         {
             var name = match.Groups[1].Value;
-            if (seen.Add(name))
+            string? defaultValue = match.Groups[2] is { Success: true } group ? group.Value : null;
+            if (!indexes.TryGetValue(name, out var index))
             {
-                names.Add(name);
+                indexes.Add(name, variables.Count);
+                variables.Add(new(Name: name, DefaultValue: defaultValue));
+                continue;
+            }
+
+            if (variables[index] is { DefaultValue: null } && defaultValue is not null)
+            {
+                variables[index] = variables[index] with { DefaultValue = defaultValue };
             }
         }
 
-        return names;
+        return variables;
     }
 
     /// <summary>Replaces each variable in <paramref name="template"/> by its value in <paramref name="values"/>; those without one are left as they are.</summary>
@@ -42,3 +51,7 @@ public static partial class ScriptTemplate
             values.TryGetValue(match.Groups[1].Value, out var value) ? value : match.Value);
     }
 }
+
+/// <summary>A variable of a script template.</summary>
+/// <param name="DefaultValue">The value filled in to begin with, if the template gives one.</param>
+public sealed record TemplateVariable(string Name, string? DefaultValue);
