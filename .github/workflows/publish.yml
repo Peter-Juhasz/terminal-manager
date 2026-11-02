@@ -1,0 +1,43 @@
+name: Publish
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Publish (${{ matrix.rid }})
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: win-x64
+            platform: x64
+          - rid: win-arm64
+            platform: ARM64
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish
+        run: >
+          dotnet publish src/App.Client.WinUI3/App.Client.WinUI3.csproj
+          --configuration Release
+          --runtime ${{ matrix.rid }}
+          --self-contained
+          -p:Platform=${{ matrix.platform }}
+          --output publish/${{ matrix.rid }}
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: terminal-manager-${{ matrix.rid }}
+          path: publish/${{ matrix.rid }}
+          if-no-files-found: error
