@@ -456,6 +456,18 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     [RelayCommand(CanExecute = nameof(CanClearUnpinned))]
     private void ClearUnpinned() => Remove(static entry => entry is { IsRunning: false, IsPinned: false });
 
+    /// <summary>Removes <paramref name="entry"/> from the history, once it has ended.</summary>
+    [RelayCommand]
+    private void RemoveEntry(CommandEntryViewModel? entry)
+    {
+        if (entry is not { IsRunning: false })
+        {
+            return;
+        }
+
+        Remove(other => other == entry);
+    }
+
     private void Remove(Func<CommandEntryViewModel, bool> predicate)
     {
         foreach (var entry in Entries.Where(predicate).ToList())

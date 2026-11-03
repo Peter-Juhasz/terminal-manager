@@ -104,6 +104,16 @@
                             </Button>
                             <Button
                                 VerticalAlignment="Center"
+                                AutomationProperties.Name="Remove from history"
+                                Click="OnRemoveEntryClick"
+                                Style="{StaticResource IconButtonStyle}"
+                                Tag="{x:Bind}"
+                                ToolTipService.ToolTip="Remove from history"
+                                Visibility="{x:Bind IsCompleted, Mode=OneWay}">
+                                <FontIcon FontSize="12" Glyph="&#xE74D;" />
+                            </Button>
+                            <Button
+                                VerticalAlignment="Center"
                                 AutomationProperties.Name="{x:Bind ExpandToolTip, Mode=OneWay}"
                                 Command="{x:Bind ToggleExpandedCommand}"
                                 Style="{StaticResource IconButtonStyle}"

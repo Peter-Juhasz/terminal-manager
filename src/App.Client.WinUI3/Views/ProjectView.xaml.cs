@@ -524,6 +524,16 @@ public sealed partial class ProjectView : UserControl
         MoveCaretToEnd();
     }
 
+    private void OnRemoveEntryClick(object sender, RoutedEventArgs e)
+    {
+        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not CommandEntryViewModel entry)
+        {
+            return;
+        }
+
+        session.RemoveEntryCommand.Execute(entry);
+    }
+
     private void OnCancelQueuedClick(object sender, RoutedEventArgs e)
     {
         if (Session is not { } session || (sender as FrameworkElement)?.Tag is not QueuedCommand queued)
