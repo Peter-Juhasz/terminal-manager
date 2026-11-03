@@ -159,6 +159,56 @@ public sealed class ProjectSerializationTests
     }
 
     [TestMethod]
+    public void PythonRoundTrips()
+    {
+        var project = new PythonProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\", Arguments = "-X dev", PrependScript = "import json", AppendScript = "print()" };
+
+        var json = JsonSerializer.Serialize<Project>(project, AppJsonSerializerContext.Default.Project);
+
+        Assert.Contains("\"$type\": \"python\"", json);
+        var deserialized = Assert.IsInstanceOfType<PythonProject>(JsonSerializer.Deserialize(json, AppJsonSerializerContext.Default.Project));
+        Assert.AreEqual(project, deserialized with { EnvironmentVariables = project.EnvironmentVariables, Scripts = project.Scripts });
+        Assert.IsInstanceOfType<PythonProject>((InterpreterProject)deserialized with { Arguments = null });
+    }
+
+    [TestMethod]
+    public void NodeRoundTrips()
+    {
+        var project = new NodeProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\", Arguments = "--input-type=module" };
+
+        var json = JsonSerializer.Serialize<Project>(project, AppJsonSerializerContext.Default.Project);
+
+        Assert.Contains("\"$type\": \"node\"", json);
+        var deserialized = Assert.IsInstanceOfType<NodeProject>(JsonSerializer.Deserialize(json, AppJsonSerializerContext.Default.Project));
+        Assert.AreEqual("--input-type=module", deserialized.Arguments);
+    }
+
+    [TestMethod]
+    public void InterpreterPassesCommandOnStandardInput()
+    {
+        var project = new NodeProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\", Arguments = "--input-type=module", PrependScript = "const a = 1;", AppendScript = "console.log(a);" };
+
+        var startInfo = project.CreateStartInfo("let b = 2;");
+
+        Assert.AreEqual("node", startInfo.FileName);
+        Assert.AreEqual("--input-type=module -", startInfo.Arguments);
+        Assert.AreEqual("const a = 1;\nlet b = 2;\nconsole.log(a);", project.CreateStandardInput("let b = 2;"));
+        Assert.AreEqual("-", (project with { Arguments = null }).CreateStartInfo("let b = 2;").Arguments);
+    }
+
+    // The output would be written by the code page of the system, and held back, otherwise.
+    [TestMethod]
+    public void PythonIsRunWithUtf8Unbuffered()
+    {
+        var startInfo = new PythonProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\" }.CreateStartInfo("print()");
+
+        Assert.AreEqual("python", startInfo.FileName);
+        Assert.AreEqual("-", startInfo.Arguments);
+        Assert.AreEqual("1", startInfo.Environment["PYTHONUTF8"]);
+        Assert.AreEqual("1", startInfo.Environment["PYTHONUNBUFFERED"]);
+    }
+
+    [TestMethod]
     public void WrapPutsScriptsOnLinesOfTheirOwn()
     {
         var project = new PowerShellProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\", PrependScript = "$a = 1", AppendScript = "$b = 2" };

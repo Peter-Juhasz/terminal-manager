@@ -49,5 +49,17 @@ public sealed record class ProjectKind(string DisplayName, Func<Guid, string, st
             DisplayName = displayName,
             WorkingFolder = workingFolder,
         }),
+        new("Python (python -)", static (id, displayName, workingFolder) => new PythonProject
+        {
+            Id = id,
+            DisplayName = displayName,
+            WorkingFolder = workingFolder,
+        }),
+        new("Node.js (node -)", static (id, displayName, workingFolder) => new NodeProject
+        {
+            Id = id,
+            DisplayName = displayName,
+            WorkingFolder = workingFolder,
+        }),
     ];
 }

@@ -21,13 +21,7 @@ public sealed record class DotNetFileProject : DotNetRunProject
     public string? AppendScript { get; init; }
 
     /// <summary>The code that is run for <paramref name="command"/>, with <see cref="PrependScript"/> before it and <see cref="AppendScript"/> after it, each on lines of their own.</summary>
-    public string Wrap(string command)
-    {
-        ArgumentNullException.ThrowIfNull(command);
-
-        var prefix = PrependScript is null or "" ? string.Empty : PrependScript + "\n";
-        return AppendScript is null or "" ? prefix + command : prefix + command + "\n" + AppendScript;
-    }
+    public string Wrap(string command) => ScriptWrapping.Wrap(PrependScript, command, AppendScript);
 
     [JsonIgnore]
     public override string TerminalDisplayName => "C# file-based app";

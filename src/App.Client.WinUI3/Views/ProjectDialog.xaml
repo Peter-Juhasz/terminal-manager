@@ -55,7 +55,7 @@
                         <InfoBadge Style="{ThemeResource CriticalIconInfoBadgeStyle}" Visibility="{x:Bind ViewModel.HasEnvironmentVariablesError, Mode=OneWay}" />
                     </NavigationViewItem.InfoBadge>
                 </NavigationViewItem>
-                <!-- Only projects run by PowerShell, or C# file-based apps, have them, and the terminal can't be changed from this page. -->
+                <!-- Only projects run by PowerShell, or whose commands are code, have them, and the terminal can't be changed from this page. -->
                 <NavigationViewItem
                     x:Name="ScriptsPageItem"
                     Content="Prepend and append"
@@ -111,18 +111,18 @@
                                 Visibility="{x:Bind ViewModel.IsWorkingFolderMissing, Mode=OneWay}" />
                         </StackPanel>
 
-                        <!-- Only projects run by dotnet run have them. -->
-                        <StackPanel Spacing="4" Visibility="{x:Bind ViewModel.IsDotNetRun, Mode=OneWay}">
+                        <!-- Only projects run by dotnet run, or by an interpreter, have them. -->
+                        <StackPanel Spacing="4" Visibility="{x:Bind ViewModel.HasArguments, Mode=OneWay}">
                             <TextBox
                                 FontFamily="{StaticResource MonospaceFontFamily}"
-                                Header="Arguments of dotnet run"
+                                Header="{x:Bind ViewModel.ArgumentsHeader, Mode=OneWay}"
                                 IsSpellCheckEnabled="False"
-                                PlaceholderText="--project src/MyApp -c Release"
-                                Text="{x:Bind ViewModel.RunArguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                PlaceholderText="{x:Bind ViewModel.ArgumentsPlaceholder, Mode=OneWay}"
+                                Text="{x:Bind ViewModel.Arguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                             <TextBlock
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                 Style="{ThemeResource CaptionTextBlockStyle}"
-                                Text="{x:Bind ViewModel.RunArgumentsDescription, Mode=OneWay}"
+                                Text="{x:Bind ViewModel.ArgumentsDescription, Mode=OneWay}"
                                 TextWrapping="Wrap" />
                         </StackPanel>
                     </StackPanel>

@@ -277,6 +277,61 @@ public sealed class CommandRunnerTests(TestContext testContext)
         Assert.AreEqual("command\r\nafter\r\n", result.Output);
     }
 
+    // Needs Python, so it is skipped where it isn't installed.
+    [TestMethod]
+    public async Task RunAsyncRunsPython()
+    {
+        if (!IsOnPath("python"))
+        {
+            Assert.Inconclusive("Python isn't installed.");
+        }
+
+        var project = new PythonProject
+        {
+            Id = Guid.NewGuid(),
+            DisplayName = "Test",
+            WorkingFolder = Path.GetTempPath(),
+            PrependScript = "import sys",
+            AppendScript = "sys.exit(3)",
+        };
+
+        var result = await RunAsync(project, "print('aé€')");
+
+        Assert.AreEqual(3, result.ExitCode, result.Output + result.Error);
+        Assert.AreEqual("aé€\r\n", result.Output);
+    }
+
+    // Needs Node.js, so it is skipped where it isn't installed.
+    [TestMethod]
+    public async Task RunAsyncRunsNode()
+    {
+        if (!IsOnPath("node"))
+        {
+            Assert.Inconclusive("Node.js isn't installed.");
+        }
+
+        var project = new NodeProject
+        {
+            Id = Guid.NewGuid(),
+            DisplayName = "Test",
+            WorkingFolder = Path.GetTempPath(),
+            PrependScript = "const text = 'aé€';",
+            AppendScript = "process.exitCode = 3;",
+        };
+
+        var result = await RunAsync(project, "console.log(text);");
+
+        Assert.AreEqual(3, result.ExitCode, result.Output + result.Error);
+        Assert.AreEqual("aé€\n", result.Output);
+    }
+
+    // The python in WindowsApps only offers to install it from the Store, so it isn't taken for it.
+    private static bool IsOnPath(string name) =>
+        (Environment.GetEnvironmentVariable("PATH") ?? string.Empty)
+            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
+            .Where(static folder => !folder.Contains(@"\WindowsApps", StringComparison.OrdinalIgnoreCase))
+            .Any(folder => File.Exists(Path.Combine(folder, name + ".exe")));
+
     private sealed record class StandardInputProject : CmdProject
     {
         public required string Input { get; init; }
