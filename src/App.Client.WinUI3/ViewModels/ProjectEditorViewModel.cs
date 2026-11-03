@@ -32,6 +32,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         DisplayName = project.DisplayName;
         WorkingFolder = project.WorkingFolder;
         LoadEnvFile = project.LoadEnvFile;
+        PersistHistory = project.PersistHistory;
         foreach (var (name, value) in project.EnvironmentVariables ?? ReadOnlyDictionary<string, string>.Empty)
         {
             EnvironmentVariables.Add(new(Remove) { Name = name, Value = value });
@@ -162,6 +163,10 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     [ObservableProperty]
     public partial bool LoadEnvFile { get; set; }
 
+    /// <summary>Whether the commands that were run, with what they wrote, are saved, and shown again after the app is started.</summary>
+    [ObservableProperty]
+    public partial bool PersistHistory { get; set; }
+
     /// <summary>Why the environment variables can't be saved, or <see langword="null"/> when they can.</summary>
     public string? EnvironmentVariablesError
     {
@@ -232,8 +237,8 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         };
         var built = _project switch
         {
-            null => Kind.Create(Guid.NewGuid(), DisplayName.Trim(), WorkingFolder.Trim()) with { EnvironmentVariables = environmentVariables, LoadEnvFile = LoadEnvFile },
-            { } project => project with { DisplayName = DisplayName.Trim(), WorkingFolder = WorkingFolder.Trim(), EnvironmentVariables = environmentVariables, LoadEnvFile = LoadEnvFile },
+            null => Kind.Create(Guid.NewGuid(), DisplayName.Trim(), WorkingFolder.Trim()) with { EnvironmentVariables = environmentVariables, LoadEnvFile = LoadEnvFile, PersistHistory = PersistHistory },
+            { } project => project with { DisplayName = DisplayName.Trim(), WorkingFolder = WorkingFolder.Trim(), EnvironmentVariables = environmentVariables, LoadEnvFile = LoadEnvFile, PersistHistory = PersistHistory },
         };
 
         // a script of only blank lines would still move what is typed down in the script that is run

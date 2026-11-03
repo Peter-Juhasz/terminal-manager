@@ -1,4 +1,5 @@
 using System.Globalization;
+using App.Client.WinUI3.Models;
 using App.Client.WinUI3.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -21,7 +22,33 @@ public sealed partial class CommandEntryViewModel(string command, bool isElevate
     public bool IsElevated { get; } = isElevated;
 
     /// <summary>When the command was started.</summary>
-    public DateTimeOffset StartedAt { get; } = DateTimeOffset.Now;
+    public DateTimeOffset StartedAt { get; private init; } = DateTimeOffset.Now;
+
+    /// <summary>Shows a command run before the app was started, as it ended; it can only be run again.</summary>
+    public static CommandEntryViewModel Restore(HistoryEntry saved, Func<Task> rerun)
+    {
+        ArgumentNullException.ThrowIfNull(saved);
+
+        var entry = new CommandEntryViewModel(saved.Command, saved.IsElevated, static () => { }, rerun)
+        {
+            StartedAt = saved.StartedAt,
+            IsPinned = saved.IsPinned,
+        };
+        entry.AppendOutput(saved.Output ?? []);
+        entry.Complete(saved.ExitCode, saved.WasStopped, saved.Duration);
+        return entry;
+    }
+
+    /// <summary>The command as it is saved, once it has ended.</summary>
+    public HistoryEntry ToHistoryEntry() => new(
+        Command: Command,
+        IsElevated: IsElevated,
+        StartedAt: StartedAt,
+        Output: Output.IsEmpty ? null : Output.Chunks.ToArray(),
+        ExitCode: ExitCode,
+        WasStopped: WasStopped,
+        Duration: Duration,
+        IsPinned: IsPinned);
 
     public string StartedAtText => StartedAt.ToLocalTime().ToString("T", CultureInfo.CurrentCulture);
 

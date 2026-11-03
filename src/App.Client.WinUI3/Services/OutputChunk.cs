@@ -1,5 +1,9 @@
+using System.Text.Json.Serialization;
+
 namespace App.Client.WinUI3.Services;
 
+// saved by name in the history, so it reads the same if more are added
+[JsonConverter(typeof(JsonStringEnumConverter<OutputStream>))]
 public enum OutputStream
 {
     StandardOutput,

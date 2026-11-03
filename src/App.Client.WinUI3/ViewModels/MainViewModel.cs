@@ -5,12 +5,15 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace App.Client.WinUI3.ViewModels;
 
-public sealed partial class MainViewModel(ProjectStore store, CommandRunner runner, ElevatedCommandRunner elevatedRunner, PowerShellCompleter completer, PowerShellHighlighter highlighter) : ObservableObject
+public sealed partial class MainViewModel(ProjectStore store, HistoryStore history, CommandRunner runner, ElevatedCommandRunner elevatedRunner, PowerShellCompleter completer, PowerShellHighlighter highlighter) : ObservableObject
 {
     public ObservableCollection<ProjectSessionViewModel> Sessions { get; } = [];
 
     [ObservableProperty]
     public partial ProjectSessionViewModel? SelectedSession { get; set; }
+
+    // the history of a project is only read once it is shown
+    partial void OnSelectedSessionChanged(ProjectSessionViewModel? value) => _ = value?.LoadHistoryAsync(CancellationToken.None);
 
     [ObservableProperty]
     public partial bool HasProjects { get; private set; }
@@ -65,7 +68,7 @@ public sealed partial class MainViewModel(ProjectStore store, CommandRunner runn
         var projects = await store.ListAsync(cancellationToken);
         foreach (var project in projects.OrderBy(static project => project.DisplayName, StringComparer.CurrentCultureIgnoreCase))
         {
-            Attach(new ProjectSessionViewModel(project, runner, elevatedRunner, completer, highlighter, store));
+            Attach(new ProjectSessionViewModel(project, runner, elevatedRunner, completer, highlighter, store, history));
         }
 
         HasProjects = Sessions.Count > 0;
@@ -76,7 +79,7 @@ public sealed partial class MainViewModel(ProjectStore store, CommandRunner runn
     {
         await store.AddAsync(project, cancellationToken);
 
-        var session = new ProjectSessionViewModel(project, runner, elevatedRunner, completer, highlighter, store);
+        var session = new ProjectSessionViewModel(project, runner, elevatedRunner, completer, highlighter, store, history);
         Attach(session);
         HasProjects = true;
         SelectedSession = session;
@@ -86,8 +89,15 @@ public sealed partial class MainViewModel(ProjectStore store, CommandRunner runn
     {
         ArgumentNullException.ThrowIfNull(session);
 
+        ArgumentNullException.ThrowIfNull(project);
+
+        var persistedHistory = session.Project.PersistHistory;
         await store.UpdateAsync(project, cancellationToken);
         session.Project = project;
+        if (project.PersistHistory != persistedHistory)
+        {
+            await session.OnPersistHistoryChangedAsync(cancellationToken);
+        }
     }
 
     public async Task DeleteAsync(ProjectSessionViewModel session, CancellationToken cancellationToken)
@@ -95,6 +105,14 @@ public sealed partial class MainViewModel(ProjectStore store, CommandRunner runn
         ArgumentNullException.ThrowIfNull(session);
 
         await store.DeleteAsync(session.Project.Id, cancellationToken);
+        try
+        {
+            await history.DeleteAsync(session.Project.Id, cancellationToken);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // the project is gone either way; its history is only left behind
+        }
 
         session.StopAll();
         var index = Sessions.IndexOf(session);

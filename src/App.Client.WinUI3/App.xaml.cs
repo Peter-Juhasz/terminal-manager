@@ -87,6 +87,13 @@ public partial class App : Application
                 .WithLocking()
                 .AsJsonObjectRepository<AppSettings>(AppJsonSerializerContext.Default.AppSettings)));
 
+        var historyPartition = dataFolder.GetPartition("history");
+        services.AddSingleton(new HistoryStore(projectId =>
+            historyPartition
+                .GetBlob($"{projectId}.json")
+                .WithLocking()
+                .AsJsonObjectRepository<IReadOnlyList<HistoryEntry>>(AppJsonSerializerContext.Default.IReadOnlyListHistoryEntry)));
+
         services.AddSingleton<CommandRunner>();
         services.AddSingleton<ElevatedCommandRunner>();
         services.AddSingleton<PowerShellCompleter>();

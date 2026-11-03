@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Text.Json;
 using App.Client.WinUI3.Models;
 using App.Client.WinUI3.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -9,10 +10,19 @@ using CommunityToolkit.Mvvm.Input;
 namespace App.Client.WinUI3.ViewModels;
 
 /// <summary>
-/// A project, with the commands run in it since the app was started.
+/// A project, with the commands run in it since the app was started, and before it if its history is kept.
 /// </summary>
-public sealed partial class ProjectSessionViewModel(Project project, CommandRunner runner, ElevatedCommandRunner elevatedRunner, PowerShellCompleter completer, PowerShellHighlighter highlighter, ProjectStore store) : ObservableObject
+public sealed partial class ProjectSessionViewModel(Project project, CommandRunner runner, ElevatedCommandRunner elevatedRunner, PowerShellCompleter completer, PowerShellHighlighter highlighter, ProjectStore store, HistoryStore history) : ObservableObject
 {
+    // Reading the saved history, which is started the first time the project is selected; until then it isn't saved either, so it isn't saved over.
+    private Task? _loadingHistory;
+
+    // Whether the saved history couldn't be read, in which case it is left as it is.
+    private bool _isHistoryUnreadable;
+
+    // Saves one at a time, so a later history isn't saved over by an earlier one.
+    private readonly SemaphoreSlim _savingHistory = new(1, 1);
+
     // How often the time spent by the running command is updated.
     private static readonly TimeSpan DurationRefreshInterval = TimeSpan.FromSeconds(1);
 
@@ -214,6 +224,111 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         return store.UpdateAsync(Project, cancellationToken);
     }
 
+    /// <summary>Shows the commands saved to the history of the project, the first time this is called, if its history is kept.</summary>
+    public Task LoadHistoryAsync(CancellationToken cancellationToken) => Project.PersistHistory
+        ? _loadingHistory ??= LoadSavedHistoryAsync(cancellationToken)
+        : Task.CompletedTask;
+
+    // Awaited on the UI thread, so the entries are added on it.
+    private async Task LoadSavedHistoryAsync(CancellationToken cancellationToken)
+    {
+        IReadOnlyList<HistoryEntry> saved;
+        try
+        {
+            saved = await history.LoadAsync(Project.Id, cancellationToken);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        {
+            _isHistoryUnreadable = true;
+            return;
+        }
+
+        // shown before those run while it was read
+        for (var index = 0; index < saved.Count; index++)
+        {
+            var (command, isElevated) = (saved[index].Command, saved[index].IsElevated);
+            var entry = CommandEntryViewModel.Restore(saved[index], () => ExecuteAsync(command, isElevated));
+            entry.PropertyChanged += OnEntryChanged;
+            Entries.Insert(index, entry);
+            if (Project is PowerShellProject powerShell)
+            {
+                _ = HighlightAsync(entry, powerShell);
+            }
+        }
+
+        // recalled before those run while it was read, each only where it was run last
+        var commands = saved.Select(static entry => entry.Command).Concat(_history).ToList();
+        _history.Clear();
+        foreach (var command in commands)
+        {
+            _history.Remove(command);
+            _history.Add(command);
+        }
+
+        _historyIndex = _history.Count;
+
+        HasEntries = Entries.Count > 0;
+        ClearCommand.NotifyCanExecuteChanged();
+        ClearUnpinnedCommand.NotifyCanExecuteChanged();
+    }
+
+    /// <summary>Saves the history as it is when it starts being kept, or deletes it when it no longer is, after <see cref="Project"/> was changed.</summary>
+    public async Task OnPersistHistoryChangedAsync(CancellationToken cancellationToken)
+    {
+        if (Project.PersistHistory)
+        {
+            // as it isn't kept while it is turned off, there is none saved to be shown
+            _loadingHistory ??= Task.CompletedTask;
+            _isHistoryUnreadable = false;
+            await SaveHistoryAsync(cancellationToken);
+            return;
+        }
+
+        _loadingHistory = null;
+        await _savingHistory.WaitAsync(cancellationToken);
+        try
+        {
+            await history.DeleteAsync(Project.Id, cancellationToken);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
+        finally
+        {
+            _savingHistory.Release();
+        }
+    }
+
+    // Saves the commands that have ended, if the history is kept, and the saved one was read first; failing to save it doesn't stop anything else.
+    private async Task SaveHistoryAsync(CancellationToken cancellationToken)
+    {
+        if (!Project.PersistHistory || _loadingHistory is not { } loading)
+        {
+            return;
+        }
+
+        await loading;
+        if (_isHistoryUnreadable)
+        {
+            return;
+        }
+
+        await _savingHistory.WaitAsync(cancellationToken);
+        try
+        {
+            // taken once it is its turn, so it is the latest
+            var entries = Entries.Where(static entry => !entry.IsRunning).Select(static entry => entry.ToHistoryEntry()).ToArray();
+            await history.SaveAsync(Project.Id, entries, cancellationToken);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
+        finally
+        {
+            _savingHistory.Release();
+        }
+    }
+
     private async Task ExecuteAsync(string command, bool isElevated)
     {
         _history.Remove(command);
@@ -275,6 +390,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
             _running.Remove(entry);
             UpdateRunning();
             CommandCompleted?.Invoke(this, entry);
+            _ = SaveHistoryAsync(CancellationToken.None);
             RunNextQueued();
         }
     }
@@ -351,6 +467,9 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         HasEntries = Entries.Count > 0;
         ClearCommand.NotifyCanExecuteChanged();
         ClearUnpinnedCommand.NotifyCanExecuteChanged();
+
+        // so those cleared aren't shown again
+        _ = SaveHistoryAsync(CancellationToken.None);
     }
 
     private void OnEntryChanged(object? sender, PropertyChangedEventArgs e)
@@ -358,6 +477,12 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         if (e.PropertyName is nameof(CommandEntryViewModel.IsPinned))
         {
             ClearUnpinnedCommand.NotifyCanExecuteChanged();
+
+            // one still running is saved as pinned once it ends
+            if (sender is CommandEntryViewModel { IsRunning: false })
+            {
+                _ = SaveHistoryAsync(CancellationToken.None);
+            }
         }
     }
 

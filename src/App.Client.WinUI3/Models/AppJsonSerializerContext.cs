@@ -9,4 +9,5 @@ namespace App.Client.WinUI3.Models;
 [JsonSerializable(typeof(Project))]
 [JsonSerializable(typeof(IReadOnlyCollection<Project>))]
 [JsonSerializable(typeof(AppSettings))]
+[JsonSerializable(typeof(IReadOnlyList<HistoryEntry>))]
 public sealed partial class AppJsonSerializerContext : JsonSerializerContext;

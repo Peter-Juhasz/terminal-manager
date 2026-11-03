@@ -22,6 +22,7 @@
     <Compile Include="$(AppDirectory)Models\AppJsonSerializerContext.cs" Link="App\Models\AppJsonSerializerContext.cs" />
     <Compile Include="$(AppDirectory)Models\AppSettings.cs" Link="App\Models\AppSettings.cs" />
     <Compile Include="$(AppDirectory)Models\AppTheme.cs" Link="App\Models\AppTheme.cs" />
+    <Compile Include="$(AppDirectory)Models\HistoryEntry.cs" Link="App\Models\HistoryEntry.cs" />
     <Compile Include="$(AppDirectory)Models\PowerShellProject.cs" Link="App\Models\PowerShellProject.cs" />
     <Compile Include="$(AppDirectory)Models\WindowsPowerShellProject.cs" Link="App\Models\WindowsPowerShellProject.cs" />
     <Compile Include="$(AppDirectory)Models\DeveloperPowerShellProject.cs" Link="App\Models\DeveloperPowerShellProject.cs" />

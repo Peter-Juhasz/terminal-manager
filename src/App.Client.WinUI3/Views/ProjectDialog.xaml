@@ -125,6 +125,17 @@
                                 Text="{x:Bind ViewModel.ArgumentsDescription, Mode=OneWay}"
                                 TextWrapping="Wrap" />
                         </StackPanel>
+
+                        <StackPanel Spacing="4">
+                            <CheckBox IsChecked="{x:Bind ViewModel.PersistHistory, Mode=TwoWay}">
+                                <TextBlock Text="Keep history" TextWrapping="Wrap" />
+                            </CheckBox>
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{ThemeResource CaptionTextBlockStyle}"
+                                Text="The commands that were run, with what they wrote, are saved, and shown again after the app is started."
+                                TextWrapping="Wrap" />
+                        </StackPanel>
                     </StackPanel>
 
                     <StackPanel Spacing="8" Visibility="{x:Bind EnvironmentVariablesPageItem.IsSelected, Mode=OneWay}">

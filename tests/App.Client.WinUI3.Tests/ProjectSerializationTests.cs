@@ -1,5 +1,6 @@
 using System.Text.Json;
 using App.Client.WinUI3.Models;
+using App.Client.WinUI3.Services;
 
 namespace App.Client.WinUI3.Tests;
 
@@ -236,5 +237,59 @@ public sealed class ProjectSerializationTests
         Assert.IsNotNull(deserialized);
         Assert.AreEqual("1", deserialized.EnvironmentVariables?["DOTNET_CLI_TELEMETRY_OPTOUT"]);
         Assert.IsTrue(deserialized.LoadEnvFile);
+    }
+
+    [TestMethod]
+    public void PersistHistoryRoundTrips()
+    {
+        Project project = new PowerShellProject
+        {
+            Id = Guid.NewGuid(),
+            DisplayName = "A",
+            WorkingFolder = @"C:\",
+            PersistHistory = true,
+        };
+
+        var json = JsonSerializer.Serialize(project, AppJsonSerializerContext.Default.Project);
+        var deserialized = JsonSerializer.Deserialize(json, AppJsonSerializerContext.Default.Project);
+
+        Assert.IsNotNull(deserialized);
+        Assert.IsTrue(deserialized.PersistHistory);
+    }
+
+    [TestMethod]
+    public void HistoryRoundTrips()
+    {
+        IReadOnlyList<HistoryEntry> history =
+        [
+            new(
+                Command: "dir",
+                IsElevated: true,
+                StartedAt: new DateTimeOffset(2026, 11, 3, 10, 0, 0, TimeSpan.FromHours(1)),
+                Output: [new(OutputStream.StandardOutput, "a\n"), new(OutputStream.StandardError, "b\n")],
+                ExitCode: 1,
+                WasStopped: false,
+                Duration: TimeSpan.FromMilliseconds(1234),
+                IsPinned: true),
+            new(
+                Command: "sleep 10",
+                IsElevated: false,
+                StartedAt: DateTimeOffset.UnixEpoch,
+                Output: null,
+                ExitCode: null,
+                WasStopped: true,
+                Duration: TimeSpan.Zero,
+                IsPinned: false),
+        ];
+
+        var json = JsonSerializer.Serialize(history, AppJsonSerializerContext.Default.IReadOnlyListHistoryEntry);
+        var deserialized = JsonSerializer.Deserialize(json, AppJsonSerializerContext.Default.IReadOnlyListHistoryEntry);
+
+        Assert.IsNotNull(deserialized);
+        Assert.Contains("\"standardError\"", json, StringComparison.OrdinalIgnoreCase);
+        Assert.HasCount(2, deserialized);
+        Assert.AreEqual(history[0] with { Output = null }, deserialized[0] with { Output = null });
+        Assert.AreSequenceEqual(history[0].Output!, deserialized[0].Output!);
+        Assert.AreEqual(history[1], deserialized[1]);
     }
 }
