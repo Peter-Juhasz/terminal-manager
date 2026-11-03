@@ -42,6 +42,11 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
             PrependScript = powerShell.PrependScript;
             AppendScript = powerShell.AppendScript;
         }
+
+        if (project is DotNetRunProject dotNetRun)
+        {
+            RunArguments = dotNetRun.RunArguments;
+        }
     }
 
     public bool IsNew => _project is null;
@@ -53,11 +58,17 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     public IReadOnlyList<ProjectKind> Kinds { get; } = ProjectKind.All;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsPowerShell))]
+    [NotifyPropertyChangedFor(nameof(IsPowerShell), nameof(IsDotNetRun))]
     public partial ProjectKind Kind { get; set; }
 
     // the kind is told by what it creates, as that of a project being edited creates the project itself.
     public bool IsPowerShell => Kind.Create(Guid.Empty, string.Empty, string.Empty) is PowerShellProject;
+
+    public bool IsDotNetRun => Kind.Create(Guid.Empty, string.Empty, string.Empty) is DotNetRunProject;
+
+    /// <summary>The arguments of <c>dotnet run</c> itself, which only projects run by it have.</summary>
+    [ObservableProperty]
+    public partial string RunArguments { get; set; } = string.Empty;
 
     /// <summary>The script run before each command, which only projects run by PowerShell have.</summary>
     [ObservableProperty]
@@ -160,6 +171,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         return built switch
         {
             PowerShellProject powerShell => powerShell with { PrependScript = PrependScript.TrimEnd(), AppendScript = AppendScript.TrimEnd() },
+            DotNetRunProject dotNetRun => dotNetRun with { RunArguments = RunArguments.Trim() },
             _ => built,
         };
     }

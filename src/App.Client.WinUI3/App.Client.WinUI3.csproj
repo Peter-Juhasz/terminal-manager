@@ -31,6 +31,7 @@
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
     <!-- Copied, so it is found unpackaged too. -->
     <Content Include="Assets\pwsh.svg" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\dotnet.svg" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\AppIcon.svg" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\AppIcon.ico" CopyToOutputDirectory="PreserveNewest" />
     <!-- From the Visual Studio Image Library. -->

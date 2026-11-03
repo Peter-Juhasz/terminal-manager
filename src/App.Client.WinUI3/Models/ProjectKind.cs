@@ -37,5 +37,11 @@ public sealed record class ProjectKind(string DisplayName, Func<Guid, string, st
             DisplayName = displayName,
             WorkingFolder = workingFolder,
         }),
+        new(".NET app (dotnet run)", static (id, displayName, workingFolder) => new DotNetRunProject
+        {
+            Id = id,
+            DisplayName = displayName,
+            WorkingFolder = workingFolder,
+        }),
     ];
 }

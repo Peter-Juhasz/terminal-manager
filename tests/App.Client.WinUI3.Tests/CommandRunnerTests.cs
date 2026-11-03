@@ -177,6 +177,37 @@ public sealed class CommandRunnerTests(TestContext testContext)
         Assert.AreEqual("Visual Studio was not found.\r\n", result.Error);
     }
 
+    // A file-based app is run, so the command must reach it as its arguments, and its output must still be read as UTF-8.
+    [TestMethod]
+    public async Task RunAsyncRunsDotNetApp()
+    {
+        var folder = Directory.CreateTempSubdirectory();
+        try
+        {
+            File.WriteAllText(Path.Combine(folder.FullName, "app.cs"), """
+                foreach (var arg in args) System.Console.WriteLine(arg);
+                System.Console.WriteLine("aé€");
+                return 3;
+                """);
+            var project = new DotNetRunProject
+            {
+                Id = Guid.NewGuid(),
+                DisplayName = "Test",
+                WorkingFolder = folder.FullName,
+                RunArguments = "app.cs",
+            };
+
+            var result = await RunAsync(project, "greet \"a b\"");
+
+            Assert.AreEqual(3, result.ExitCode, result.Output + result.Error);
+            Assert.AreEqual("greet\r\na b\r\naé€\r\n", result.Output);
+        }
+        finally
+        {
+            folder.Delete(recursive: true);
+        }
+    }
+
     private async Task<CommandResult> RunWithFileAsync(string command, byte[] file)
     {
         var folder = Directory.CreateTempSubdirectory();

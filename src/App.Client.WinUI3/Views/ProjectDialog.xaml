@@ -110,6 +110,21 @@
                                 Text="The folder doesn't exist."
                                 Visibility="{x:Bind ViewModel.IsWorkingFolderMissing, Mode=OneWay}" />
                         </StackPanel>
+
+                        <!-- Only projects run by dotnet run have them. -->
+                        <StackPanel Spacing="4" Visibility="{x:Bind ViewModel.IsDotNetRun, Mode=OneWay}">
+                            <TextBox
+                                FontFamily="{StaticResource MonospaceFontFamily}"
+                                Header="Arguments of dotnet run"
+                                IsSpellCheckEnabled="False"
+                                PlaceholderText="--project src/MyApp -c Release"
+                                Text="{x:Bind ViewModel.RunArguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{ThemeResource CaptionTextBlockStyle}"
+                                Text="Each command is passed to the app after these, as in dotnet run [arguments] -- [command]."
+                                TextWrapping="Wrap" />
+                        </StackPanel>
                     </StackPanel>
 
                     <StackPanel Spacing="8" Visibility="{x:Bind EnvironmentVariablesPageItem.IsSelected, Mode=OneWay}">

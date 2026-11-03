@@ -1,0 +1,47 @@
+using System.Diagnostics;
+using System.Text.Json.Serialization;
+
+namespace App.Client.WinUI3.Models;
+
+/// <summary>
+/// A project whose commands are passed to an app run by <c>dotnet run</c>, as the arguments after <c>--</c>.
+/// </summary>
+/// <remarks>
+/// The app is built again for each command, if it changed, before it is run.
+/// </remarks>
+public sealed record class DotNetRunProject : Project
+{
+    /// <summary>The arguments of <c>dotnet run</c> itself, such as the project to run, put before the command.</summary>
+    // the source generated deserializer sets it to null when it is missing.
+    public string RunArguments { get; init => field = value ?? string.Empty; } = string.Empty;
+
+    [JsonIgnore]
+    public override string TerminalDisplayName => "dotnet run";
+
+    private static readonly Uri IconUri = new("ms-appx:///Assets/dotnet.svg");
+
+    [JsonIgnore]
+    public override Uri? TerminalIconUri => IconUri;
+
+    public override ProcessStartInfo CreateStartInfo(string command)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        // The command line is built by hand, so the command is split into the arguments of the app the way it was typed, quotes included.
+        // The console is switched to UTF-8 by the CLI, which the app shares, as the output is read as UTF-8.
+        // These come before the environment variables of the project, so they can still be changed by them.
+        return new ProcessStartInfo("dotnet")
+        {
+            Arguments = RunArguments switch
+            {
+                "" => $"run -- {command}",
+                var arguments => $"run {arguments} -- {command}",
+            },
+            Environment =
+            {
+                ["DOTNET_CLI_FORCE_UTF8_ENCODING"] = "true",
+                ["DOTNET_NOLOGO"] = "true",
+            },
+        };
+    }
+}

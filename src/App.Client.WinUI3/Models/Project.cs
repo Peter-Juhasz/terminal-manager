@@ -14,6 +14,7 @@ namespace App.Client.WinUI3.Models;
 [JsonDerivedType(typeof(DeveloperPowerShellProject), "devpwsh")]
 [JsonDerivedType(typeof(CmdProject), "cmd")]
 [JsonDerivedType(typeof(DeveloperCmdProject), "devcmd")]
+[JsonDerivedType(typeof(DotNetRunProject), "dotnetrun")]
 public abstract record class Project
 {
     public required Guid Id { get; init; }

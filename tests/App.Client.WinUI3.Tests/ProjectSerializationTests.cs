@@ -77,6 +77,27 @@ public sealed class ProjectSerializationTests
     }
 
     [TestMethod]
+    public void DotNetRunRoundTrips()
+    {
+        var project = new DotNetRunProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\", RunArguments = "--project src/App -c Release" };
+
+        var json = JsonSerializer.Serialize<Project>(project, AppJsonSerializerContext.Default.Project);
+
+        Assert.Contains("\"$type\": \"dotnetrun\"", json);
+        var deserialized = Assert.IsInstanceOfType<DotNetRunProject>(JsonSerializer.Deserialize(json, AppJsonSerializerContext.Default.Project));
+        Assert.AreEqual("--project src/App -c Release", deserialized.RunArguments);
+    }
+
+    [TestMethod]
+    public void DotNetRunPassesCommandAfterRunArguments()
+    {
+        var project = new DotNetRunProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\", RunArguments = "-c Release" };
+
+        Assert.AreEqual("run -c Release -- greet \"a b\"", project.CreateStartInfo("greet \"a b\"").Arguments);
+        Assert.AreEqual("run -- greet", (project with { RunArguments = "" }).CreateStartInfo("greet").Arguments);
+    }
+
+    [TestMethod]
     public void WrapPutsScriptsOnLinesOfTheirOwn()
     {
         var project = new PowerShellProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\", PrependScript = "$a = 1", AppendScript = "$b = 2" };
