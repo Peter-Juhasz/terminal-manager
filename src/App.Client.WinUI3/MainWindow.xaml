@@ -101,6 +101,14 @@
                                             </MenuFlyoutItem.Icon>
                                         </MenuFlyoutItem>
                                         <MenuFlyoutItem
+                                            Click="OnDuplicateProjectClick"
+                                            Tag="{x:Bind}"
+                                            Text="Duplicate">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE8C8;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem
                                             Click="OnDeleteProjectClick"
                                             Tag="{x:Bind}"
                                             Text="Delete">

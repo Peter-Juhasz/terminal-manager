@@ -85,6 +85,14 @@ public sealed partial class MainViewModel(ProjectStore store, HistoryStore histo
         SelectedSession = session;
     }
 
+    /// <summary>Adds a copy of the project of <paramref name="session"/>, with its settings and saved scripts, but not its history.</summary>
+    public async Task DuplicateAsync(ProjectSessionViewModel session, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+
+        await AddAsync(session.Project with { Id = Guid.NewGuid(), DisplayName = $"{session.Project.DisplayName} (copy)" }, cancellationToken);
+    }
+
     public async Task UpdateAsync(ProjectSessionViewModel session, Project project, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(session);

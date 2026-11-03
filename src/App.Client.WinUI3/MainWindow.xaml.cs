@@ -153,6 +153,14 @@ public sealed partial class MainWindow : Window
 		}
 	}
 
+	private async void OnDuplicateProjectClick(object sender, RoutedEventArgs e)
+	{
+		if ((sender as FrameworkElement)?.Tag is ProjectSessionViewModel session)
+		{
+			await ViewModel.DuplicateAsync(session, CancellationToken.None);
+		}
+	}
+
 	private async void OnDeleteProjectClick(object sender, RoutedEventArgs e)
 	{
 		if ((sender as FrameworkElement)?.Tag is ProjectSessionViewModel session)
