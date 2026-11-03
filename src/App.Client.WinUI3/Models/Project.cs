@@ -28,14 +28,13 @@ public abstract record class Project
     [JsonIgnore]
     public string ExpandedWorkingFolder => Environment.ExpandEnvironmentVariables(WorkingFolder);
 
-    /// <summary>The environment variables commands are run with, in addition to those of the app, or in place of them by the same name.</summary>
-    // the source generated deserializer sets it to null when it is missing, as projects saved before it was added are.
-    public IReadOnlyDictionary<string, string> EnvironmentVariables { get; init => field = value ?? ReadOnlyDictionary<string, string>.Empty; } = ReadOnlyDictionary<string, string>.Empty;
+    /// <summary>The environment variables commands are run with, in addition to those of the app, or in place of them by the same name, or <see langword="null"/> when there are none.</summary>
+    public IReadOnlyDictionary<string, string>? EnvironmentVariables { get; init; }
 
     /// <summary>The environment variables commands are run with, with the environment variables in their values expanded.</summary>
     [JsonIgnore]
     public IReadOnlyDictionary<string, string> ExpandedEnvironmentVariables =>
-        EnvironmentVariables.ToDictionary(static pair => pair.Key, static pair => Environment.ExpandEnvironmentVariables(pair.Value), StringComparer.OrdinalIgnoreCase);
+        (EnvironmentVariables ?? ReadOnlyDictionary<string, string>.Empty).ToDictionary(static pair => pair.Key, static pair => Environment.ExpandEnvironmentVariables(pair.Value), StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Whether commands are also run with the variables in the .env file in the working folder, which those in <see cref="EnvironmentVariables"/> replace by the same name.</summary>
     public bool LoadEnvFile { get; init; }
@@ -60,8 +59,8 @@ public abstract record class Project
         return variables;
     }
 
-    /// <summary>The commands saved to the project, in the order they are shown.</summary>
-    public IReadOnlyList<SavedScript> Scripts { get; init; } = Array.Empty<SavedScript>();
+    /// <summary>The commands saved to the project, in the order they are shown, or <see langword="null"/> when there are none.</summary>
+    public IReadOnlyList<SavedScript>? Scripts { get; init; }
 
     /// <summary>The name of the terminal the commands are run by, as shown to the user.</summary>
     [JsonIgnore]

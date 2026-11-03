@@ -28,10 +28,10 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
 
     public ObservableCollection<CommandEntryViewModel> Entries { get; } = [];
 
-    public ObservableCollection<SavedScript> Scripts { get; } = new(project.Scripts);
+    public ObservableCollection<SavedScript> Scripts { get; } = new(project.Scripts ?? []);
 
     [ObservableProperty]
-    public partial bool HasScripts { get; private set; } = project.Scripts.Count > 0;
+    public partial bool HasScripts { get; private set; } = project.Scripts is { Count: > 0 };
 
     [ObservableProperty]
     public partial bool HasEntries { get; private set; }
@@ -210,7 +210,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     private Task SaveScriptsAsync(CancellationToken cancellationToken)
     {
         HasScripts = Scripts.Count > 0;
-        Project = Project with { Scripts = Scripts.ToArray() };
+        Project = Project with { Scripts = Scripts switch { [] => null, _ => Scripts.ToArray() } };
         return store.UpdateAsync(Project, cancellationToken);
     }
 

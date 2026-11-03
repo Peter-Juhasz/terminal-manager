@@ -28,26 +28,25 @@ public record class PowerShellProject : Project
     /// <summary>The executable the commands are run by.</summary>
     private protected virtual string FileName => "pwsh";
 
-    /// <summary>The script run before each command, in the same scope, so what it defines can be used by the command.</summary>
-    // the source generated deserializer sets it to null when it is missing, as projects saved before it was added are.
-    public string PrependScript { get; init => field = value ?? string.Empty; } = string.Empty;
+    /// <summary>The script run before each command, in the same scope, so what it defines can be used by the command, or <see langword="null"/> when there is none.</summary>
+    public string? PrependScript { get; init; }
 
-    /// <summary>The script run after each command, in the same scope.</summary>
-    public string AppendScript { get; init => field = value ?? string.Empty; } = string.Empty;
+    /// <summary>The script run after each command, in the same scope, or <see langword="null"/> when there is none.</summary>
+    public string? AppendScript { get; init; }
 
     /// <summary>
     /// What is put before a command when it is completed or parsed, so what <see cref="PrependScript"/> defines, or leaves open, is taken into account;
     /// positions in the command are this much further in the script.
     /// </summary>
     [JsonIgnore]
-    public string EditorPrefix => PrependScript is "" ? string.Empty : PrependScript + "\n";
+    public string EditorPrefix => PrependScript is null or "" ? string.Empty : PrependScript + "\n";
 
     /// <summary>The script that is run for <paramref name="command"/>, with <see cref="PrependScript"/> before it and <see cref="AppendScript"/> after it, each on lines of their own.</summary>
     public string Wrap(string command)
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        return AppendScript is "" ? EditorPrefix + command : EditorPrefix + command + "\n" + AppendScript;
+        return AppendScript is null or "" ? EditorPrefix + command : EditorPrefix + command + "\n" + AppendScript;
     }
 
     [JsonIgnore]

@@ -7,18 +7,43 @@ namespace App.Client.WinUI3.Tests;
 public sealed class ProjectSerializationTests
 {
     [TestMethod]
-    public void EnvironmentVariablesAreEmptyWhenMissing()
+    public void OptionalValuesAreUnsetWhenMissing()
     {
-        const string json = """{"$type":"pwsh","id":"0fa573f3-d373-40d7-90dc-29ec60652191","displayName":"A","workingFolder":"C:\\","scripts":[]}""";
+        const string json = """{"$type":"pwsh","id":"0fa573f3-d373-40d7-90dc-29ec60652191","displayName":"A","workingFolder":"C:\\"}""";
 
         var project = JsonSerializer.Deserialize(json, AppJsonSerializerContext.Default.Project);
 
         Assert.IsNotNull(project);
-        Assert.IsEmpty(project.EnvironmentVariables);
+        Assert.IsNull(project.EnvironmentVariables);
+        Assert.IsEmpty(project.ResolveEnvironmentVariables());
+        Assert.IsNull(project.Scripts);
         Assert.IsFalse(project.LoadEnvFile);
         var powerShell = Assert.IsInstanceOfType<PowerShellProject>(project);
-        Assert.AreEqual(string.Empty, powerShell.PrependScript);
-        Assert.AreEqual(string.Empty, powerShell.AppendScript);
+        Assert.IsNull(powerShell.PrependScript);
+        Assert.IsNull(powerShell.AppendScript);
+        Assert.AreEqual("Get-Item .", powerShell.Wrap("Get-Item ."));
+    }
+
+    [TestMethod]
+    public void UnsetValuesAreNotWritten()
+    {
+        var project = new DotNetRunProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\" };
+
+        var json = JsonSerializer.Serialize<Project>(project, AppJsonSerializerContext.Default.Project);
+
+        Assert.DoesNotContain("environmentVariables", json);
+        Assert.DoesNotContain("loadEnvFile", json);
+        Assert.DoesNotContain("scripts", json);
+        Assert.DoesNotContain("runArguments", json);
+        Assert.AreEqual("run -- greet", project.CreateStartInfo("greet").Arguments);
+    }
+
+    [TestMethod]
+    public void SettingsWithoutWrappingRoundTrip()
+    {
+        var json = JsonSerializer.Serialize(new AppSettings(WrapOutput: false), AppJsonSerializerContext.Default.AppSettings);
+
+        Assert.IsFalse(JsonSerializer.Deserialize(json, AppJsonSerializerContext.Default.AppSettings)!.WrapOutput);
     }
 
     [TestMethod]
@@ -123,7 +148,7 @@ public sealed class ProjectSerializationTests
         var deserialized = JsonSerializer.Deserialize(json, AppJsonSerializerContext.Default.Project);
 
         Assert.IsNotNull(deserialized);
-        Assert.AreEqual("1", deserialized.EnvironmentVariables["DOTNET_CLI_TELEMETRY_OPTOUT"]);
+        Assert.AreEqual("1", deserialized.EnvironmentVariables?["DOTNET_CLI_TELEMETRY_OPTOUT"]);
         Assert.IsTrue(deserialized.LoadEnvFile);
     }
 }

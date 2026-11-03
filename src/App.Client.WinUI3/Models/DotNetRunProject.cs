@@ -11,9 +11,8 @@ namespace App.Client.WinUI3.Models;
 /// </remarks>
 public sealed record class DotNetRunProject : Project
 {
-    /// <summary>The arguments of <c>dotnet run</c> itself, such as the project to run, put before the command.</summary>
-    // the source generated deserializer sets it to null when it is missing.
-    public string RunArguments { get; init => field = value ?? string.Empty; } = string.Empty;
+    /// <summary>The arguments of <c>dotnet run</c> itself, such as the project to run, put before the command, or <see langword="null"/> when there are none.</summary>
+    public string? RunArguments { get; init; }
 
     [JsonIgnore]
     public override string TerminalDisplayName => "dotnet run";
@@ -34,7 +33,7 @@ public sealed record class DotNetRunProject : Project
         {
             Arguments = RunArguments switch
             {
-                "" => $"run -- {command}",
+                null or "" => $"run -- {command}",
                 var arguments => $"run {arguments} -- {command}",
             },
             Environment =

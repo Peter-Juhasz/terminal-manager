@@ -101,7 +101,7 @@ public sealed class ElevationClientServerTests(TestContext testContext)
         Assert.IsNotNull(powerShell);
         Assert.AreEqual(project.Id, powerShell.Id);
         Assert.AreEqual(project.WorkingFolder, powerShell.WorkingFolder);
-        Assert.AreEqual("dotnet build", powerShell.Scripts.Single().Command);
+        Assert.AreEqual("dotnet build", powerShell.Scripts?.Single().Command);
         Assert.AreEqual("Write-Output 'é'", receivedCommand);
     }
 

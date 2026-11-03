@@ -44,7 +44,8 @@ public sealed class SettingsServiceTests(TestContext testContext)
 
         Assert.AreEqual(theme, service.Settings.Theme);
         using var json = JsonDocument.Parse(await File.ReadAllTextAsync(SettingsPath, testContext.CancellationToken));
-        Assert.AreEqual(theme.ToString(), json.RootElement.GetProperty("theme").GetString());
+        // the default theme isn't written, as it is read back the same without it
+        Assert.AreEqual(theme is AppTheme.System ? null : theme.ToString(), json.RootElement.TryGetProperty("theme", out var saved) ? saved.GetString() : null);
 
         var restarted = CreateService();
         await restarted.LoadAsync(testContext.CancellationToken);

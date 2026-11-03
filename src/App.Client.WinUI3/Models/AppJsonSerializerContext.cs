@@ -4,7 +4,8 @@ using System.Text.Json.Serialization;
 namespace App.Client.WinUI3.Models;
 
 // Source generated, so serialization keeps working when the app is trimmed.
-[JsonSourceGenerationOptions(JsonSerializerDefaults.Web, WriteIndented = true)]
+// Values left unset aren't written, so they are read back as their defaults.
+[JsonSourceGenerationOptions(JsonSerializerDefaults.Web, WriteIndented = true, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault)]
 [JsonSerializable(typeof(Project))]
 [JsonSerializable(typeof(IReadOnlyCollection<Project>))]
 [JsonSerializable(typeof(AppSettings))]

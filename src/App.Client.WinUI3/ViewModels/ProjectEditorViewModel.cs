@@ -32,20 +32,20 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         DisplayName = project.DisplayName;
         WorkingFolder = project.WorkingFolder;
         LoadEnvFile = project.LoadEnvFile;
-        foreach (var (name, value) in project.EnvironmentVariables)
+        foreach (var (name, value) in project.EnvironmentVariables ?? ReadOnlyDictionary<string, string>.Empty)
         {
             EnvironmentVariables.Add(new(Remove) { Name = name, Value = value });
         }
 
         if (project is PowerShellProject powerShell)
         {
-            PrependScript = powerShell.PrependScript;
-            AppendScript = powerShell.AppendScript;
+            PrependScript = powerShell.PrependScript ?? string.Empty;
+            AppendScript = powerShell.AppendScript ?? string.Empty;
         }
 
         if (project is DotNetRunProject dotNetRun)
         {
-            RunArguments = dotNetRun.RunArguments;
+            RunArguments = dotNetRun.RunArguments ?? string.Empty;
         }
     }
 
@@ -160,7 +160,12 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
 
     public Project Build()
     {
-        var environmentVariables = FilledEnvironmentVariables.ToDictionary(static variable => variable.Name.Trim(), static variable => variable.Value, StringComparer.OrdinalIgnoreCase);
+        // what isn't filled in is left unset, so it isn't saved
+        IReadOnlyDictionary<string, string>? environmentVariables = FilledEnvironmentVariables.ToDictionary(static variable => variable.Name.Trim(), static variable => variable.Value, StringComparer.OrdinalIgnoreCase) switch
+        {
+            { Count: 0 } => null,
+            var variables => variables,
+        };
         var built = _project switch
         {
             null => Kind.Create(Guid.NewGuid(), DisplayName.Trim(), WorkingFolder.Trim()) with { EnvironmentVariables = environmentVariables, LoadEnvFile = LoadEnvFile },
@@ -170,9 +175,15 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         // a script of only blank lines would still move what is typed down in the script that is run
         return built switch
         {
-            PowerShellProject powerShell => powerShell with { PrependScript = PrependScript.TrimEnd(), AppendScript = AppendScript.TrimEnd() },
-            DotNetRunProject dotNetRun => dotNetRun with { RunArguments = RunArguments.Trim() },
+            PowerShellProject powerShell => powerShell with { PrependScript = NullIfEmpty(PrependScript.TrimEnd()), AppendScript = NullIfEmpty(AppendScript.TrimEnd()) },
+            DotNetRunProject dotNetRun => dotNetRun with { RunArguments = NullIfEmpty(RunArguments.Trim()) },
             _ => built,
         };
     }
+
+    private static string? NullIfEmpty(string value) => value switch
+    {
+        "" => null,
+        _ => value,
+    };
 }
