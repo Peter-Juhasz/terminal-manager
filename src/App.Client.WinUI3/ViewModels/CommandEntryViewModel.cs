@@ -24,7 +24,7 @@ public sealed partial class CommandEntryViewModel(string command, bool isElevate
     /// <summary>When the command was started.</summary>
     public DateTimeOffset StartedAt { get; private init; } = DateTimeOffset.Now;
 
-    /// <summary>Shows a command run before the app was started, as it ended; it can only be run again.</summary>
+    /// <summary>Shows a command run before the app was started, as it ended, with its output collapsed; it can only be run again.</summary>
     public static CommandEntryViewModel Restore(HistoryEntry saved, Func<Task> rerun)
     {
         ArgumentNullException.ThrowIfNull(saved);
@@ -33,6 +33,7 @@ public sealed partial class CommandEntryViewModel(string command, bool isElevate
         {
             StartedAt = saved.StartedAt,
             IsPinned = saved.IsPinned,
+            IsExpanded = false,
         };
         entry.AppendOutput(saved.Output ?? []);
         entry.Complete(saved.ExitCode, saved.WasStopped, saved.Duration);
