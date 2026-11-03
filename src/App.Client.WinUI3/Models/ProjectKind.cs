@@ -7,6 +7,12 @@ public sealed record class ProjectKind(string DisplayName, Func<Guid, string, st
 {
     public static IReadOnlyList<ProjectKind> All { get; } = (ProjectKind[])
     [
+        new("Command Prompt (cmd)", static (id, displayName, workingFolder) => new CmdProject
+        {
+            Id = id,
+            DisplayName = displayName,
+            WorkingFolder = workingFolder,
+        }),
         new("PowerShell (pwsh)", static (id, displayName, workingFolder) => new PowerShellProject
         {
             Id = id,
@@ -19,19 +25,13 @@ public sealed record class ProjectKind(string DisplayName, Func<Guid, string, st
             DisplayName = displayName,
             WorkingFolder = workingFolder,
         }),
-        new("Developer PowerShell for VS (pwsh)", static (id, displayName, workingFolder) => new DeveloperPowerShellProject
-        {
-            Id = id,
-            DisplayName = displayName,
-            WorkingFolder = workingFolder,
-        }),
-        new("Command Prompt (cmd)", static (id, displayName, workingFolder) => new CmdProject
-        {
-            Id = id,
-            DisplayName = displayName,
-            WorkingFolder = workingFolder,
-        }),
         new("Developer Command Prompt for VS (cmd)", static (id, displayName, workingFolder) => new DeveloperCmdProject
+        {
+            Id = id,
+            DisplayName = displayName,
+            WorkingFolder = workingFolder,
+        }),
+        new("Developer PowerShell for VS (pwsh)", static (id, displayName, workingFolder) => new DeveloperPowerShellProject
         {
             Id = id,
             DisplayName = displayName,
