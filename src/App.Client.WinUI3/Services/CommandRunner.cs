@@ -15,6 +15,9 @@ public sealed class CommandRunner : ICommandRunner
     // As much as the pipe of a stream holds.
     private const int ReadBufferSize = 4096;
 
+    // Without a byte order mark, which would be read as part of the input.
+    private static readonly Encoding InputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+
     /// <inheritdoc/>
     public async Task<int> RunAsync(Project project, string command, IOutputSink output, CancellationToken cancellationToken)
     {
@@ -24,6 +27,7 @@ public sealed class CommandRunner : ICommandRunner
         try
         {
             var startInfo = project.CreateStartInfo(command);
+            var input = project.CreateStandardInput(command);
             startInfo.WorkingDirectory = project.ExpandedWorkingFolder;
             foreach (var (name, value) in project.ResolveEnvironmentVariables())
             {
@@ -35,13 +39,11 @@ public sealed class CommandRunner : ICommandRunner
             startInfo.RedirectStandardInput = true;
             startInfo.RedirectStandardOutput = true;
             startInfo.RedirectStandardError = true;
+            startInfo.StandardInputEncoding = InputEncoding;
             startInfo.StandardOutputEncoding = Encoding.UTF8;
             startInfo.StandardErrorEncoding = Encoding.UTF8;
 
             using var process = Process.Start(startInfo) ?? throw new InvalidOperationException($"'{startInfo.FileName}' couldn't be started.");
-
-            // Nothing is ever typed in, so commands that read their input don't wait for it.
-            process.StandardInput.Close();
 
             await using var registration = cancellationToken.Register(() => Kill(process));
 
@@ -50,6 +52,9 @@ public sealed class CommandRunner : ICommandRunner
             var pumps = Task.WhenAll(
                 StartPump(process.StandardOutput.BaseStream, OutputStream.StandardOutput, output),
                 StartPump(process.StandardError.BaseStream, OutputStream.StandardError, output));
+
+            // Only once the output is read, as a command that writes more than its pipe holds before it reads its input would wait for it to be read otherwise.
+            await WriteInputAsync(process.StandardInput, input, cancellationToken).ConfigureAwait(false);
 
             await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
 
@@ -66,6 +71,25 @@ public sealed class CommandRunner : ICommandRunner
         finally
         {
             output.Complete();
+        }
+    }
+
+    // Writes what the command is given, then closes the input; nothing else is ever typed in, so commands that read their input don't wait for more.
+    // A command that is stopped, or exits without reading all of it, breaks the pipe, which ends the write.
+    private static async Task WriteInputAsync(StreamWriter input, string? text, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await using (input.ConfigureAwait(false))
+            {
+                if (text is not null)
+                {
+                    await input.WriteAsync(text.AsMemory(), cancellationToken).ConfigureAwait(false);
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or OperationCanceledException)
+        {
         }
     }
 

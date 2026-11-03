@@ -13,6 +13,7 @@
     <Compile Include="$(AppDirectory)Models\CmdProject.cs" Link="App\Models\CmdProject.cs" />
     <Compile Include="$(AppDirectory)Models\DeveloperCmdProject.cs" Link="App\Models\DeveloperCmdProject.cs" />
     <Compile Include="$(AppDirectory)Models\DotNetRunProject.cs" Link="App\Models\DotNetRunProject.cs" />
+    <Compile Include="$(AppDirectory)Models\DotNetFileProject.cs" Link="App\Models\DotNetFileProject.cs" />
     <Compile Include="$(AppDirectory)Models\VisualStudioEnvironment.cs" Link="App\Models\VisualStudioEnvironment.cs" />
     <Compile Include="$(AppDirectory)Models\AppJsonSerializerContext.cs" Link="App\Models\AppJsonSerializerContext.cs" />
     <Compile Include="$(AppDirectory)Models\AppSettings.cs" Link="App\Models\AppSettings.cs" />

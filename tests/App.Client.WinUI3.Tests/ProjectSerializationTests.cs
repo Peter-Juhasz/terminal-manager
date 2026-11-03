@@ -123,6 +123,30 @@ public sealed class ProjectSerializationTests
     }
 
     [TestMethod]
+    public void DotNetFileRoundTrips()
+    {
+        var project = new DotNetFileProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\", RunArguments = "-c Release" };
+
+        var json = JsonSerializer.Serialize<Project>(project, AppJsonSerializerContext.Default.Project);
+
+        Assert.Contains("\"$type\": \"dotnetfile\"", json);
+        var deserialized = Assert.IsInstanceOfType<DotNetFileProject>(JsonSerializer.Deserialize(json, AppJsonSerializerContext.Default.Project));
+        Assert.AreEqual("-c Release", deserialized.RunArguments);
+        Assert.IsInstanceOfType<DotNetFileProject>((DotNetRunProject)deserialized with { RunArguments = null });
+    }
+
+    [TestMethod]
+    public void DotNetFilePassesCommandOnStandardInput()
+    {
+        var project = new DotNetFileProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\", RunArguments = "-- a b" };
+
+        Assert.AreEqual("run - -- a b", project.CreateStartInfo("Console.WriteLine();").Arguments);
+        Assert.AreEqual("run -", (project with { RunArguments = null }).CreateStartInfo("Console.WriteLine();").Arguments);
+        Assert.AreEqual("Console.WriteLine();", project.CreateStandardInput("Console.WriteLine();"));
+        Assert.IsNull(new DotNetRunProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\" }.CreateStandardInput("greet"));
+    }
+
+    [TestMethod]
     public void WrapPutsScriptsOnLinesOfTheirOwn()
     {
         var project = new PowerShellProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\", PrependScript = "$a = 1", AppendScript = "$b = 2" };

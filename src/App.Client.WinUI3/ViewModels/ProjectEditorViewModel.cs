@@ -58,13 +58,20 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     public IReadOnlyList<ProjectKind> Kinds { get; } = ProjectKind.All;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsPowerShell), nameof(IsDotNetRun))]
+    [NotifyPropertyChangedFor(nameof(IsPowerShell), nameof(IsDotNetRun), nameof(RunArgumentsDescription))]
     public partial ProjectKind Kind { get; set; }
 
     // the kind is told by what it creates, as that of a project being edited creates the project itself.
     public bool IsPowerShell => Kind.Create(Guid.Empty, string.Empty, string.Empty) is PowerShellProject;
 
     public bool IsDotNetRun => Kind.Create(Guid.Empty, string.Empty, string.Empty) is DotNetRunProject;
+
+    /// <summary>How each command is run with <see cref="RunArguments"/>.</summary>
+    public string RunArgumentsDescription => Kind.Create(Guid.Empty, string.Empty, string.Empty) switch
+    {
+        DotNetFileProject => "Each command is run as the code of a file-based app, as in dotnet run - [arguments]. Pass arguments to the app after --.",
+        _ => "Each command is passed to the app after these, as in dotnet run [arguments] -- [command].",
+    };
 
     /// <summary>The arguments of <c>dotnet run</c> itself, which only projects run by it have.</summary>
     [ObservableProperty]

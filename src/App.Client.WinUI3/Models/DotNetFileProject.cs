@@ -1,0 +1,35 @@
+using System.Diagnostics;
+using System.Text.Json.Serialization;
+
+namespace App.Client.WinUI3.Models;
+
+/// <summary>
+/// A project whose commands are C# code, each run as a file-based app by <c>dotnet run -</c>, which reads it from the standard input.
+/// </summary>
+/// <remarks>
+/// Other files in the working folder, such as launch profiles, aren't used, but it is still the folder the app is built and run in.
+/// </remarks>
+public sealed record class DotNetFileProject : DotNetRunProject
+{
+    [JsonIgnore]
+    public override string TerminalDisplayName => "C# file-based app";
+
+    public override ProcessStartInfo CreateStartInfo(string command)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        // the code is read in place of a file by "-", which is put first, so arguments after "--" are still passed to the app.
+        return CreateDotNetStartInfo(RunArguments switch
+        {
+            null or "" => "run -",
+            var arguments => $"run - {arguments}",
+        });
+    }
+
+    public override string? CreateStandardInput(string command)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        return command;
+    }
+}

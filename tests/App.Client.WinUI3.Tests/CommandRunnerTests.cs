@@ -208,6 +208,63 @@ public sealed class CommandRunnerTests(TestContext testContext)
         }
     }
 
+    [TestMethod]
+    public async Task RunAsyncWritesStandardInput()
+    {
+        var result = await RunAsync(new StandardInputProject { Id = Guid.NewGuid(), DisplayName = "Test", WorkingFolder = Path.GetTempPath(), Input = "a\r\nb\r\n" }, "findstr \"^\"");
+
+        Assert.AreEqual(0, result.ExitCode);
+        Assert.AreEqual("a\r\nb\r\n", result.Output);
+    }
+
+    // More than the pipes hold each way, so it is only read to the end when the output is read while the input is written.
+    [TestMethod]
+    public async Task RunAsyncWritesStandardInputLongerThanPipe()
+    {
+        var input = string.Concat(Enumerable.Range(1, 20000).Select(static index => $"line {index}\r\n"));
+
+        var result = await RunAsync(new StandardInputProject { Id = Guid.NewGuid(), DisplayName = "Test", WorkingFolder = Path.GetTempPath(), Input = input }, "findstr \"^\"");
+
+        Assert.AreEqual(input, result.Output);
+    }
+
+    [TestMethod]
+    public async Task RunAsyncIgnoresStandardInputNotRead()
+    {
+        var result = await RunAsync(new StandardInputProject { Id = Guid.NewGuid(), DisplayName = "Test", WorkingFolder = Path.GetTempPath(), Input = new string('a', 1_000_000) }, "exit /b 3");
+
+        Assert.AreEqual(3, result.ExitCode);
+    }
+
+    // The code is read from the standard input, which must be read as UTF-8, as the output must.
+    [TestMethod]
+    public async Task RunAsyncRunsDotNetFileBasedApp()
+    {
+        var project = new DotNetFileProject
+        {
+            Id = Guid.NewGuid(),
+            DisplayName = "Test",
+            WorkingFolder = Path.GetTempPath(),
+            RunArguments = "-- greet",
+        };
+
+        var result = await RunAsync(project, """
+            foreach (var arg in args) System.Console.WriteLine(arg);
+            System.Console.WriteLine("aé€");
+            return 3;
+            """);
+
+        Assert.AreEqual(3, result.ExitCode, result.Output + result.Error);
+        Assert.AreEqual("greet\r\naé€\r\n", result.Output);
+    }
+
+    private sealed record class StandardInputProject : CmdProject
+    {
+        public required string Input { get; init; }
+
+        public override string? CreateStandardInput(string command) => Input;
+    }
+
     private async Task<CommandResult> RunWithFileAsync(string command, byte[] file)
     {
         var folder = Directory.CreateTempSubdirectory();

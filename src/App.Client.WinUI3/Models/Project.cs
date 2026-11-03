@@ -15,6 +15,7 @@ namespace App.Client.WinUI3.Models;
 [JsonDerivedType(typeof(CmdProject), "cmd")]
 [JsonDerivedType(typeof(DeveloperCmdProject), "devcmd")]
 [JsonDerivedType(typeof(DotNetRunProject), "dotnetrun")]
+[JsonDerivedType(typeof(DotNetFileProject), "dotnetfile")]
 public abstract record class Project
 {
     public required Guid Id { get; init; }
@@ -74,4 +75,10 @@ public abstract record class Project
     /// Describes the process that runs <paramref name="command"/>. Its working folder and the redirection of its streams are set by the caller.
     /// </summary>
     public abstract ProcessStartInfo CreateStartInfo(string command);
+
+    /// <summary>
+    /// What is written to the standard input of the process that runs <paramref name="command"/>, which is closed after it,
+    /// or <see langword="null"/> to close it right away, as when the command is passed by <see cref="CreateStartInfo"/> alone.
+    /// </summary>
+    public virtual string? CreateStandardInput(string command) => null;
 }
