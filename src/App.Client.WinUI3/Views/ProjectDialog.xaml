@@ -64,6 +64,11 @@
                         <FontIcon Glyph="&#xE756;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <NavigationViewItem x:Name="HistoryPageItem" Content="History">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE81C;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
             </NavigationView.MenuItems>
 
             <ScrollViewer Margin="24,0,0,0" Padding="0,0,16,0">
@@ -161,17 +166,6 @@
                                 Text="{x:Bind ViewModel.ArgumentsDescription, Mode=OneWay}"
                                 TextWrapping="Wrap" />
                         </StackPanel>
-
-                        <StackPanel Spacing="4">
-                            <CheckBox IsChecked="{x:Bind ViewModel.PersistHistory, Mode=TwoWay}">
-                                <TextBlock Text="Keep history" TextWrapping="Wrap" />
-                            </CheckBox>
-                            <TextBlock
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Style="{ThemeResource CaptionTextBlockStyle}"
-                                Text="The commands that were run, with what they wrote, are saved, and shown again after the app is started."
-                                TextWrapping="Wrap" />
-                        </StackPanel>
                     </StackPanel>
 
                     <StackPanel Spacing="8" Visibility="{x:Bind EnvironmentVariablesPageItem.IsSelected, Mode=OneWay}">
@@ -260,6 +254,17 @@
                             PlaceholderText="{x:Bind ViewModel.AppendScriptPlaceholder, Mode=OneWay}"
                             ScrollViewer.VerticalScrollBarVisibility="Auto"
                             Text="{x:Bind ViewModel.AppendScript, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="4" Visibility="{x:Bind HistoryPageItem.IsSelected, Mode=OneWay}">
+                        <CheckBox IsChecked="{x:Bind ViewModel.PersistHistory, Mode=TwoWay}">
+                            <TextBlock Text="Keep history" TextWrapping="Wrap" />
+                        </CheckBox>
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{ThemeResource CaptionTextBlockStyle}"
+                            Text="The commands that were run, with what they wrote, are saved, and shown again after the app is started."
                             TextWrapping="Wrap" />
                     </StackPanel>
                 </Grid>
