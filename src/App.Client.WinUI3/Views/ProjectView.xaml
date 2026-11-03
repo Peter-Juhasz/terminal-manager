@@ -25,8 +25,38 @@
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <!--  The command, with when it was started, and the command copied or run again, and the output collapsed beside it.  -->
-                    <Grid Padding="14,6,6,6" ColumnSpacing="8">
+                    <!--  The command, with when it was started, and the command copied or run again, and the output collapsed beside it; pinned, saved or removed from its menu (the command text keeps its own).  -->
+                    <Grid
+                        Padding="14,6,6,6"
+                        Background="Transparent"
+                        ColumnSpacing="8">
+                        <Grid.ContextFlyout>
+                            <MenuFlyout>
+                                <MenuFlyoutItem Command="{x:Bind TogglePinnedCommand}" Text="{x:Bind PinToolTip, Mode=OneWay}">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon Glyph="&#xE718;" />
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                                <MenuFlyoutItem
+                                    Click="OnSaveAsScriptClick"
+                                    Tag="{x:Bind}"
+                                    Text="Save as script">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon Glyph="&#xE74E;" />
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                                <MenuFlyoutSeparator Visibility="{x:Bind IsCompleted, Mode=OneWay}" />
+                                <MenuFlyoutItem
+                                    Click="OnRemoveEntryClick"
+                                    Tag="{x:Bind}"
+                                    Text="Remove from history"
+                                    Visibility="{x:Bind IsCompleted, Mode=OneWay}">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon Glyph="&#xE74D;" />
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                            </MenuFlyout>
+                        </Grid.ContextFlyout>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
@@ -59,24 +89,15 @@
                                 Style="{ThemeResource CaptionTextBlockStyle}"
                                 Text="{x:Bind StartedAtText}"
                                 ToolTipService.ToolTip="{x:Bind StartedAtToolTip}" />
-                            <Button
+                            <FontIcon
+                                Margin="0,0,8,0"
                                 VerticalAlignment="Center"
-                                AutomationProperties.Name="{x:Bind PinToolTip, Mode=OneWay}"
-                                Command="{x:Bind TogglePinnedCommand}"
-                                Style="{StaticResource IconButtonStyle}"
-                                ToolTipService.ToolTip="{x:Bind PinToolTip, Mode=OneWay}">
-                                <Grid>
-                                    <FontIcon
-                                        FontSize="12"
-                                        Glyph="&#xE718;"
-                                        Visibility="{x:Bind IsNotPinned, Mode=OneWay}" />
-                                    <FontIcon
-                                        FontSize="12"
-                                        Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                                        Glyph="&#xE841;"
-                                        Visibility="{x:Bind IsPinned, Mode=OneWay}" />
-                                </Grid>
-                            </Button>
+                                AutomationProperties.Name="Pinned"
+                                FontSize="12"
+                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                Glyph="&#xE841;"
+                                ToolTipService.ToolTip="Pinned"
+                                Visibility="{x:Bind IsPinned, Mode=OneWay}" />
                             <Button
                                 VerticalAlignment="Center"
                                 AutomationProperties.Name="Copy command"
@@ -92,25 +113,6 @@
                                 Style="{StaticResource IconButtonStyle}"
                                 ToolTipService.ToolTip="Run again">
                                 <FontIcon FontSize="12" Glyph="&#xE72C;" />
-                            </Button>
-                            <Button
-                                VerticalAlignment="Center"
-                                AutomationProperties.Name="Save as script"
-                                Click="OnSaveAsScriptClick"
-                                Style="{StaticResource IconButtonStyle}"
-                                Tag="{x:Bind}"
-                                ToolTipService.ToolTip="Save as script">
-                                <FontIcon FontSize="12" Glyph="&#xE710;" />
-                            </Button>
-                            <Button
-                                VerticalAlignment="Center"
-                                AutomationProperties.Name="Remove from history"
-                                Click="OnRemoveEntryClick"
-                                Style="{StaticResource IconButtonStyle}"
-                                Tag="{x:Bind}"
-                                ToolTipService.ToolTip="Remove from history"
-                                Visibility="{x:Bind IsCompleted, Mode=OneWay}">
-                                <FontIcon FontSize="12" Glyph="&#xE74D;" />
                             </Button>
                             <Button
                                 VerticalAlignment="Center"
