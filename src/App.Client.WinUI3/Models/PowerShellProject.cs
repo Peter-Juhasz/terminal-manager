@@ -6,7 +6,7 @@ namespace App.Client.WinUI3.Models;
 /// <summary>
 /// A project whose commands are run by PowerShell (pwsh), or by Windows PowerShell for <see cref="WindowsPowerShellProject"/>.
 /// </summary>
-public record class PowerShellProject : Project
+public record class PowerShellProject : LocalProject
 {
     // The output is read as UTF-8 without progress bars, which are only meant for a console.
     private protected const string EncodingPrelude = """

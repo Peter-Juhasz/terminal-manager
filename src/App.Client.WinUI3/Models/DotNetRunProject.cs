@@ -10,7 +10,7 @@ namespace App.Client.WinUI3.Models;
 /// <remarks>
 /// The app is built again for each command, if it changed, before it is run.
 /// </remarks>
-public record class DotNetRunProject : Project
+public record class DotNetRunProject : LocalProject
 {
     /// <summary>The arguments of <c>dotnet run</c> itself, such as the project to run, put before the command, or <see langword="null"/> when there are none.</summary>
     public string? RunArguments { get; init; }

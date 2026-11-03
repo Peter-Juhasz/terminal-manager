@@ -95,20 +95,56 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBox
-                                    Header="Working folder"
-                                    PlaceholderText="C:\src\my-project"
+                                    Header="{x:Bind ViewModel.WorkingFolderHeader, Mode=OneWay}"
+                                    IsSpellCheckEnabled="False"
+                                    PlaceholderText="{x:Bind ViewModel.WorkingFolderPlaceholder, Mode=OneWay}"
                                     Text="{x:Bind ViewModel.WorkingFolder, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <!-- A folder elsewhere can't be browsed for here. -->
                                 <Button
                                     Grid.Column="1"
                                     VerticalAlignment="Bottom"
                                     Click="OnBrowseClick"
-                                    Content="Browse…" />
+                                    Content="Browse…"
+                                    Visibility="{x:Bind ViewModel.IsWorkingFolderLocal, Mode=OneWay}" />
                             </Grid>
                             <TextBlock
                                 Foreground="{ThemeResource SystemFillColorCriticalBrush}"
                                 Style="{ThemeResource CaptionTextBlockStyle}"
                                 Text="The folder doesn't exist."
                                 Visibility="{x:Bind ViewModel.IsWorkingFolderMissing, Mode=OneWay}" />
+                        </StackPanel>
+
+                        <!-- Only projects run on an Azure virtual machine have them. -->
+                        <StackPanel Spacing="16" Visibility="{x:Bind ViewModel.IsAzureVm, Mode=OneWay}">
+                            <StackPanel Spacing="4">
+                                <TextBox
+                                    Header="Subscription"
+                                    IsSpellCheckEnabled="False"
+                                    PlaceholderText="Name or id"
+                                    Text="{x:Bind ViewModel.Subscription, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                    Text="Leave it empty for the default subscription of the Azure CLI."
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                            <TextBox
+                                Header="Resource group"
+                                IsSpellCheckEnabled="False"
+                                PlaceholderText="my-resource-group"
+                                Text="{x:Bind ViewModel.ResourceGroup, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <StackPanel Spacing="4">
+                                <TextBox
+                                    Header="Virtual machine"
+                                    IsSpellCheckEnabled="False"
+                                    PlaceholderText="my-vm"
+                                    Text="{x:Bind ViewModel.VmName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                    Text="Each command is run by az vm run-command invoke, as root or the local system account, in the working folder on the machine. Its output is shown once it ended."
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
                         </StackPanel>
 
                         <!-- Only projects run by dotnet run, or by an interpreter, have them. -->
@@ -142,9 +178,10 @@
                         <TextBlock
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                             Style="{ThemeResource CaptionTextBlockStyle}"
-                            Text="Commands are run with these, in addition to the variables of the app. Use %NAME% in a value to include another variable."
+                            Text="{x:Bind ViewModel.EnvironmentVariablesDescription, Mode=OneWay}"
                             TextWrapping="Wrap" />
-                        <CheckBox IsChecked="{x:Bind ViewModel.LoadEnvFile, Mode=TwoWay}">
+                        <!-- A .env file is only read from a folder on this machine. -->
+                        <CheckBox IsChecked="{x:Bind ViewModel.LoadEnvFile, Mode=TwoWay}" Visibility="{x:Bind ViewModel.IsWorkingFolderLocal, Mode=OneWay}">
                             <TextBlock Text="Load from .env file" TextWrapping="Wrap" />
                         </CheckBox>
                         <ItemsControl ItemsSource="{x:Bind ViewModel.EnvironmentVariables}">

@@ -61,5 +61,17 @@ public sealed record class ProjectKind(string DisplayName, Func<Guid, string, st
             DisplayName = displayName,
             WorkingFolder = workingFolder,
         }),
+        new("Azure VM, Linux shell (az vm run-command)", static (id, displayName, workingFolder) => new AzureVmShellProject
+        {
+            Id = id,
+            DisplayName = displayName,
+            WorkingFolder = workingFolder,
+        }),
+        new("Azure VM, Windows PowerShell (az vm run-command)", static (id, displayName, workingFolder) => new AzureVmPowerShellProject
+        {
+            Id = id,
+            DisplayName = displayName,
+            WorkingFolder = workingFolder,
+        }),
     ];
 }

@@ -6,7 +6,7 @@ namespace App.Client.WinUI3.Models;
 /// <summary>
 /// A project whose commands are run by the Command Prompt (cmd), or in the developer environment of Visual Studio for <see cref="DeveloperCmdProject"/>.
 /// </summary>
-public record class CmdProject : Project
+public record class CmdProject : LocalProject
 {
     /// <summary>What is run before each command, ending with an <c>&amp;</c>; the code page is switched, as the output is read as UTF-8.</summary>
     private protected virtual string Prelude => "chcp 65001 >nul & ";

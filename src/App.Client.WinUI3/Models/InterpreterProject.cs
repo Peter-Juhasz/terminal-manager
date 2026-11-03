@@ -7,7 +7,7 @@ namespace App.Client.WinUI3.Models;
 /// A project whose commands are code, each run as a script by an interpreter that reads it from the standard input, as <c>-</c> is passed for its name,
 /// such as Python for <see cref="PythonProject"/> and Node.js for <see cref="NodeProject"/>.
 /// </summary>
-public abstract record class InterpreterProject : Project
+public abstract record class InterpreterProject : LocalProject
 {
     /// <summary>The executable the commands are run by.</summary>
     private protected abstract string FileName { get; }

@@ -5,7 +5,7 @@ namespace App.Client.WinUI3.Services;
 /// <summary>
 /// Runs commands as an administrator, by the <see cref="ElevatedHost"/>. It is started the first time a command is run, which the user is asked to allow,
 /// and runs all the commands after, until the app closes; it is started again if it was not allowed, or has exited since.
-/// When the app itself runs as an administrator, the commands are run by <paramref name="runner"/> instead.
+/// When the app itself runs as an administrator, or the commands aren't run on this machine, they are run by <paramref name="runner"/> instead.
 /// </summary>
 public sealed class ElevatedCommandRunner(CommandRunner runner) : ICommandRunner
 {
@@ -19,7 +19,8 @@ public sealed class ElevatedCommandRunner(CommandRunner runner) : ICommandRunner
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(output);
 
-        if (Environment.IsPrivilegedProcess)
+        // commands run elsewhere don't depend on the rights of the app, such as those run on an Azure virtual machine, which are run as an administrator there anyway
+        if (Environment.IsPrivilegedProcess || project is not LocalProject local)
         {
             return await runner.RunAsync(project, command, output, cancellationToken).ConfigureAwait(false);
         }
@@ -37,7 +38,7 @@ public sealed class ElevatedCommandRunner(CommandRunner runner) : ICommandRunner
 
         // Expanded here, so they are the variables of the user, even if the host is run by another one, who allowed it with their own credentials;
         // the .env file is read here too, as that user may not be allowed to read it.
-        var expanded = project with { WorkingFolder = project.ExpandedWorkingFolder, EnvironmentVariables = project.ResolveEnvironmentVariables(), LoadEnvFile = false };
+        var expanded = local with { WorkingFolder = local.ExpandedWorkingFolder, EnvironmentVariables = local.ResolveEnvironmentVariables(), LoadEnvFile = false };
         return await client.RunAsync(expanded, command, output, cancellationToken).ConfigureAwait(false);
     }
 

@@ -16,10 +16,10 @@ public sealed class ProjectSerializationTests
 
         Assert.IsNotNull(project);
         Assert.IsNull(project.EnvironmentVariables);
-        Assert.IsEmpty(project.ResolveEnvironmentVariables());
         Assert.IsNull(project.Scripts);
-        Assert.IsFalse(project.LoadEnvFile);
         var powerShell = Assert.IsInstanceOfType<PowerShellProject>(project);
+        Assert.IsEmpty(powerShell.ResolveEnvironmentVariables());
+        Assert.IsFalse(powerShell.LoadEnvFile);
         Assert.IsNull(powerShell.PrependScript);
         Assert.IsNull(powerShell.AppendScript);
         Assert.AreEqual("Get-Item .", powerShell.Wrap("Get-Item ."));
@@ -236,7 +236,7 @@ public sealed class ProjectSerializationTests
 
         Assert.IsNotNull(deserialized);
         Assert.AreEqual("1", deserialized.EnvironmentVariables?["DOTNET_CLI_TELEMETRY_OPTOUT"]);
-        Assert.IsTrue(deserialized.LoadEnvFile);
+        Assert.IsTrue(Assert.IsInstanceOfType<LocalProject>(deserialized).LoadEnvFile);
     }
 
     [TestMethod]

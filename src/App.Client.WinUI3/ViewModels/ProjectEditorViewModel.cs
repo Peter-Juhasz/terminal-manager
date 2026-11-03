@@ -31,7 +31,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         Kinds = (ProjectKind[])[Kind];
         DisplayName = project.DisplayName;
         WorkingFolder = project.WorkingFolder;
-        LoadEnvFile = project.LoadEnvFile;
+        LoadEnvFile = project is LocalProject { LoadEnvFile: true };
         PersistHistory = project.PersistHistory;
         foreach (var (name, value) in project.EnvironmentVariables ?? ReadOnlyDictionary<string, string>.Empty)
         {
@@ -61,6 +61,15 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
             PrependScript = interpreter.PrependScript ?? string.Empty;
             AppendScript = interpreter.AppendScript ?? string.Empty;
         }
+
+        if (project is AzureVmProject azureVm)
+        {
+            Subscription = azureVm.Subscription ?? string.Empty;
+            ResourceGroup = azureVm.ResourceGroup;
+            VmName = azureVm.VmName;
+            PrependScript = azureVm.PrependScript ?? string.Empty;
+            AppendScript = azureVm.AppendScript ?? string.Empty;
+        }
     }
 
     public bool IsNew => _project is null;
@@ -74,18 +83,53 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasPrependAndAppend), nameof(ScriptsDescription), nameof(PrependScriptPlaceholder), nameof(AppendScriptPlaceholder))]
     [NotifyPropertyChangedFor(nameof(HasArguments), nameof(ArgumentsHeader), nameof(ArgumentsPlaceholder), nameof(ArgumentsDescription))]
+    [NotifyPropertyChangedFor(nameof(IsAzureVm), nameof(IsWorkingFolderLocal), nameof(WorkingFolderHeader), nameof(WorkingFolderPlaceholder), nameof(IsWorkingFolderMissing))]
+    [NotifyPropertyChangedFor(nameof(EnvironmentVariablesDescription), nameof(IsValid))]
     public partial ProjectKind Kind { get; set; }
 
     // the kind is told by what it creates, as that of a project being edited creates the project itself.
     private Project Sample => Kind.Create(Guid.Empty, string.Empty, string.Empty);
 
-    public bool HasPrependAndAppend => Sample is PowerShellProject or DotNetFileProject or InterpreterProject;
+    public bool HasPrependAndAppend => Sample is PowerShellProject or DotNetFileProject or InterpreterProject or AzureVmProject;
+
+    /// <summary>Whether commands are run on an Azure virtual machine, which is told by its subscription, resource group and name.</summary>
+    public bool IsAzureVm => Sample is AzureVmProject;
+
+    /// <summary>Whether the working folder is on this machine, so it can be browsed for, and is checked to exist; elsewhere, it is only changed to before each command.</summary>
+    public bool IsWorkingFolderLocal => Sample is LocalProject;
+
+    public string WorkingFolderHeader => IsWorkingFolderLocal ? "Working folder" : "Working folder on the machine";
+
+    public string WorkingFolderPlaceholder => Sample switch
+    {
+        AzureVmShellProject => "/home/azureuser/my-project",
+        _ => @"C:\src\my-project",
+    };
+
+    public string EnvironmentVariablesDescription => IsWorkingFolderLocal
+        ? "Commands are run with these, in addition to the variables of the app. Use %NAME% in a value to include another variable."
+        : "These are set on the machine before each command. Use %NAME% in a value to include a variable of this machine.";
+
+    /// <summary>The name or id of the subscription the machine is in, or empty for the default subscription of the Azure CLI, which only projects run on an Azure virtual machine have.</summary>
+    [ObservableProperty]
+    public partial string Subscription { get; set; } = string.Empty;
+
+    /// <summary>The resource group the machine is in, which only projects run on an Azure virtual machine have.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsValid))]
+    public partial string ResourceGroup { get; set; } = string.Empty;
+
+    /// <summary>The name of the machine, which only projects run on an Azure virtual machine have.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsValid))]
+    public partial string VmName { get; set; } = string.Empty;
 
     public string ScriptsDescription => Sample switch
     {
         DotNetFileProject => "Put before and after each command, in the same file, so what the prepend script declares, such as #: and using directives, applies to commands.",
         PythonProject => "Put before and after each command, in the same script, so what the prepend script defines can be used by commands. Neither may be indented.",
         InterpreterProject => "Put before and after each command, in the same script, so what the prepend script defines can be used by commands.",
+        AzureVmProject => "Run on the machine before and after each command, in the same script, so what the prepend script defines can be used by commands.",
         _ => "Run before and after each command, in the same scope, so what the prepend script defines can be used by commands, and is offered by completion.",
     };
 
@@ -94,6 +138,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         DotNetFileProject => "#:package Humanizer@2.14.1\nusing Humanizer;",
         PythonProject => "import json",
         NodeProject => "const fs = require('node:fs');",
+        AzureVmShellProject => ". ./env.sh",
         _ => "Import-Module ./build.psm1",
     };
 
@@ -102,6 +147,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         DotNetFileProject => "Console.WriteLine(\"Done.\");",
         PythonProject => "print(\"Done.\")",
         NodeProject => "console.log('Done.');",
+        AzureVmShellProject => "echo \"Exit code: $?\"",
         _ => "Write-Host \"Exit code: $LASTEXITCODE\"",
     };
 
@@ -151,7 +197,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsValid), nameof(IsWorkingFolderMissing))]
     public partial string WorkingFolder { get; set; } = string.Empty;
 
-    public bool IsWorkingFolderMissing => !string.IsNullOrWhiteSpace(WorkingFolder) && !Directory.Exists(ExpandedWorkingFolder);
+    public bool IsWorkingFolderMissing => IsWorkingFolderLocal && !string.IsNullOrWhiteSpace(WorkingFolder) && !Directory.Exists(ExpandedWorkingFolder);
 
     // the environment variables in it are expanded when it is used, so it is checked the same way.
     private string ExpandedWorkingFolder => Environment.ExpandEnvironmentVariables(WorkingFolder.Trim());
@@ -196,7 +242,8 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
 
     public bool HasEnvironmentVariablesError => EnvironmentVariablesError is not null;
 
-    public bool IsValid => !string.IsNullOrWhiteSpace(DisplayName) && !string.IsNullOrWhiteSpace(WorkingFolder) && !IsWorkingFolderMissing && !HasEnvironmentVariablesError;
+    public bool IsValid => !string.IsNullOrWhiteSpace(DisplayName) && !string.IsNullOrWhiteSpace(WorkingFolder) && !IsWorkingFolderMissing && !HasEnvironmentVariablesError
+        && (!IsAzureVm || (!string.IsNullOrWhiteSpace(ResourceGroup) && !string.IsNullOrWhiteSpace(VmName)));
 
     private IEnumerable<EnvironmentVariableEditorViewModel> FilledEnvironmentVariables => EnvironmentVariables.Where(static variable => !variable.IsEmpty);
 
@@ -237,9 +284,14 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         };
         var built = _project switch
         {
-            null => Kind.Create(Guid.NewGuid(), DisplayName.Trim(), WorkingFolder.Trim()) with { EnvironmentVariables = environmentVariables, LoadEnvFile = LoadEnvFile, PersistHistory = PersistHistory },
-            { } project => project with { DisplayName = DisplayName.Trim(), WorkingFolder = WorkingFolder.Trim(), EnvironmentVariables = environmentVariables, LoadEnvFile = LoadEnvFile, PersistHistory = PersistHistory },
+            null => Kind.Create(Guid.NewGuid(), DisplayName.Trim(), WorkingFolder.Trim()) with { EnvironmentVariables = environmentVariables, PersistHistory = PersistHistory },
+            { } project => project with { DisplayName = DisplayName.Trim(), WorkingFolder = WorkingFolder.Trim(), EnvironmentVariables = environmentVariables, PersistHistory = PersistHistory },
         };
+
+        if (built is LocalProject local)
+        {
+            built = local with { LoadEnvFile = LoadEnvFile };
+        }
 
         // a script of only blank lines would still move what is typed down in the script that is run
         return built switch
@@ -255,6 +307,14 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
             InterpreterProject interpreter => interpreter with
             {
                 Arguments = NullIfEmpty(Arguments.Trim()),
+                PrependScript = NullIfEmpty(PrependScript.TrimEnd()),
+                AppendScript = NullIfEmpty(AppendScript.TrimEnd()),
+            },
+            AzureVmProject azureVm => azureVm with
+            {
+                Subscription = NullIfEmpty(Subscription.Trim()),
+                ResourceGroup = ResourceGroup.Trim(),
+                VmName = VmName.Trim(),
                 PrependScript = NullIfEmpty(PrependScript.TrimEnd()),
                 AppendScript = NullIfEmpty(AppendScript.TrimEnd()),
             },

@@ -281,7 +281,7 @@
                         Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                         IsTextSelectionEnabled="True"
                         Style="{ThemeResource CaptionTextBlockStyle}"
-                        Text="{x:Bind Session.Project.WorkingFolder, Mode=OneWay}"
+                        Text="{x:Bind Session.Project.LocationDisplayName, Mode=OneWay}"
                         TextTrimming="CharacterEllipsis" />
                 </StackPanel>
             </StackPanel>
@@ -313,6 +313,7 @@
                 <Button
                     AutomationProperties.Name="Open working folder"
                     Click="OnOpenFolderClick"
+                    Visibility="{x:Bind Session.IsWorkingFolderLocal, Mode=OneWay}"
                     Style="{StaticResource IconButtonStyle}"
                     ToolTipService.ToolTip="Open working folder">
                     <FontIcon FontSize="16" Glyph="&#xE838;" />
@@ -587,6 +588,7 @@
                         <MenuFlyoutItem
                             Command="{x:Bind Session.RunElevatedCommand, Mode=OneWay}"
                             KeyboardAcceleratorTextOverride="Ctrl+Shift+Enter"
+                            Visibility="{x:Bind Session.CanRunElevated, Mode=OneWay}"
                             Text="Run as administrator">
                             <MenuFlyoutItem.Icon>
                                 <FontIcon Glyph="&#xEA18;" />

@@ -27,9 +27,15 @@
     <Compile Include="$(AppDirectory)Models\WindowsPowerShellProject.cs" Link="App\Models\WindowsPowerShellProject.cs" />
     <Compile Include="$(AppDirectory)Models\DeveloperPowerShellProject.cs" Link="App\Models\DeveloperPowerShellProject.cs" />
     <Compile Include="$(AppDirectory)Models\Project.cs" Link="App\Models\Project.cs" />
+    <Compile Include="$(AppDirectory)Models\LocalProject.cs" Link="App\Models\LocalProject.cs" />
+    <Compile Include="$(AppDirectory)Models\AzureVmProject.cs" Link="App\Models\AzureVmProject.cs" />
+    <Compile Include="$(AppDirectory)Models\AzureVmShellProject.cs" Link="App\Models\AzureVmShellProject.cs" />
+    <Compile Include="$(AppDirectory)Models\AzureVmPowerShellProject.cs" Link="App\Models\AzureVmPowerShellProject.cs" />
     <Compile Include="$(AppDirectory)Models\SavedScript.cs" Link="App\Models\SavedScript.cs" />
     <Compile Include="$(AppDirectory)Services\CommandCompletion.cs" Link="App\Services\CommandCompletion.cs" />
     <Compile Include="$(AppDirectory)Services\CommandRunner.cs" Link="App\Services\CommandRunner.cs" />
+    <Compile Include="$(AppDirectory)Services\ProcessRunner.cs" Link="App\Services\ProcessRunner.cs" />
+    <Compile Include="$(AppDirectory)Services\AzureVmCommandRunner.cs" Link="App\Services\AzureVmCommandRunner.cs" />
     <Compile Include="$(AppDirectory)Services\DotEnvFile.cs" Link="App\Services\DotEnvFile.cs" />
     <Compile Include="$(AppDirectory)Services\ElevationClient.cs" Link="App\Services\ElevationClient.cs" />
     <Compile Include="$(AppDirectory)Services\ElevationProtocol.cs" Link="App\Services\ElevationProtocol.cs" />

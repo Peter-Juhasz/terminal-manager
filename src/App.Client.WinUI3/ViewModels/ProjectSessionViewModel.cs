@@ -34,7 +34,15 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     private int _historyIndex;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanRunElevated), nameof(IsWorkingFolderLocal))]
+    [NotifyCanExecuteChangedFor(nameof(RunElevatedCommand))]
     public partial Project Project { get; set; } = project;
+
+    /// <summary>Whether commands can be run as an administrator, which they can be on this machine; elsewhere, they are run with the rights they are run with there.</summary>
+    public bool CanRunElevated => Project is LocalProject;
+
+    /// <summary>Whether the working folder is on this machine, so it can be opened.</summary>
+    public bool IsWorkingFolderLocal => Project is LocalProject;
 
     public ObservableCollection<CommandEntryViewModel> Entries { get; } = [];
 
@@ -99,11 +107,13 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
 
     private bool CanRun => !string.IsNullOrWhiteSpace(Input);
 
+    private bool CanRunInputElevated => CanRun && CanRunElevated;
+
     [RelayCommand(CanExecute = nameof(CanRun), AllowConcurrentExecutions = true)]
     private Task RunAsync() => RunInputAsync(isElevated: false);
 
     /// <summary>Runs what was typed in the input as an administrator, which the user is asked to allow the first time.</summary>
-    [RelayCommand(CanExecute = nameof(CanRun), AllowConcurrentExecutions = true)]
+    [RelayCommand(CanExecute = nameof(CanRunInputElevated), AllowConcurrentExecutions = true)]
     private Task RunElevatedAsync() => RunInputAsync(isElevated: true);
 
     private Task RunInputAsync(bool isElevated)
@@ -250,9 +260,9 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
             var entry = CommandEntryViewModel.Restore(saved[index], () => ExecuteAsync(command, isElevated));
             entry.PropertyChanged += OnEntryChanged;
             Entries.Insert(index, entry);
-            if (Project is PowerShellProject powerShell)
+            if (GetHighlightingPrefix(Project) is { } prefix)
             {
-                _ = HighlightAsync(entry, powerShell);
+                _ = HighlightAsync(entry, prefix);
             }
         }
 
@@ -331,6 +341,9 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
 
     private async Task ExecuteAsync(string command, bool isElevated)
     {
+        // as it is run with the same rights either way, it isn't shown as run as an administrator
+        isElevated &= CanRunElevated;
+
         _history.Remove(command);
         _history.Add(command);
         _historyIndex = _history.Count;
@@ -347,9 +360,9 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
 
         // the project as it is when the command is started, which it is run by, whatever it is changed to while it runs
         var project = Project;
-        if (project is PowerShellProject powerShell)
+        if (GetHighlightingPrefix(project) is { } prefix)
         {
-            _ = HighlightAsync(entry, powerShell);
+            _ = HighlightAsync(entry, prefix);
         }
 
         using var tickSource = new CancellationTokenSource();
@@ -529,12 +542,12 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     /// <summary>Gets completion ready, so completing for the first time doesn't wait for it to start up.</summary>
     public void PrepareCompletion()
     {
-        if (!CanComplete)
+        if (Project is not PowerShellProject powerShell)
         {
             return;
         }
 
-        completer.Prepare(Project.ExpandedWorkingFolder);
+        completer.Prepare(powerShell.ExpandedWorkingFolder);
     }
 
     /// <summary>Completes the text before <paramref name="cursor"/> in <paramref name="input"/>, or returns <see langword="null"/> when it can't be completed.</summary>
@@ -545,12 +558,20 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         _ => Task.FromResult<CommandCompletion?>(null),
     };
 
+    // What the commands of project are parsed after when they are highlighted, which they are only when they are run by PowerShell, or null when they aren't.
+    private static string? GetHighlightingPrefix(Project project) => project switch
+    {
+        PowerShellProject powerShell => powerShell.EditorPrefix,
+        AzureVmPowerShellProject azureVm => azureVm.EditorPrefix,
+        _ => null,
+    };
+
     // Colors the command of entry, once it was parsed, which it is only by PowerShell; it is shown as it is in the meantime.
     // It is parsed after the prepend script of the project, as it is run, though only the command is shown.
     // Awaited on the UI thread, so the entry is changed on it.
-    private async Task HighlightAsync(CommandEntryViewModel entry, PowerShellProject project)
+    private async Task HighlightAsync(CommandEntryViewModel entry, string prefix)
     {
-        if (await highlighter.HighlightAsync(project.EditorPrefix, entry.Command, CancellationToken.None) is { } highlighted)
+        if (await highlighter.HighlightAsync(prefix, entry.Command, CancellationToken.None) is { } highlighted)
         {
             entry.HighlightedCommand = highlighted;
         }

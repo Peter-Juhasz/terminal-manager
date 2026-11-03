@@ -60,7 +60,7 @@
                         <DataTemplate x:DataType="vm:ProjectSessionViewModel">
                             <NavigationViewItem
                                 Icon="{x:Bind views:Bind.TerminalIcon(Project.TerminalIconUri), Mode=OneWay}"
-                                ToolTipService.ToolTip="{x:Bind Project.WorkingFolder, Mode=OneWay}">
+                                ToolTipService.ToolTip="{x:Bind Project.LocationDisplayName, Mode=OneWay}">
                                 <Grid ColumnSpacing="8">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
