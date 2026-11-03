@@ -67,6 +67,28 @@ public sealed partial class ProjectView : UserControl
         }
     }
 
+    /// <summary>Raised when the project of the session is to be edited, which the window does, as it shows the dialog for it.</summary>
+    public event EventHandler<ProjectSessionViewModel>? EditProjectRequested;
+
+    /// <summary>Raised when the project of the session is to be deleted, which the window confirms first.</summary>
+    public event EventHandler<ProjectSessionViewModel>? DeleteProjectRequested;
+
+    private void OnEditProjectClick(object sender, RoutedEventArgs e)
+    {
+        if (Session is { } session)
+        {
+            EditProjectRequested?.Invoke(this, session);
+        }
+    }
+
+    private void OnDeleteProjectClick(object sender, RoutedEventArgs e)
+    {
+        if (Session is { } session)
+        {
+            DeleteProjectRequested?.Invoke(this, session);
+        }
+    }
+
     public static readonly DependencyProperty WrapOutputProperty = DependencyProperty.Register(
         nameof(WrapOutput),
         typeof(bool),

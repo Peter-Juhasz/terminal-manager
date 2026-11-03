@@ -136,11 +136,16 @@ public sealed partial class MainWindow : Window
 
 	private async void OnEditProjectClick(object sender, RoutedEventArgs e)
 	{
-		if ((sender as FrameworkElement)?.Tag is not ProjectSessionViewModel session)
+		if ((sender as FrameworkElement)?.Tag is ProjectSessionViewModel session)
 		{
-			return;
+			await EditProjectAsync(session);
 		}
+	}
 
+	private async void OnEditProjectRequested(object? sender, ProjectSessionViewModel session) => await EditProjectAsync(session);
+
+	private async Task EditProjectAsync(ProjectSessionViewModel session)
+	{
 		var dialog = new ProjectDialog(new ProjectEditorViewModel(session.Project)) { XamlRoot = Content.XamlRoot };
 		if (await Dialogs.ShowAsync(dialog) is ContentDialogResult.Primary)
 		{
@@ -150,11 +155,16 @@ public sealed partial class MainWindow : Window
 
 	private async void OnDeleteProjectClick(object sender, RoutedEventArgs e)
 	{
-		if ((sender as FrameworkElement)?.Tag is not ProjectSessionViewModel session)
+		if ((sender as FrameworkElement)?.Tag is ProjectSessionViewModel session)
 		{
-			return;
+			await DeleteProjectAsync(session);
 		}
+	}
 
+	private async void OnDeleteProjectRequested(object? sender, ProjectSessionViewModel session) => await DeleteProjectAsync(session);
+
+	private async Task DeleteProjectAsync(ProjectSessionViewModel session)
+	{
 		var dialog = new ContentDialog
 		{
 			XamlRoot = Content.XamlRoot,

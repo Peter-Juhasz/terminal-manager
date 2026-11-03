@@ -132,6 +132,8 @@
             <Grid>
                 <views:ProjectView
                     x:Name="ProjectView"
+                    DeleteProjectRequested="OnDeleteProjectRequested"
+                    EditProjectRequested="OnEditProjectRequested"
                     Session="{x:Bind ViewModel.SelectedSession, Mode=OneWay}"
                     Visibility="{x:Bind views:Bind.VisibleIfNotNull(ViewModel.SelectedSession), Mode=OneWay}" />
 
