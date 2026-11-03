@@ -11,6 +11,24 @@ namespace App.Client.WinUI3.Models;
 /// </remarks>
 public sealed record class DotNetFileProject : DotNetRunProject
 {
+    /// <summary>
+    /// The code put before each command, in the same file, so what it declares, such as <c>#:</c> directives and <c>using</c> directives, applies to the command,
+    /// or <see langword="null"/> when there is none.
+    /// </summary>
+    public string? PrependScript { get; init; }
+
+    /// <summary>The code put after each command, in the same file, or <see langword="null"/> when there is none.</summary>
+    public string? AppendScript { get; init; }
+
+    /// <summary>The code that is run for <paramref name="command"/>, with <see cref="PrependScript"/> before it and <see cref="AppendScript"/> after it, each on lines of their own.</summary>
+    public string Wrap(string command)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        var prefix = PrependScript is null or "" ? string.Empty : PrependScript + "\n";
+        return AppendScript is null or "" ? prefix + command : prefix + command + "\n" + AppendScript;
+    }
+
     [JsonIgnore]
     public override string TerminalDisplayName => "C# file-based app";
 
@@ -30,6 +48,6 @@ public sealed record class DotNetFileProject : DotNetRunProject
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        return command;
+        return Wrap(command);
     }
 }

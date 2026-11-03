@@ -147,6 +147,18 @@ public sealed class ProjectSerializationTests
     }
 
     [TestMethod]
+    public void DotNetFilePassesScriptsAroundCommand()
+    {
+        var project = new DotNetFileProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\", PrependScript = "using System.Text;", AppendScript = "Console.WriteLine();" };
+
+        var json = JsonSerializer.Serialize<Project>(project, AppJsonSerializerContext.Default.Project);
+        var deserialized = Assert.IsInstanceOfType<DotNetFileProject>(JsonSerializer.Deserialize(json, AppJsonSerializerContext.Default.Project));
+
+        Assert.AreEqual("using System.Text;\nvar a = 1;\nConsole.WriteLine();", deserialized.CreateStandardInput("var a = 1;"));
+        Assert.AreEqual("var a = 1;", (deserialized with { PrependScript = null, AppendScript = "" }).CreateStandardInput("var a = 1;"));
+    }
+
+    [TestMethod]
     public void WrapPutsScriptsOnLinesOfTheirOwn()
     {
         var project = new PowerShellProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\", PrependScript = "$a = 1", AppendScript = "$b = 2" };

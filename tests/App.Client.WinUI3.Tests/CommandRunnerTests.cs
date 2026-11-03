@@ -258,6 +258,25 @@ public sealed class CommandRunnerTests(TestContext testContext)
         Assert.AreEqual("greet\r\naé€\r\n", result.Output);
     }
 
+    // The directives of the prepend script must still come first in the file, as they would be errors after the command otherwise.
+    [TestMethod]
+    public async Task RunAsyncRunsDotNetFileBasedAppWithScripts()
+    {
+        var project = new DotNetFileProject
+        {
+            Id = Guid.NewGuid(),
+            DisplayName = "Test",
+            WorkingFolder = Path.GetTempPath(),
+            PrependScript = "#:property Nullable=enable\nusing System.Text;",
+            AppendScript = "Console.WriteLine(\"after\");",
+        };
+
+        var result = await RunAsync(project, "Console.WriteLine(new StringBuilder(\"command\"));");
+
+        Assert.AreEqual(0, result.ExitCode, result.Output + result.Error);
+        Assert.AreEqual("command\r\nafter\r\n", result.Output);
+    }
+
     private sealed record class StandardInputProject : CmdProject
     {
         public required string Input { get; init; }

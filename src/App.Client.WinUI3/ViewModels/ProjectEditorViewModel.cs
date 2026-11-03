@@ -43,6 +43,12 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
             AppendScript = powerShell.AppendScript ?? string.Empty;
         }
 
+        if (project is DotNetFileProject dotNetFile)
+        {
+            PrependScript = dotNetFile.PrependScript ?? string.Empty;
+            AppendScript = dotNetFile.AppendScript ?? string.Empty;
+        }
+
         if (project is DotNetRunProject dotNetRun)
         {
             RunArguments = dotNetRun.RunArguments ?? string.Empty;
@@ -58,11 +64,30 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     public IReadOnlyList<ProjectKind> Kinds { get; } = ProjectKind.All;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsPowerShell), nameof(IsDotNetRun), nameof(RunArgumentsDescription))]
+    [NotifyPropertyChangedFor(nameof(HasPrependAndAppend), nameof(IsDotNetRun), nameof(RunArgumentsDescription))]
+    [NotifyPropertyChangedFor(nameof(ScriptsDescription), nameof(PrependScriptPlaceholder), nameof(AppendScriptPlaceholder))]
     public partial ProjectKind Kind { get; set; }
 
     // the kind is told by what it creates, as that of a project being edited creates the project itself.
-    public bool IsPowerShell => Kind.Create(Guid.Empty, string.Empty, string.Empty) is PowerShellProject;
+    public bool HasPrependAndAppend => Kind.Create(Guid.Empty, string.Empty, string.Empty) is PowerShellProject or DotNetFileProject;
+
+    public string ScriptsDescription => Kind.Create(Guid.Empty, string.Empty, string.Empty) switch
+    {
+        DotNetFileProject => "Put before and after each command, in the same file, so what the prepend script declares, such as #: and using directives, applies to commands.",
+        _ => "Run before and after each command, in the same scope, so what the prepend script defines can be used by commands, and is offered by completion.",
+    };
+
+    public string PrependScriptPlaceholder => Kind.Create(Guid.Empty, string.Empty, string.Empty) switch
+    {
+        DotNetFileProject => "#:package Humanizer@2.14.1\nusing Humanizer;",
+        _ => "Import-Module ./build.psm1",
+    };
+
+    public string AppendScriptPlaceholder => Kind.Create(Guid.Empty, string.Empty, string.Empty) switch
+    {
+        DotNetFileProject => "Console.WriteLine(\"Done.\");",
+        _ => "Write-Host \"Exit code: $LASTEXITCODE\"",
+    };
 
     public bool IsDotNetRun => Kind.Create(Guid.Empty, string.Empty, string.Empty) is DotNetRunProject;
 
@@ -77,11 +102,11 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     [ObservableProperty]
     public partial string RunArguments { get; set; } = string.Empty;
 
-    /// <summary>The script run before each command, which only projects run by PowerShell have.</summary>
+    /// <summary>The script run before each command, which only projects run by PowerShell, or C# file-based apps, have.</summary>
     [ObservableProperty]
     public partial string PrependScript { get; set; } = string.Empty;
 
-    /// <summary>The script run after each command, which only projects run by PowerShell have.</summary>
+    /// <summary>The script run after each command, which only projects run by PowerShell, or C# file-based apps, have.</summary>
     [ObservableProperty]
     public partial string AppendScript { get; set; } = string.Empty;
 
@@ -183,6 +208,12 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         return built switch
         {
             PowerShellProject powerShell => powerShell with { PrependScript = NullIfEmpty(PrependScript.TrimEnd()), AppendScript = NullIfEmpty(AppendScript.TrimEnd()) },
+            DotNetFileProject dotNetFile => dotNetFile with
+            {
+                RunArguments = NullIfEmpty(RunArguments.Trim()),
+                PrependScript = NullIfEmpty(PrependScript.TrimEnd()),
+                AppendScript = NullIfEmpty(AppendScript.TrimEnd()),
+            },
             DotNetRunProject dotNetRun => dotNetRun with { RunArguments = NullIfEmpty(RunArguments.Trim()) },
             _ => built,
         };
