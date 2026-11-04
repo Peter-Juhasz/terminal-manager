@@ -13,6 +13,11 @@
     <ContentDialog.Resources>
         <!-- Wide enough for two columns of terminals. -->
         <x:Double x:Key="ContentDialogMaxWidth">800</x:Double>
+        <!-- The terminals, grouped by whether they run on this machine or elsewhere. -->
+        <CollectionViewSource
+            x:Name="KindsSource"
+            IsSourceGrouped="True"
+            Source="{x:Bind KindGroups}" />
     </ContentDialog.Resources>
 
     <StackPanel Width="720" Spacing="12">
@@ -24,11 +29,20 @@
         <!-- A terminal is picked by clicking it, which goes on to the project. -->
         <GridView
             x:Name="KindsView"
-            MaxHeight="420"
+            MaxHeight="480"
             IsItemClickEnabled="True"
             ItemClick="OnKindClick"
-            ItemsSource="{x:Bind Kinds}"
+            ItemsSource="{x:Bind KindsSource.View}"
             SelectionMode="None">
+            <GridView.GroupStyle>
+                <GroupStyle>
+                    <GroupStyle.HeaderTemplate>
+                        <DataTemplate x:DataType="local:ProjectKindGroup">
+                            <TextBlock Style="{ThemeResource SubtitleTextBlockStyle}" Text="{x:Bind Name}" />
+                        </DataTemplate>
+                    </GroupStyle.HeaderTemplate>
+                </GroupStyle>
+            </GridView.GroupStyle>
             <GridView.ItemContainerStyle>
                 <Style BasedOn="{StaticResource DefaultGridViewItemStyle}" TargetType="GridViewItem">
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />

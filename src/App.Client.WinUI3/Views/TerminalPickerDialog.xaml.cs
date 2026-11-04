@@ -15,7 +15,12 @@ public sealed partial class TerminalPickerDialog : ContentDialog
         Opened += (_, _) => KindsView.Focus(FocusState.Programmatic);
     }
 
-    public IReadOnlyList<ProjectKind> Kinds => ProjectKind.All;
+    /// <summary>The kinds, those run on this machine first, then those run elsewhere.</summary>
+    public IReadOnlyList<ProjectKindGroup> KindGroups { get; } = (ProjectKindGroup[])
+    [
+        new(name: "Local", kinds: ProjectKind.All.Where(static kind => !kind.IsRemote)),
+        new(name: "Remote", kinds: ProjectKind.All.Where(static kind => kind.IsRemote)),
+    ];
 
     /// <summary>The kind picked, or <see langword="null"/> when the dialog was cancelled.</summary>
     public ProjectKind? SelectedKind { get; private set; }
@@ -25,4 +30,12 @@ public sealed partial class TerminalPickerDialog : ContentDialog
         SelectedKind = (ProjectKind)e.ClickedItem;
         Hide();
     }
+}
+
+/// <summary>
+/// A group of <see cref="ProjectKind"/>s under a header, which is itself the list of its kinds, as a grouped <see cref="Microsoft.UI.Xaml.Data.CollectionViewSource"/> takes it.
+/// </summary>
+public sealed class ProjectKindGroup(string name, IEnumerable<ProjectKind> kinds) : List<ProjectKind>(kinds)
+{
+    public string Name { get; } = name;
 }

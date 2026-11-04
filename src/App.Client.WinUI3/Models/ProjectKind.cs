@@ -6,7 +6,8 @@ namespace App.Client.WinUI3.Models;
 /// <param name="DisplayName">The name of the terminal, with the command it is run by.</param>
 /// <param name="Description">What the commands of a project of the kind are, and where they are run, in a sentence.</param>
 /// <param name="Create">Creates a project of the kind, from its id, name and working folder.</param>
-public sealed record class ProjectKind(string DisplayName, string Description, Func<Guid, string, string, Project> Create)
+/// <param name="IsRemote">Whether the commands are run somewhere other than this machine, such as a virtual machine, a container or another computer.</param>
+public sealed record class ProjectKind(string DisplayName, string Description, Func<Guid, string, string, Project> Create, bool IsRemote = false)
 {
     /// <summary>The logo of the terminal, or <see langword="null"/> for a generic terminal icon.</summary>
     // told by what it creates, as that of a project being edited creates the project itself.
@@ -103,7 +104,8 @@ public sealed record class ProjectKind(string DisplayName, string Description, F
                 Id = id,
                 DisplayName = displayName,
                 WorkingFolder = workingFolder,
-            }),
+            },
+            IsRemote: true),
         new(
             DisplayName: "Azure VM, Windows PowerShell (az vm run-command)",
             Description: "Commands are run by PowerShell on a Windows virtual machine in Azure.",
@@ -112,7 +114,8 @@ public sealed record class ProjectKind(string DisplayName, string Description, F
                 Id = id,
                 DisplayName = displayName,
                 WorkingFolder = workingFolder,
-            }),
+            },
+            IsRemote: true),
         new(
             DisplayName: "Docker container, shell (docker exec)",
             Description: "Commands are run by sh in a running Docker container.",
@@ -121,7 +124,8 @@ public sealed record class ProjectKind(string DisplayName, string Description, F
                 Id = id,
                 DisplayName = displayName,
                 WorkingFolder = workingFolder,
-            }),
+            },
+            IsRemote: true),
         new(
             DisplayName: "Docker container, PowerShell (docker exec)",
             Description: "Commands are run by PowerShell in a running Docker container.",
@@ -130,7 +134,8 @@ public sealed record class ProjectKind(string DisplayName, string Description, F
                 Id = id,
                 DisplayName = displayName,
                 WorkingFolder = workingFolder,
-            }),
+            },
+            IsRemote: true),
         new(
             DisplayName: "Kubernetes pod, shell (kubectl exec)",
             Description: "Commands are run by sh in a container of a Kubernetes pod.",
@@ -139,7 +144,8 @@ public sealed record class ProjectKind(string DisplayName, string Description, F
                 Id = id,
                 DisplayName = displayName,
                 WorkingFolder = workingFolder,
-            }),
+            },
+            IsRemote: true),
         new(
             DisplayName: "Kubernetes pod, PowerShell (kubectl exec)",
             Description: "Commands are run by PowerShell in a container of a Kubernetes pod.",
@@ -148,7 +154,8 @@ public sealed record class ProjectKind(string DisplayName, string Description, F
                 Id = id,
                 DisplayName = displayName,
                 WorkingFolder = workingFolder,
-            }),
+            },
+            IsRemote: true),
         new(
             DisplayName: "PowerShell remoting (Invoke-Command)",
             Description: "Commands are run by PowerShell on another computer, over a remote session.",
@@ -157,6 +164,7 @@ public sealed record class ProjectKind(string DisplayName, string Description, F
                 Id = id,
                 DisplayName = displayName,
                 WorkingFolder = workingFolder,
-            }),
+            },
+            IsRemote: true),
     ];
 }
