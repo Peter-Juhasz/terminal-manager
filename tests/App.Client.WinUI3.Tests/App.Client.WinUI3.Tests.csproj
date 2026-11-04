@@ -14,7 +14,7 @@
     <Compile Include="$(AppDirectory)Models\DeveloperCmdProject.cs" Link="App\Models\DeveloperCmdProject.cs" />
     <Compile Include="$(AppDirectory)Models\DotNetRunProject.cs" Link="App\Models\DotNetRunProject.cs" />
     <Compile Include="$(AppDirectory)Models\DotNetFileProject.cs" Link="App\Models\DotNetFileProject.cs" />
-    <Compile Include="$(AppDirectory)Models\ScriptWrapping.cs" Link="App\Models\ScriptWrapping.cs" />
+    <Compile Include="$(AppDirectory)Models\CommandLanguage.cs" Link="App\Models\CommandLanguage.cs" />
     <Compile Include="$(AppDirectory)Models\InterpreterProject.cs" Link="App\Models\InterpreterProject.cs" />
     <Compile Include="$(AppDirectory)Models\PythonProject.cs" Link="App\Models\PythonProject.cs" />
     <Compile Include="$(AppDirectory)Models\NodeProject.cs" Link="App\Models\NodeProject.cs" />

@@ -21,6 +21,9 @@ public sealed record class PythonProject : InterpreterProject
     ];
 
     [JsonIgnore]
+    public override CommandLanguage Language => CommandLanguage.Python;
+
+    [JsonIgnore]
     public override string TerminalDisplayName => "Python";
 
     private static readonly Uri IconUri = new("ms-appx:///Assets/python.svg");

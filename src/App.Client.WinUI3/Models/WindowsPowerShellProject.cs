@@ -11,7 +11,7 @@ namespace App.Client.WinUI3.Models;
 public sealed record class WindowsPowerShellProject : PowerShellProject
 {
     // $PSStyle was added in PowerShell 7.2, and Windows PowerShell doesn't color its output anyway.
-    private protected override string Prelude => EncodingPrelude;
+    private protected override string Prelude => PowerShellScript.EncodingPrelude;
 
     private protected override string FileName => "powershell";
 

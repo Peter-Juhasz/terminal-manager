@@ -32,21 +32,11 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         WorkingFolder = project.WorkingFolder;
         LoadEnvFile = project is LocalProject { LoadEnvFile: true };
         PersistHistory = project.PersistHistory;
+        PrependScript = project.PrependScript ?? string.Empty;
+        AppendScript = project.AppendScript ?? string.Empty;
         foreach (var (name, value) in project.EnvironmentVariables ?? ReadOnlyDictionary<string, string>.Empty)
         {
             EnvironmentVariables.Add(new(Remove) { Name = name, Value = value });
-        }
-
-        if (project is PowerShellProject powerShell)
-        {
-            PrependScript = powerShell.PrependScript ?? string.Empty;
-            AppendScript = powerShell.AppendScript ?? string.Empty;
-        }
-
-        if (project is DotNetFileProject dotNetFile)
-        {
-            PrependScript = dotNetFile.PrependScript ?? string.Empty;
-            AppendScript = dotNetFile.AppendScript ?? string.Empty;
         }
 
         if (project is DotNetRunProject dotNetRun)
@@ -57,8 +47,6 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         if (project is InterpreterProject interpreter)
         {
             Arguments = interpreter.Arguments ?? string.Empty;
-            PrependScript = interpreter.PrependScript ?? string.Empty;
-            AppendScript = interpreter.AppendScript ?? string.Empty;
         }
 
         if (project is AzureVmProject azureVm)
@@ -66,14 +54,6 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
             Subscription = azureVm.Subscription ?? string.Empty;
             ResourceGroup = azureVm.ResourceGroup;
             VmName = azureVm.VmName;
-            PrependScript = azureVm.PrependScript ?? string.Empty;
-            AppendScript = azureVm.AppendScript ?? string.Empty;
-        }
-
-        if (project is ContainerProject container)
-        {
-            PrependScript = container.PrependScript ?? string.Empty;
-            AppendScript = container.AppendScript ?? string.Empty;
         }
 
         if (project is DockerProject docker)
@@ -86,8 +66,6 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         if (project is PowerShellRemotingProject remoting)
         {
             ComputerName = remoting.ComputerName;
-            PrependScript = remoting.PrependScript ?? string.Empty;
-            AppendScript = remoting.AppendScript ?? string.Empty;
         }
 
         if (project is KubectlProject kubectl)
@@ -114,10 +92,9 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(EnvironmentVariablesDescription), nameof(IsValid))]
     public partial ProjectKind Kind { get; set; }
 
-    // the kind is told by what it creates, as that of a project being edited creates the project itself.
-    private Project Sample => Kind.Create(Guid.Empty, string.Empty, string.Empty);
+    private Project Sample => Kind.Sample;
 
-    public bool HasPrependAndAppend => Sample is PowerShellProject or DotNetFileProject or InterpreterProject or AzureVmProject or ContainerProject or PowerShellRemotingProject;
+    public bool HasPrependAndAppend => Sample.HasPrependAndAppend;
 
     /// <summary>Whether commands are run on an Azure virtual machine, which is told by its subscription, resource group and name.</summary>
     public bool IsAzureVm => Sample is AzureVmProject;
@@ -373,8 +350,18 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         };
         var built = _project switch
         {
-            null => Kind.Create(Guid.NewGuid(), DisplayName.Trim(), WorkingFolder.Trim()) with { EnvironmentVariables = environmentVariables, PersistHistory = PersistHistory },
-            { } project => project with { DisplayName = DisplayName.Trim(), WorkingFolder = WorkingFolder.Trim(), EnvironmentVariables = environmentVariables, PersistHistory = PersistHistory },
+            null => Kind.Create(Guid.NewGuid(), DisplayName.Trim(), WorkingFolder.Trim()),
+            { } project => project with { DisplayName = DisplayName.Trim(), WorkingFolder = WorkingFolder.Trim() },
+        };
+
+        // a script of only blank lines would still move what is typed down in the script that is run;
+        // the scripts are left empty for kinds that have none, as they aren't shown for them.
+        built = built with
+        {
+            EnvironmentVariables = environmentVariables,
+            PersistHistory = PersistHistory,
+            PrependScript = NullIfEmpty(PrependScript.TrimEnd()),
+            AppendScript = NullIfEmpty(AppendScript.TrimEnd()),
         };
 
         if (built is LocalProject local)
@@ -382,53 +369,29 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
             built = local with { LoadEnvFile = LoadEnvFile };
         }
 
-        // a script of only blank lines would still move what is typed down in the script that is run
         return built switch
         {
-            PowerShellProject powerShell => powerShell with { PrependScript = NullIfEmpty(PrependScript.TrimEnd()), AppendScript = NullIfEmpty(AppendScript.TrimEnd()) },
-            DotNetFileProject dotNetFile => dotNetFile with
-            {
-                RunArguments = NullIfEmpty(Arguments.Trim()),
-                PrependScript = NullIfEmpty(PrependScript.TrimEnd()),
-                AppendScript = NullIfEmpty(AppendScript.TrimEnd()),
-            },
             DotNetRunProject dotNetRun => dotNetRun with { RunArguments = NullIfEmpty(Arguments.Trim()) },
-            InterpreterProject interpreter => interpreter with
-            {
-                Arguments = NullIfEmpty(Arguments.Trim()),
-                PrependScript = NullIfEmpty(PrependScript.TrimEnd()),
-                AppendScript = NullIfEmpty(AppendScript.TrimEnd()),
-            },
+            InterpreterProject interpreter => interpreter with { Arguments = NullIfEmpty(Arguments.Trim()) },
             AzureVmProject azureVm => azureVm with
             {
                 Subscription = NullIfEmpty(Subscription.Trim()),
                 ResourceGroup = ResourceGroup.Trim(),
                 VmName = VmName.Trim(),
-                PrependScript = NullIfEmpty(PrependScript.TrimEnd()),
-                AppendScript = NullIfEmpty(AppendScript.TrimEnd()),
             },
             DockerProject docker => docker with
             {
                 Context = NullIfEmpty(Context.Trim()),
                 Container = Container.Trim(),
                 User = NullIfEmpty(User.Trim()),
-                PrependScript = NullIfEmpty(PrependScript.TrimEnd()),
-                AppendScript = NullIfEmpty(AppendScript.TrimEnd()),
             },
-            PowerShellRemotingProject remoting => remoting with
-            {
-                ComputerName = ComputerName.Trim(),
-                PrependScript = NullIfEmpty(PrependScript.TrimEnd()),
-                AppendScript = NullIfEmpty(AppendScript.TrimEnd()),
-            },
+            PowerShellRemotingProject remoting => remoting with { ComputerName = ComputerName.Trim() },
             KubectlProject kubectl => kubectl with
             {
                 Context = NullIfEmpty(Context.Trim()),
                 Namespace = NullIfEmpty(Namespace.Trim()),
                 Pod = Pod.Trim(),
                 Container = NullIfEmpty(Container.Trim()),
-                PrependScript = NullIfEmpty(PrependScript.TrimEnd()),
-                AppendScript = NullIfEmpty(AppendScript.TrimEnd()),
             },
             _ => built,
         };

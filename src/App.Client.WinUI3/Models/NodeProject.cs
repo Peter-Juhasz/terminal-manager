@@ -13,6 +13,9 @@ public sealed record class NodeProject : InterpreterProject
     private protected override string FileName => "node";
 
     [JsonIgnore]
+    public override CommandLanguage Language => CommandLanguage.JavaScript;
+
+    [JsonIgnore]
     public override string TerminalDisplayName => "Node.js";
 
     private static readonly Uri IconUri = new("ms-appx:///Assets/node.svg");

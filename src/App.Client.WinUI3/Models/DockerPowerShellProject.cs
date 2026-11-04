@@ -6,7 +6,8 @@ namespace App.Client.WinUI3.Models;
 public sealed record class DockerPowerShellProject : DockerProject
 {
     [JsonIgnore]
-    public override string TerminalDisplayName => "Docker (PowerShell)";
+    public override CommandLanguage Language => CommandLanguage.PowerShell;
 
-    private protected override IEnumerable<string> CreateShellArguments(string body, IReadOnlyDictionary<string, string> environmentVariables) => RunByPowerShell(body, environmentVariables);
+    [JsonIgnore]
+    public override string TerminalDisplayName => "Docker (PowerShell)";
 }

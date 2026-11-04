@@ -16,32 +16,14 @@ namespace App.Client.WinUI3.Models;
 /// </remarks>
 public sealed record class PowerShellRemotingProject : Project
 {
-    // the output is read without progress bars or colors, which are only meant for a console.
-    private const string LocalPrelude = """
-        [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
-        $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
-        $ProgressPreference = 'SilentlyContinue'
-        $PSStyle.OutputRendering = 'PlainText'
-
-        """;
-
     /// <summary>The variable the script sets on the computer to whether the command succeeded, which it is left unset by when it is stopped by an error.</summary>
     private const string SucceededVariable = "$global:__terminal_manager_succeeded";
 
     /// <summary>The name of the computer commands are run on, as in <c>Invoke-Command -ComputerName</c>.</summary>
     public string ComputerName { get; init; } = string.Empty;
 
-    /// <summary>The script run before each command, in the same scope, so what it defines can be used by the command, or <see langword="null"/> when there is none.</summary>
-    public string? PrependScript { get; init; }
-
-    /// <summary>The script run after each command, in the same scope, or <see langword="null"/> when there is none.</summary>
-    public string? AppendScript { get; init; }
-
-    /// <summary>
-    /// What is put before a command when it is highlighted, so what <see cref="PrependScript"/> defines, or leaves open, is taken into account.
-    /// </summary>
     [JsonIgnore]
-    public string EditorPrefix => PrependScript is null or "" ? string.Empty : PrependScript + "\n";
+    public override CommandLanguage Language => CommandLanguage.PowerShell;
 
     [JsonIgnore]
     public override string TerminalDisplayName => "PowerShell remoting";
@@ -64,7 +46,7 @@ public sealed record class PowerShellRemotingProject : Project
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var body = ScriptWrapping.Wrap(PrependScript, command, AppendScript).ReplaceLineEndings("\n");
+        var body = Wrap(command).ReplaceLineEndings("\n");
         return new StringBuilder()
             .Append(SucceededVariable).Append(" = $false\n")
             .Append("$ProgressPreference = 'SilentlyContinue'\n")
@@ -84,7 +66,7 @@ public sealed record class PowerShellRemotingProject : Project
     /// </remarks>
     public ProcessStartInfo CreateStartInfo(string command)
     {
-        var script = new StringBuilder(LocalPrelude)
+        var script = new StringBuilder(PowerShellScript.PlainTextPrelude)
             .Append("$__terminal_manager_session = New-PSSession -ComputerName ").Append(PowerShellScript.Quote(ComputerName)).Append(" -ErrorAction Stop\n")
             .Append("try {\n")
             .Append("Invoke-Command -Session $__terminal_manager_session -ScriptBlock ([scriptblock]::Create(").Append(PowerShellScript.Quote(CreateRemoteScript(command))).Append("))\n")

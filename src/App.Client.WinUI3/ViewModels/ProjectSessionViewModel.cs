@@ -561,11 +561,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     // What the commands of project are parsed after when they are highlighted, which they are only when they are run by PowerShell, or null when they aren't.
     private static string? GetHighlightingPrefix(Project project) => project switch
     {
-        PowerShellProject powerShell => powerShell.EditorPrefix,
-        AzureVmPowerShellProject azureVm => azureVm.EditorPrefix,
-        DockerPowerShellProject docker => docker.EditorPrefix,
-        KubectlPowerShellProject kubectl => kubectl.EditorPrefix,
-        PowerShellRemotingProject remoting => remoting.EditorPrefix,
+        { Language: CommandLanguage.PowerShell } => project.EditorPrefix,
         _ => null,
     };
 

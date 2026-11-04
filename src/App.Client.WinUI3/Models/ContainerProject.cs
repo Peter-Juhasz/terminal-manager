@@ -16,10 +16,7 @@ namespace App.Client.WinUI3.Models;
 public abstract record class ContainerProject : Project
 {
     // The output is read without progress bars or colors, which are only meant for a console; $PSStyle isn't there before PowerShell 7.2.
-    private const string PowerShellPrelude = """
-        [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
-        $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
-        $ProgressPreference = 'SilentlyContinue'
+    private const string PowerShellPrelude = PowerShellScript.EncodingPrelude + """
         if ($PSStyle) { $PSStyle.OutputRendering = 'PlainText' }
         $global:LASTEXITCODE = 0
 
@@ -33,18 +30,6 @@ public abstract record class ContainerProject : Project
 
         """;
 
-    /// <summary>The script run before each command, in the same scope, so what it defines can be used by the command, or <see langword="null"/> when there is none.</summary>
-    public string? PrependScript { get; init; }
-
-    /// <summary>The script run after each command, in the same scope, or <see langword="null"/> when there is none.</summary>
-    public string? AppendScript { get; init; }
-
-    /// <summary>
-    /// What is put before a command when it is highlighted, so what <see cref="PrependScript"/> defines, or leaves open, is taken into account.
-    /// </summary>
-    [JsonIgnore]
-    public string EditorPrefix => PrependScript is null or "" ? string.Empty : PrependScript + "\n";
-
     /// <summary>The executable of the client that runs the commands in the container, which is expected to be on the path.</summary>
     private protected abstract string FileName { get; }
 
@@ -53,9 +38,14 @@ public abstract record class ContainerProject : Project
 
     /// <summary>
     /// The arguments run in the container for <paramref name="body"/>, which is the command with the scripts before and after it: the shell, or PowerShell,
-    /// with a script that changes to the working folder and sets <paramref name="environmentVariables"/> first.
+    /// as <see cref="Project.Language"/> tells, with a script that changes to the working folder and sets <paramref name="environmentVariables"/> first.
     /// </summary>
-    private protected abstract IEnumerable<string> CreateShellArguments(string body, IReadOnlyDictionary<string, string> environmentVariables);
+    private IEnumerable<string> CreateShellArguments(string body, IReadOnlyDictionary<string, string> environmentVariables) => Language switch
+    {
+        CommandLanguage.Shell => RunByShell(body, environmentVariables),
+        CommandLanguage.PowerShell => RunByPowerShell(body, environmentVariables),
+        var language => throw new InvalidOperationException($"Commands in {language} can't be run in a container."),
+    };
 
     /// <summary>Describes the process of the client that runs <paramref name="command"/> in the container. The redirection of its streams is set by the caller.</summary>
     public ProcessStartInfo CreateStartInfo(string command)
@@ -63,7 +53,7 @@ public abstract record class ContainerProject : Project
         ArgumentNullException.ThrowIfNull(command);
 
         // the container may not take carriage returns as the end of a line, which text boxes end them with
-        var body = ScriptWrapping.Wrap(PrependScript, command, AppendScript).ReplaceLineEndings("\n");
+        var body = Wrap(command).ReplaceLineEndings("\n");
 
         // each argument is quoted for the command line as needed, so the script reaches the container as it is;
         // the working folder is in the container, so the client is run in one that is sure to exist here.
@@ -77,14 +67,14 @@ public abstract record class ContainerProject : Project
     }
 
     /// <summary>Runs <paramref name="body"/> by <c>sh</c>, which is in nearly every Linux image, unlike other shells.</summary>
-    private protected IEnumerable<string> RunByShell(string body, IReadOnlyDictionary<string, string> environmentVariables)
+    private IEnumerable<string> RunByShell(string body, IReadOnlyDictionary<string, string> environmentVariables)
     {
         var script = new StringBuilder().AppendShellPreamble(WorkingFolder, environmentVariables).Append(body).Append('\n');
         return (string[])["sh", "-c", script.ToString()];
     }
 
     /// <summary>Runs <paramref name="body"/> by PowerShell (pwsh); the working folder not being there stops the script.</summary>
-    private protected IEnumerable<string> RunByPowerShell(string body, IReadOnlyDictionary<string, string> environmentVariables)
+    private IEnumerable<string> RunByPowerShell(string body, IReadOnlyDictionary<string, string> environmentVariables)
     {
         var script = new StringBuilder(PowerShellPrelude).AppendPowerShellPreamble(WorkingFolder, environmentVariables).Append(body).Append('\n').Append(PowerShellEpilogue);
         return (string[])["pwsh", "-NoLogo", "-NoProfile", "-NonInteractive", "-OutputFormat", "Text", "-Command", script.ToString().ReplaceLineEndings("\n")];

@@ -6,7 +6,8 @@ namespace App.Client.WinUI3.Models;
 public sealed record class DockerShellProject : DockerProject
 {
     [JsonIgnore]
-    public override string TerminalDisplayName => "Docker (shell)";
+    public override CommandLanguage Language => CommandLanguage.Shell;
 
-    private protected override IEnumerable<string> CreateShellArguments(string body, IReadOnlyDictionary<string, string> environmentVariables) => RunByShell(body, environmentVariables);
+    [JsonIgnore]
+    public override string TerminalDisplayName => "Docker (shell)";
 }

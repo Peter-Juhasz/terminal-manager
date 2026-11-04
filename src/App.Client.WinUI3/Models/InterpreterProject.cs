@@ -18,15 +18,6 @@ public abstract record class InterpreterProject : LocalProject
     /// <summary>The options of the interpreter, put before the <c>-</c> that stands for the script, or <see langword="null"/> when there are none.</summary>
     public string? Arguments { get; init; }
 
-    /// <summary>The code put before each command, in the same script, so what it defines can be used by the command, or <see langword="null"/> when there is none.</summary>
-    public string? PrependScript { get; init; }
-
-    /// <summary>The code put after each command, in the same script, or <see langword="null"/> when there is none.</summary>
-    public string? AppendScript { get; init; }
-
-    /// <summary>The code that is run for <paramref name="command"/>, with <see cref="PrependScript"/> before it and <see cref="AppendScript"/> after it, each on lines of their own.</summary>
-    public string Wrap(string command) => ScriptWrapping.Wrap(PrependScript, command, AppendScript);
-
     public override ProcessStartInfo CreateStartInfo(string command)
     {
         ArgumentNullException.ThrowIfNull(command);

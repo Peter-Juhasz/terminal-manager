@@ -22,12 +22,6 @@ public abstract record class AzureVmProject : Project
     /// <summary>The name of the machine.</summary>
     public string VmName { get; init; } = string.Empty;
 
-    /// <summary>The script run before each command, in the same scope, so what it defines can be used by the command, or <see langword="null"/> when there is none.</summary>
-    public string? PrependScript { get; init; }
-
-    /// <summary>The script run after each command, in the same scope, or <see langword="null"/> when there is none.</summary>
-    public string? AppendScript { get; init; }
-
     /// <summary>The id of the built-in run command that runs the script, such as <c>RunShellScript</c>.</summary>
     [JsonIgnore]
     public abstract string CommandId { get; }
@@ -55,12 +49,10 @@ public abstract record class AzureVmProject : Project
         ArgumentException.ThrowIfNullOrEmpty(exitCodeMarker);
 
         // the machine may not take carriage returns as the end of a line, which text boxes end them with
-        var body = NormalizeLineEndings(ScriptWrapping.Wrap(PrependScript, command, AppendScript));
+        var body = Wrap(command).ReplaceLineEndings("\n");
         return CreateScript(body, ExpandedEnvironmentVariables, exitCodeMarker);
     }
 
     /// <summary>The script run for <paramref name="body"/>, which is the command with the scripts before and after it, as <see cref="CreateScript(string, string)"/> describes it.</summary>
     private protected abstract string CreateScript(string body, IReadOnlyDictionary<string, string> environmentVariables, string exitCodeMarker);
-
-    private static string NormalizeLineEndings(string text) => text.ReplaceLineEndings("\n");
 }

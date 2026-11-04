@@ -6,7 +6,8 @@ namespace App.Client.WinUI3.Models;
 public sealed record class KubectlShellProject : KubectlProject
 {
     [JsonIgnore]
-    public override string TerminalDisplayName => "Kubernetes (shell)";
+    public override CommandLanguage Language => CommandLanguage.Shell;
 
-    private protected override IEnumerable<string> CreateShellArguments(string body, IReadOnlyDictionary<string, string> environmentVariables) => RunByShell(body, environmentVariables);
+    [JsonIgnore]
+    public override string TerminalDisplayName => "Kubernetes (shell)";
 }

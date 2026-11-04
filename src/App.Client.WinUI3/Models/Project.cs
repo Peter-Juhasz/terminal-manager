@@ -58,4 +58,39 @@ public abstract record class Project
     /// <summary>Where the working folder is, as shown to the user, such as the folder itself, or the machine it is on and the folder.</summary>
     [JsonIgnore]
     public virtual string LocationDisplayName => WorkingFolder;
+
+    /// <summary>The language commands are written in, as they are passed to the terminal.</summary>
+    [JsonIgnore]
+    public abstract CommandLanguage Language { get; }
+
+    /// <summary>
+    /// Whether commands are code passed as a whole, so <see cref="PrependScript"/> and <see cref="AppendScript"/> can be put before and after them;
+    /// they can't be for a command line, as for cmd, or for the arguments of an app.
+    /// </summary>
+    [JsonIgnore]
+    public bool HasPrependAndAppend => Language is not (CommandLanguage.Cmd or CommandLanguage.Arguments);
+
+    /// <summary>
+    /// The code run before each command, in the same script or scope, so what it defines can be used by the command, or <see langword="null"/> when there is none.
+    /// Only used when <see cref="HasPrependAndAppend"/> is set.
+    /// </summary>
+    public string? PrependScript { get; init; }
+
+    /// <summary>The code run after each command, in the same script or scope, or <see langword="null"/> when there is none. Only used when <see cref="HasPrependAndAppend"/> is set.</summary>
+    public string? AppendScript { get; init; }
+
+    /// <summary>
+    /// What is put before a command when it is completed, parsed or highlighted, so what <see cref="PrependScript"/> defines, or leaves open, is taken into account;
+    /// positions in the command are this much further in the script.
+    /// </summary>
+    [JsonIgnore]
+    public string EditorPrefix => PrependScript is null or "" ? string.Empty : PrependScript + "\n";
+
+    /// <summary>The code that is run for <paramref name="command"/>, with <see cref="PrependScript"/> before it and <see cref="AppendScript"/> after it, each on lines of their own.</summary>
+    public string Wrap(string command)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        return AppendScript is null or "" ? EditorPrefix + command : EditorPrefix + command + "\n" + AppendScript;
+    }
 }

@@ -18,13 +18,10 @@ public sealed record class AzureVmPowerShellProject : AzureVmProject
     public override string ScriptFileExtension => ".ps1";
 
     [JsonIgnore]
-    public override string TerminalDisplayName => "Azure VM (PowerShell)";
+    public override CommandLanguage Language => CommandLanguage.PowerShell;
 
-    /// <summary>
-    /// What is put before a command when it is highlighted, so what <see cref="AzureVmProject.PrependScript"/> defines, or leaves open, is taken into account.
-    /// </summary>
     [JsonIgnore]
-    public string EditorPrefix => PrependScript is null or "" ? string.Empty : PrependScript + "\n";
+    public override string TerminalDisplayName => "Azure VM (PowerShell)";
 
     // The exit code is written by the console rather than the pipeline, so it is still written when the command exits.
     private protected override string CreateScript(string body, IReadOnlyDictionary<string, string> environmentVariables, string exitCodeMarker)

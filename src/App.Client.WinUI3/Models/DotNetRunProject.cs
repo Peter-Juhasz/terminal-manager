@@ -16,6 +16,9 @@ public record class DotNetRunProject : LocalProject
     public string? RunArguments { get; init; }
 
     [JsonIgnore]
+    public override CommandLanguage Language => CommandLanguage.Arguments;
+
+    [JsonIgnore]
     public override string TerminalDisplayName => "dotnet run";
 
     private static readonly Uri IconUri = new("ms-appx:///Assets/dotnet.svg");

@@ -36,7 +36,22 @@ public sealed class ProjectSerializationTests
         Assert.DoesNotContain("loadEnvFile", json);
         Assert.DoesNotContain("scripts", json);
         Assert.DoesNotContain("runArguments", json);
+        Assert.DoesNotContain("prependScript", json);
+        Assert.DoesNotContain("appendScript", json);
         Assert.AreEqual("run -- greet", project.CreateStartInfo("greet").Arguments);
+    }
+
+    [TestMethod]
+    public void OnlyCommandsOfCodeHavePrependAndAppend()
+    {
+        Assert.IsFalse(new CmdProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\" }.HasPrependAndAppend);
+        Assert.IsFalse(new DeveloperCmdProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\" }.HasPrependAndAppend);
+        Assert.IsFalse(new DotNetRunProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\" }.HasPrependAndAppend);
+        Assert.IsTrue(new DotNetFileProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\" }.HasPrependAndAppend);
+        Assert.IsTrue(new PythonProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\" }.HasPrependAndAppend);
+        Assert.IsTrue(new WindowsPowerShellProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\" }.HasPrependAndAppend);
+        Assert.IsTrue(new DockerShellProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = "/app" }.HasPrependAndAppend);
+        Assert.IsTrue(new PowerShellRemotingProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\" }.HasPrependAndAppend);
     }
 
     [TestMethod]

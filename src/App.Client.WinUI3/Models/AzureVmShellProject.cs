@@ -15,6 +15,9 @@ public sealed record class AzureVmShellProject : AzureVmProject
     public override string ScriptFileExtension => ".sh";
 
     [JsonIgnore]
+    public override CommandLanguage Language => CommandLanguage.Shell;
+
+    [JsonIgnore]
     public override string TerminalDisplayName => "Azure VM (shell)";
 
     // In a subshell, so a command that exits still has its exit code written after it.

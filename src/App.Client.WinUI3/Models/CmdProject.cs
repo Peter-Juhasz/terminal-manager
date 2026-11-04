@@ -12,6 +12,9 @@ public record class CmdProject : LocalProject
     private protected virtual string Prelude => "chcp 65001 >nul & ";
 
     [JsonIgnore]
+    public override CommandLanguage Language => CommandLanguage.Cmd;
+
+    [JsonIgnore]
     public override string TerminalDisplayName => "Command Prompt";
 
     [JsonIgnore]
