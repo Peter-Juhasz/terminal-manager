@@ -102,6 +102,15 @@ public sealed record class ProjectKind(string DisplayName, string Description, F
                 WorkingFolder = workingFolder,
             }),
         new(
+            DisplayName: "WSL, bash (wsl.exe)",
+            Description: "Commands are run by bash in a Linux distribution of the Windows Subsystem for Linux.",
+            Create: static (id, displayName, workingFolder) => new WslProject
+            {
+                Id = id,
+                DisplayName = displayName,
+                WorkingFolder = workingFolder,
+            }),
+        new(
             DisplayName: "Azure VM, Linux shell (az vm run-command)",
             Description: "Commands are run by the shell of a Linux virtual machine in Azure.",
             Create: static (id, displayName, workingFolder) => new AzureVmShellProject

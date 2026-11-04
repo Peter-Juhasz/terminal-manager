@@ -17,6 +17,7 @@ namespace App.Client.WinUI3.Models;
 [JsonDerivedType(typeof(DotNetFileProject), "dotnetfile")]
 [JsonDerivedType(typeof(PythonProject), "python")]
 [JsonDerivedType(typeof(NodeProject), "node")]
+[JsonDerivedType(typeof(WslProject), "wsl")]
 [JsonDerivedType(typeof(AzureVmShellProject), "azvmshell")]
 [JsonDerivedType(typeof(AzureVmPowerShellProject), "azvmpwsh")]
 [JsonDerivedType(typeof(DockerShellProject), "dockersh")]

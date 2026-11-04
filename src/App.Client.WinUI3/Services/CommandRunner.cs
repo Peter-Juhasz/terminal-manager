@@ -40,7 +40,12 @@ public sealed class CommandRunner : ICommandRunner
     {
         var startInfo = project.CreateStartInfo(command);
         var input = project.CreateStandardInput(command);
-        startInfo.WorkingDirectory = project.ExpandedWorkingFolder;
+        // a folder of Linux can't be started in, so the process is started where the project tells, and the command changes to it
+        if (project.IsWorkingFolderOnWindows)
+        {
+            startInfo.WorkingDirectory = project.ExpandedWorkingFolder;
+        }
+
         foreach (var (name, value) in project.ResolveEnvironmentVariables())
         {
             startInfo.Environment[name] = value;

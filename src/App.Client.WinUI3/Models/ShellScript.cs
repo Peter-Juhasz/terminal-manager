@@ -10,9 +10,15 @@ internal static class ShellScript
     extension(StringBuilder script)
     {
         /// <summary>Changes to <paramref name="folder"/>, exiting when it can't, then exports <paramref name="environmentVariables"/>, each on a line of its own.</summary>
-        public StringBuilder AppendShellPreamble(string folder, IReadOnlyDictionary<string, string> environmentVariables)
+        public StringBuilder AppendShellPreamble(string folder, IReadOnlyDictionary<string, string> environmentVariables) =>
+            script.AppendShellChangeFolder(folder).AppendShellExports(environmentVariables);
+
+        /// <summary>Changes to <paramref name="folder"/>, exiting when it can't, on a line of its own.</summary>
+        public StringBuilder AppendShellChangeFolder(string folder) => script.Append("cd -- ").Append(QuoteFolder(folder)).Append(" || exit\n");
+
+        /// <summary>Exports <paramref name="environmentVariables"/>, each on a line of its own.</summary>
+        public StringBuilder AppendShellExports(IReadOnlyDictionary<string, string> environmentVariables)
         {
-            script.Append("cd -- ").Append(QuoteFolder(folder)).Append(" || exit\n");
             foreach (var (name, value) in environmentVariables)
             {
                 script.Append("export ").Append(name).Append('=').Append(Quote(value)).Append('\n');

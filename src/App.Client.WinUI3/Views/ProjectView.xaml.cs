@@ -303,7 +303,7 @@ public sealed partial class ProjectView : UserControl
 
     private void OnOpenFolderClick(object sender, RoutedEventArgs e)
     {
-        if (Session?.Project is LocalProject { ExpandedWorkingFolder: var folder } && Directory.Exists(folder))
+        if (Session?.Project is LocalProject { IsWorkingFolderOnWindows: true, ExpandedWorkingFolder: var folder } && Directory.Exists(folder))
         {
             Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true })?.Dispose();
         }
@@ -470,7 +470,7 @@ public sealed partial class ProjectView : UserControl
         picker.FileTypeChoices.Add("Text", [".txt"]);
         picker.FileTypeChoices.Add("Log", [".log"]);
 
-        if (Session?.Project is LocalProject { ExpandedWorkingFolder: var folder } && Directory.Exists(folder))
+        if (Session?.Project is LocalProject { IsWorkingFolderOnWindows: true, ExpandedWorkingFolder: var folder } && Directory.Exists(folder))
         {
             picker.SuggestedFolder = folder;
         }

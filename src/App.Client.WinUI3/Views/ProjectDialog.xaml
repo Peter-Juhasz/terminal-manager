@@ -170,6 +170,34 @@
                                 TextWrapping="Wrap" />
                         </StackPanel>
 
+                        <!-- Only projects run by WSL have them. -->
+                        <StackPanel Spacing="16" Visibility="{x:Bind ViewModel.IsWsl, Mode=OneWay}">
+                            <StackPanel Spacing="4">
+                                <TextBox
+                                    Header="Distribution"
+                                    IsSpellCheckEnabled="False"
+                                    PlaceholderText="Ubuntu"
+                                    Text="{x:Bind ViewModel.Distribution, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                    Text="Its name, as wsl --list shows it. Leave it empty for the default distribution."
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                            <StackPanel Spacing="4">
+                                <TextBox
+                                    Header="User"
+                                    IsSpellCheckEnabled="False"
+                                    PlaceholderText="root"
+                                    Text="{x:Bind ViewModel.User, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                    Text="Leave it empty for the default user of the distribution. Each command is run by wsl.exe, as a script of a login bash, in the working folder: a folder of Windows, such as C:\src\app, is opened as /mnt/c/src/app, and a folder of Linux, such as ~/src/app, is changed to first. The .env file is only read from a folder of Windows."
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                        </StackPanel>
+
                         <!-- Only projects run in a Docker container have them. -->
                         <StackPanel Spacing="16" Visibility="{x:Bind ViewModel.IsDocker, Mode=OneWay}">
                             <StackPanel Spacing="4">

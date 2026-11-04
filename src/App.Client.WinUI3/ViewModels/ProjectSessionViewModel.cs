@@ -42,7 +42,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     public bool CanRunElevated => Project is LocalProject;
 
     /// <summary>Whether the working folder is on this machine, so it can be opened.</summary>
-    public bool IsWorkingFolderLocal => Project is LocalProject;
+    public bool IsWorkingFolderLocal => Project is LocalProject { IsWorkingFolderOnWindows: true };
 
     public ObservableCollection<CommandEntryViewModel> Entries { get; } = [];
 

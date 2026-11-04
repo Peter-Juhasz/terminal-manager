@@ -63,6 +63,12 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
             User = docker.User ?? string.Empty;
         }
 
+        if (project is WslProject wsl)
+        {
+            Distribution = wsl.Distribution ?? string.Empty;
+            User = wsl.User ?? string.Empty;
+        }
+
         if (project is PowerShellRemotingProject remoting)
         {
             ComputerName = remoting.ComputerName;
@@ -88,7 +94,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(HasPrependAndAppend), nameof(ScriptsDescription), nameof(PrependScriptPlaceholder), nameof(AppendScriptPlaceholder))]
     [NotifyPropertyChangedFor(nameof(HasArguments), nameof(ArgumentsHeader), nameof(ArgumentsPlaceholder), nameof(ArgumentsDescription))]
     [NotifyPropertyChangedFor(nameof(IsAzureVm), nameof(IsWorkingFolderLocal), nameof(WorkingFolderHeader), nameof(WorkingFolderPlaceholder), nameof(IsWorkingFolderMissing))]
-    [NotifyPropertyChangedFor(nameof(IsDocker), nameof(IsKubectl), nameof(ContainerDescription), nameof(IsPowerShellRemoting))]
+    [NotifyPropertyChangedFor(nameof(IsDocker), nameof(IsKubectl), nameof(ContainerDescription), nameof(IsPowerShellRemoting), nameof(IsWsl))]
     [NotifyPropertyChangedFor(nameof(EnvironmentVariablesDescription), nameof(IsValid))]
     public partial ProjectKind Kind { get; set; }
 
@@ -105,6 +111,13 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     /// <summary>Whether commands are run in a container of a Kubernetes pod, which is told by its context, namespace, pod and container.</summary>
     public bool IsKubectl => Sample is KubectlProject;
 
+    /// <summary>Whether commands are run in a distribution of the Windows Subsystem for Linux, which is told by its name and the user they are run as.</summary>
+    public bool IsWsl => Sample is WslProject;
+
+    /// <summary>The distribution of the Windows Subsystem for Linux commands are run in, or empty for the default distribution, which only projects run by WSL have.</summary>
+    [ObservableProperty]
+    public partial string Distribution { get; set; } = string.Empty;
+
     /// <summary>Whether commands are run on another computer by PowerShell remoting, which is told by its name.</summary>
     public bool IsPowerShellRemoting => Sample is PowerShellRemotingProject;
 
@@ -118,6 +131,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
 
     public string WorkingFolderHeader => Sample switch
     {
+        WslProject => "Working folder, of Windows or Linux",
         LocalProject => "Working folder",
         ContainerProject => "Working folder in the container",
         _ => "Working folder on the machine",
@@ -126,12 +140,14 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     public string WorkingFolderPlaceholder => Sample switch
     {
         AzureVmShellProject => "/home/azureuser/my-project",
+        WslProject => @"C:\src\my-project or ~/src/my-project",
         ContainerProject => "/app",
         _ => @"C:\src\my-project",
     };
 
     public string EnvironmentVariablesDescription => Sample switch
     {
+        WslProject => "These are set in Linux before each command, after the profile is read. Use %NAME% in a value to include a variable of this machine.",
         LocalProject => "Commands are run with these, in addition to the variables of the app. Use %NAME% in a value to include another variable.",
         ContainerProject => "These are set in the container before each command. Use %NAME% in a value to include a variable of this machine.",
         _ => "These are set on the machine before each command. Use %NAME% in a value to include a variable of this machine.",
@@ -159,7 +175,10 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsValid))]
     public partial string Container { get; set; } = string.Empty;
 
-    /// <summary>The user commands are run as in the Docker container, or empty for that of the container, which only projects run in one have.</summary>
+    /// <summary>
+    /// The user commands are run as in the Docker container, or in the WSL distribution, or empty for that of the container, or the default user of the distribution,
+    /// which only projects run in one of them have.
+    /// </summary>
     [ObservableProperty]
     public partial string User { get; set; } = string.Empty;
 
@@ -193,6 +212,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         InterpreterProject => "Put before and after each command, in the same script, so what the prepend script defines can be used by commands.",
         AzureVmProject or PowerShellRemotingProject => "Run on the machine before and after each command, in the same script, so what the prepend script defines can be used by commands.",
         ContainerProject => "Run in the container before and after each command, in the same script, so what the prepend script defines can be used by commands.",
+        WslProject => "Run in Linux before and after each command, in the same script, so what the prepend script defines can be used by commands.",
         _ => "Run before and after each command, in the same scope, so what the prepend script defines can be used by commands, and is offered by completion.",
     };
 
@@ -201,7 +221,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         DotNetFileProject => "#:package Humanizer@2.14.1\nusing Humanizer;",
         PythonProject => "import json",
         NodeProject => "const fs = require('node:fs');",
-        AzureVmShellProject or DockerShellProject or KubectlShellProject => ". ./env.sh",
+        AzureVmShellProject or DockerShellProject or KubectlShellProject or WslProject => ". ./env.sh",
         _ => "Import-Module ./build.psm1",
     };
 
@@ -210,7 +230,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         DotNetFileProject => "Console.WriteLine(\"Done.\");",
         PythonProject => "print(\"Done.\")",
         NodeProject => "console.log('Done.');",
-        AzureVmShellProject or DockerShellProject or KubectlShellProject => "echo \"Exit code: $?\"",
+        AzureVmShellProject or DockerShellProject or KubectlShellProject or WslProject => "echo \"Exit code: $?\"",
         _ => "Write-Host \"Exit code: $LASTEXITCODE\"",
     };
 
@@ -260,7 +280,8 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsValid), nameof(IsWorkingFolderMissing))]
     public partial string WorkingFolder { get; set; } = string.Empty;
 
-    public bool IsWorkingFolderMissing => IsWorkingFolderLocal && !string.IsNullOrWhiteSpace(WorkingFolder) && !Directory.Exists(ExpandedWorkingFolder);
+    // a folder of Linux is only changed to when commands are run, as the distribution may not even be running yet
+    public bool IsWorkingFolderMissing => IsWorkingFolderLocal && !string.IsNullOrWhiteSpace(WorkingFolder) && !(IsWsl && WslProject.IsLinuxFolder(WorkingFolder)) && !Directory.Exists(ExpandedWorkingFolder);
 
     // the environment variables in it are expanded when it is used, so it is checked the same way.
     private string ExpandedWorkingFolder => Environment.ExpandEnvironmentVariables(WorkingFolder.Trim());
@@ -383,6 +404,11 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
             {
                 Context = NullIfEmpty(Context.Trim()),
                 Container = Container.Trim(),
+                User = NullIfEmpty(User.Trim()),
+            },
+            WslProject wsl => wsl with
+            {
+                Distribution = NullIfEmpty(Distribution.Trim()),
                 User = NullIfEmpty(User.Trim()),
             },
             PowerShellRemotingProject remoting => remoting with { ComputerName = ComputerName.Trim() },

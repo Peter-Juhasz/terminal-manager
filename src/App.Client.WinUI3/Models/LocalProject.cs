@@ -13,7 +13,17 @@ public abstract record class LocalProject : Project
     [JsonIgnore]
     public string ExpandedWorkingFolder => Environment.ExpandEnvironmentVariables(WorkingFolder);
 
-    /// <summary>Whether commands are also run with the variables in the .env file in the working folder, which those in <see cref="Project.EnvironmentVariables"/> replace by the same name.</summary>
+    /// <summary>
+    /// Whether the working folder is a folder of Windows, so processes are started in it, and it can be opened; it isn't for a folder of Linux of a <see cref="WslProject"/>,
+    /// which the commands change to themselves.
+    /// </summary>
+    [JsonIgnore]
+    public virtual bool IsWorkingFolderOnWindows => true;
+
+    /// <summary>
+    /// Whether commands are also run with the variables in the .env file in the working folder, which those in <see cref="Project.EnvironmentVariables"/> replace by the same name;
+    /// only when it is a folder of Windows.
+    /// </summary>
     public bool LoadEnvFile { get; init; }
 
     /// <summary>
@@ -22,7 +32,7 @@ public abstract record class LocalProject : Project
     /// </summary>
     public IReadOnlyDictionary<string, string> ResolveEnvironmentVariables()
     {
-        if (!LoadEnvFile)
+        if (!LoadEnvFile || !IsWorkingFolderOnWindows)
         {
             return ExpandedEnvironmentVariables;
         }
@@ -37,7 +47,8 @@ public abstract record class LocalProject : Project
     }
 
     /// <summary>
-    /// Describes the process that runs <paramref name="command"/>. Its working folder and the redirection of its streams are set by the caller.
+    /// Describes the process that runs <paramref name="command"/>. The redirection of its streams is set by the caller, and so is its working folder,
+    /// when <see cref="IsWorkingFolderOnWindows"/> is set; otherwise, it is set here.
     /// </summary>
     public abstract ProcessStartInfo CreateStartInfo(string command);
 

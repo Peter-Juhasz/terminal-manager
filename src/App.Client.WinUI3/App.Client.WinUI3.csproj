@@ -37,6 +37,7 @@
     <Content Include="Assets\azure-vm.svg" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\docker.svg" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\kubernetes.svg" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\linux.svg" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\AppIcon.svg" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\AppIcon.ico" CopyToOutputDirectory="PreserveNewest" />
     <!-- From the Visual Studio Image Library. -->
