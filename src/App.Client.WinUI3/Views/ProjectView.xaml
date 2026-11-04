@@ -146,13 +146,18 @@
                             Visibility="{x:Bind IsOutputVisible, Mode=OneWay}">
                             <RichTextBlock
                                 x:Name="OutputText"
-                                controls:TerminalOutput.Output="{x:Bind Output}"
+                                controls:TerminalOutput.Output="{x:Bind DisplayedOutput, Mode=OneWay}"
                                 FontFamily="{StaticResource MonospaceFontFamily}"
                                 FontSize="13"
                                 IsTextSelectionEnabled="True"
                                 SizeChanged="OnOutputTextSizeChanged"
                                 TextWrapping="Wrap" />
                         </ScrollViewer>
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{ThemeResource CaptionTextBlockStyle}"
+                            Text="No matching lines"
+                            Visibility="{x:Bind IsNoMatchingLinesVisible, Mode=OneWay}" />
 
                         <!--  How it ended, and how long it took.  -->
                         <StackPanel
@@ -367,6 +372,7 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBox
                     x:Name="SearchBox"
@@ -401,6 +407,16 @@
                         FontSize="14"
                         FontWeight="SemiBold"
                         Text=".*" />
+                </ToggleButton>
+                <ToggleButton
+                    x:Name="FilterLinesToggleButton"
+                    Grid.Column="3"
+                    VerticalAlignment="Center"
+                    AutomationProperties.Name="Show only matching lines"
+                    Click="OnSearchOptionClick"
+                    Style="{StaticResource IconToggleButtonStyle}"
+                    ToolTipService.ToolTip="Show only matching lines">
+                    <FontIcon FontSize="16" Glyph="&#xE71C;" />
                 </ToggleButton>
             </Grid>
         </Grid>

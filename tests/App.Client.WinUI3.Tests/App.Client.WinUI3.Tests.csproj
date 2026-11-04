@@ -61,7 +61,9 @@
     <Compile Include="$(AppDirectory)Services\ProgressSequenceParser.cs" Link="App\Services\ProgressSequenceParser.cs" />
     <Compile Include="$(AppDirectory)Services\ScriptTemplate.cs" Link="App\Services\ScriptTemplate.cs" />
     <Compile Include="$(AppDirectory)Services\SettingsService.cs" Link="App\Services\SettingsService.cs" />
+    <Compile Include="$(AppDirectory)Services\TextSearch.cs" Link="App\Services\TextSearch.cs" />
     <Compile Include="$(AppDirectory)ViewModels\CommandOutput.cs" Link="App\ViewModels\CommandOutput.cs" />
+    <Compile Include="$(AppDirectory)ViewModels\OutputLineFilter.cs" Link="App\ViewModels\OutputLineFilter.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -153,12 +153,15 @@ public sealed partial class ProjectView : UserControl
         {
             ApplyWrapOutput(element);
             ApplyMaxOutputHeight(element);
-            ApplySearchQuery(element);
+            ApplySearch(element, args.Index);
         }
     }
 
-    /// <summary>What is searched for in the history, highlighted where it is found; nothing while the search is off.</summary>
-    private string? SearchQuery => SearchToggleButton.IsChecked is true && SearchBox.Text is { Length: > 0 } text ? text : null;
+    /// <summary>What is searched for in the history, highlighted where it is found; nothing while the search is off, or its pattern is invalid.</summary>
+    private TextSearch? _search;
+
+    /// <summary>What the lines of the output are filtered by, while only those it is found in are shown.</summary>
+    private TextSearch? LineFilter => FilterLinesToggleButton.IsChecked is true ? _search : null;
 
     private void OnToggleSearchClick(object sender, RoutedEventArgs e)
     {
@@ -170,16 +173,12 @@ public sealed partial class ProjectView : UserControl
             SearchBox.SelectAll();
         }
 
-        ApplySearchQuery();
+        OnSearchChanged();
     }
 
-    private void OnSearchTextChanged(object sender, TextChangedEventArgs e) => ApplySearchQuery();
+    private void OnSearchTextChanged(object sender, TextChangedEventArgs e) => OnSearchChanged();
 
-    private void OnSearchOptionClick(object sender, RoutedEventArgs e) => ApplySearchQuery();
-
-    private bool IsSearchCaseSensitive => CaseSensitiveToggleButton.IsChecked is true;
-
-    private bool IsSearchRegex => RegexToggleButton.IsChecked is true;
+    private void OnSearchOptionClick(object sender, RoutedEventArgs e) => OnSearchChanged();
 
     // escape ends the search, as it does in a browser
     private void OnSearchBoxKeyDown(object sender, KeyRoutedEventArgs e)
@@ -192,43 +191,54 @@ public sealed partial class ProjectView : UserControl
         e.Handled = true;
         SearchToggleButton.IsChecked = false;
         SearchPanel.Visibility = Visibility.Collapsed;
-        ApplySearchQuery();
+        OnSearchChanged();
         FocusInput();
     }
 
-    // The entries laid out already; the others get it when they are prepared.
-    private void ApplySearchQuery()
+    // The search is made once for all the entries, from what is typed and the options as they are now.
+    private void OnSearchChanged()
     {
-        SearchBox.Description = SearchQuery is { } query && IsSearchRegex && !SearchHighlighting.IsValidRegex(query, IsSearchCaseSensitive)
-            ? "Invalid regular expression"
-            : null;
+        var query = SearchToggleButton.IsChecked is true ? SearchBox.Text : null;
+        var isRegex = RegexToggleButton.IsChecked is true;
+        _search = TextSearch.Create(query, isCaseSensitive: CaseSensitiveToggleButton.IsChecked is true, isRegex);
+        SearchBox.Description = isRegex && !string.IsNullOrEmpty(query) && _search is null ? "Invalid regular expression" : null;
 
+        // the entries laid out already; the others get it when they are prepared, so only the output that is shown is searched
         for (var i = 0; i < VisualTreeHelper.GetChildrenCount(HistoryRepeater); i++)
         {
             if (VisualTreeHelper.GetChild(HistoryRepeater, i) is FrameworkElement element)
             {
-                ApplySearchQuery(element);
+                ApplySearch(element, HistoryRepeater.GetElementIndex(element));
+            }
+        }
+
+        // the lines found in the output of the others are let go, and searched for again if they are shown
+        var lineFilter = LineFilter;
+        foreach (var entry in Session?.Entries ?? [])
+        {
+            if (!Equals(entry.LineFilter, lineFilter))
+            {
+                entry.FilterLines(null);
             }
         }
     }
 
-    private void ApplySearchQuery(FrameworkElement element)
+    // the entry is found by its index, as the data context isn't set on an element whose template uses x:Bind; one let go to be recycled has none
+    private void ApplySearch(FrameworkElement element, int index)
     {
-        var query = SearchQuery;
-        var isCaseSensitive = IsSearchCaseSensitive;
-        var isRegex = IsSearchRegex;
+        if (index >= 0 && HistoryRepeater.ItemsSourceView?.GetAt(index) is CommandEntryViewModel entry)
+        {
+            entry.FilterLines(LineFilter);
+        }
+
         if (element.FindName("CommandText") is RichTextBlock command)
         {
-            SearchHighlighting.SetIsCaseSensitive(command, isCaseSensitive);
-            SearchHighlighting.SetIsRegex(command, isRegex);
-            SearchHighlighting.SetQuery(command, query);
+            SearchHighlighting.SetSearch(command, _search);
         }
 
         if (element.FindName("OutputText") is RichTextBlock output)
         {
-            SearchHighlighting.SetIsCaseSensitive(output, isCaseSensitive);
-            SearchHighlighting.SetIsRegex(output, isRegex);
-            SearchHighlighting.SetQuery(output, query);
+            SearchHighlighting.SetSearch(output, _search);
         }
     }
 

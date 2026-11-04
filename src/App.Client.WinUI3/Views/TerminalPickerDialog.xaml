@@ -89,14 +89,14 @@
                             VerticalAlignment="Top"
                             Spacing="4">
                             <TextBlock
-                                controls:SearchHighlighting.Query="{x:Bind Query}"
+                                controls:SearchHighlighting.Search="{x:Bind Search}"
                                 MaxLines="2"
                                 Style="{ThemeResource BodyStrongTextBlockStyle}"
                                 Text="{x:Bind Kind.DisplayName}"
                                 TextTrimming="CharacterEllipsis"
                                 TextWrapping="Wrap" />
                             <TextBlock
-                                controls:SearchHighlighting.Query="{x:Bind Query}"
+                                controls:SearchHighlighting.Search="{x:Bind Search}"
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                 MaxLines="2"
                                 Style="{ThemeResource CaptionTextBlockStyle}"

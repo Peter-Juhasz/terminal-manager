@@ -1,4 +1,5 @@
 using App.Client.WinUI3.Models;
+using App.Client.WinUI3.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -22,9 +23,10 @@ public sealed partial class TerminalPickerDialog : ContentDialog
     // shows the kinds whose name or description has the query in it, those run on this machine first, then those run elsewhere
     private void Filter(string query)
     {
+        var search = TextSearch.Create(query, isCaseSensitive: false, isRegex: false);
         var matches = ProjectKind.All
-            .Where(kind => query is "" || kind.DisplayName.Contains(query, StringComparison.CurrentCultureIgnoreCase) || kind.Description.Contains(query, StringComparison.CurrentCultureIgnoreCase))
-            .Select(kind => new ProjectKindMatch(Kind: kind, Query: query))
+            .Where(kind => search is null || search.IsMatch(kind.DisplayName) || search.IsMatch(kind.Description))
+            .Select(kind => new ProjectKindMatch(Kind: kind, Search: search))
             .ToList();
         ProjectKindGroup[] groups =
         [
@@ -62,8 +64,8 @@ public sealed partial class TerminalPickerDialog : ContentDialog
     }
 }
 
-/// <summary>A <see cref="ProjectKind"/> found by the search, with what was searched for, so it can be highlighted.</summary>
-public sealed record class ProjectKindMatch(ProjectKind Kind, string Query);
+/// <summary>A <see cref="ProjectKind"/> found by the search, with what was searched for, so it can be highlighted; nothing when it wasn't searched for.</summary>
+public sealed record class ProjectKindMatch(ProjectKind Kind, TextSearch? Search);
 
 /// <summary>
 /// A group of <see cref="ProjectKindMatch"/>es under a header, which is itself the list of its kinds, as a grouped <see cref="Microsoft.UI.Xaml.Data.CollectionViewSource"/> takes it.

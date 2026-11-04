@@ -60,11 +60,59 @@ public sealed partial class CommandEntryViewModel(string command, bool isElevate
 
     public bool HasOutput => !Output.IsEmpty;
 
+    // the lines of the output shown while they are filtered
+    private OutputLineFilter? _lineFilter;
+
+    /// <summary>What is searched for in the lines of the output, while only those it is found in are shown.</summary>
+    public TextSearch? LineFilter => _lineFilter?.Search;
+
+    /// <summary>The output as it is shown: all of it, or the lines <see cref="LineFilter"/> is found in.</summary>
+    public CommandOutput DisplayedOutput => _lineFilter?.Output ?? Output;
+
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsOutputVisible), nameof(ExpandGlyph), nameof(ExpandToolTip))]
+    [NotifyPropertyChangedFor(nameof(IsOutputVisible), nameof(IsNoMatchingLinesVisible), nameof(ExpandGlyph), nameof(ExpandToolTip))]
     public partial bool IsExpanded { get; set; } = true;
 
-    public bool IsOutputVisible => HasOutput && IsExpanded;
+    public bool IsOutputVisible => HasOutput && IsExpanded && !DisplayedOutput.IsEmpty;
+
+    /// <summary>Whether the output is filtered, and none of its lines are shown, so it says so instead.</summary>
+    public bool IsNoMatchingLinesVisible => HasOutput && IsExpanded && _lineFilter is { Output.IsEmpty: true };
+
+    /// <summary>
+    /// Shows only the lines of the output <paramref name="search"/> is found in, or all of it when it is null. The lines written later are searched
+    /// as they are written; the output is searched again only when what is searched for changes.
+    /// </summary>
+    public void FilterLines(TextSearch? search)
+    {
+        if (Equals(search, LineFilter))
+        {
+            return;
+        }
+
+        if (search is null)
+        {
+            _lineFilter = null;
+        }
+        else
+        {
+            _lineFilter = new(search);
+            _lineFilter.Update(Output.Chunks);
+            if (IsCompleted)
+            {
+                _lineFilter.Complete();
+            }
+        }
+
+        OnPropertyChanged(nameof(LineFilter));
+        OnPropertyChanged(nameof(DisplayedOutput));
+        OnDisplayedOutputChanged();
+    }
+
+    private void OnDisplayedOutputChanged()
+    {
+        OnPropertyChanged(nameof(IsOutputVisible));
+        OnPropertyChanged(nameof(IsNoMatchingLinesVisible));
+    }
 
     public string ExpandGlyph => IsExpanded ? "\uE70E" : "\uE70D";
 
@@ -147,11 +195,17 @@ public sealed partial class CommandEntryViewModel(string command, bool isElevate
     private void AppendOutput(IReadOnlyList<OutputChunk> chunks)
     {
         var hadOutput = HasOutput;
+        var hadDisplayedOutput = !DisplayedOutput.IsEmpty;
         Output.Append(chunks);
+        _lineFilter?.Update(Output.Chunks);
         if (!hadOutput && HasOutput)
         {
             OnPropertyChanged(nameof(HasOutput));
-            OnPropertyChanged(nameof(IsOutputVisible));
+        }
+
+        if (hadOutput != HasOutput || hadDisplayedOutput != !DisplayedOutput.IsEmpty)
+        {
+            OnDisplayedOutputChanged();
         }
     }
 
@@ -161,6 +215,17 @@ public sealed partial class CommandEntryViewModel(string command, bool isElevate
         ExitCode = exitCode;
         WasStopped = wasStopped;
         IsRunning = false;
+
+        // the last line ended with the output
+        if (_lineFilter is { } filter)
+        {
+            var hadDisplayedOutput = !filter.Output.IsEmpty;
+            filter.Complete();
+            if (hadDisplayedOutput != !filter.Output.IsEmpty)
+            {
+                OnDisplayedOutputChanged();
+            }
+        }
     }
 
     /// <summary>Stops the command, and all the processes it started, if it is still running.</summary>
