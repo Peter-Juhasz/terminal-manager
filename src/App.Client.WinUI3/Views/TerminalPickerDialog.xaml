@@ -4,7 +4,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:App.Client.WinUI3.Views"
-    xmlns:models="using:App.Client.WinUI3.Models"
+    xmlns:controls="using:App.Client.WinUI3.Controls"
     Title="New project"
     CloseButtonText="Cancel"
     DefaultButton="Close"
@@ -14,17 +14,39 @@
         <!-- Wide enough for two columns of terminals. -->
         <x:Double x:Key="ContentDialogMaxWidth">800</x:Double>
         <!-- The terminals, grouped by whether they run on this machine or elsewhere. -->
-        <CollectionViewSource
-            x:Name="KindsSource"
-            IsSourceGrouped="True"
-            Source="{x:Bind KindGroups}" />
+        <!-- Filled by the search, so only those found are shown. -->
+        <CollectionViewSource x:Name="KindsSource" IsSourceGrouped="True" />
     </ContentDialog.Resources>
 
     <StackPanel Width="720" Spacing="12">
+        <!-- The search sits at the top right of the terminals, beside what to do with them. -->
+        <Grid ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock
+                VerticalAlignment="Center"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Text="Choose the terminal the commands of the project are run by."
+                TextWrapping="Wrap" />
+            <AutoSuggestBox
+                x:Name="SearchBox"
+                Grid.Column="1"
+                Width="240"
+                VerticalAlignment="Center"
+                AutomationProperties.Name="Search terminals"
+                PlaceholderText="Search"
+                QueryIcon="Find"
+                QuerySubmitted="OnSearchQuerySubmitted"
+                TextChanged="OnSearchTextChanged" />
+        </Grid>
+
         <TextBlock
+            x:Name="NoMatchesText"
             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-            Text="Choose the terminal the commands of the project are run by."
-            TextWrapping="Wrap" />
+            Text="No terminals found."
+            Visibility="Collapsed" />
 
         <!-- A terminal is picked by clicking it, which goes on to the project. -->
         <GridView
@@ -32,7 +54,6 @@
             MaxHeight="480"
             IsItemClickEnabled="True"
             ItemClick="OnKindClick"
-            ItemsSource="{x:Bind KindsSource.View}"
             SelectionMode="None">
             <GridView.GroupStyle>
                 <GroupStyle>
@@ -50,34 +71,36 @@
                 </Style>
             </GridView.ItemContainerStyle>
             <GridView.ItemTemplate>
-                <DataTemplate x:DataType="models:ProjectKind">
+                <DataTemplate x:DataType="local:ProjectKindMatch">
                     <!-- Tall enough for a name and a description of two lines each, so none is cut off, and all start at the top alike. -->
                     <Grid
                         Width="352"
                         Height="100"
                         Padding="12"
-                        AutomationProperties.Name="{x:Bind DisplayName}"
+                        AutomationProperties.Name="{x:Bind Kind.DisplayName}"
                         ColumnSpacing="12">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <ContentPresenter VerticalAlignment="Top" Content="{x:Bind local:Bind.TerminalIcon(IconUri, 32)}" />
+                        <ContentPresenter VerticalAlignment="Top" Content="{x:Bind local:Bind.TerminalIcon(Kind.IconUri, 32)}" />
                         <StackPanel
                             Grid.Column="1"
                             VerticalAlignment="Top"
                             Spacing="4">
                             <TextBlock
+                                controls:SearchHighlighting.Query="{x:Bind Query}"
                                 MaxLines="2"
                                 Style="{ThemeResource BodyStrongTextBlockStyle}"
-                                Text="{x:Bind DisplayName}"
+                                Text="{x:Bind Kind.DisplayName}"
                                 TextTrimming="CharacterEllipsis"
                                 TextWrapping="Wrap" />
                             <TextBlock
+                                controls:SearchHighlighting.Query="{x:Bind Query}"
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                 MaxLines="2"
                                 Style="{ThemeResource CaptionTextBlockStyle}"
-                                Text="{x:Bind Description}"
+                                Text="{x:Bind Kind.Description}"
                                 TextTrimming="CharacterEllipsis"
                                 TextWrapping="Wrap" />
                         </StackPanel>

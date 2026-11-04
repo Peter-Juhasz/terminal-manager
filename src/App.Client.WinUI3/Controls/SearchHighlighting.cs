@@ -7,11 +7,12 @@ using Microsoft.UI.Xaml.Media;
 namespace App.Client.WinUI3.Controls;
 
 /// <summary>
-/// Highlights where the text searched for is found in a <see cref="RichTextBlock"/>, in any case, with a text highlighter,
+/// Highlights where the text searched for is found in a <see cref="RichTextBlock"/> or a <see cref="TextBlock"/>, in any case, with a text highlighter,
 /// so the runs it is shown in are left as they are.
 /// </summary>
 /// <remarks>
-/// The text block doesn't tell when its text changes, so whatever shows text in it highlights it again with <see cref="Update"/>.
+/// A rich text block doesn't tell when its text changes, so whatever shows text in it highlights it again with <see cref="Update"/>.
+/// A text block is highlighted again when its <see cref="TextBlock.Text"/> changes.
 /// </remarks>
 public static class SearchHighlighting
 {
@@ -21,13 +22,20 @@ public static class SearchHighlighting
         typeof(SearchHighlighting),
         new PropertyMetadata(null, OnQueryChanged));
 
-    public static string? GetQuery(RichTextBlock element)
+    // whether a text block is highlighted again when its text changes, so it is watched once
+    private static readonly DependencyProperty IsTextWatchedProperty = DependencyProperty.RegisterAttached(
+        "IsTextWatched",
+        typeof(bool),
+        typeof(SearchHighlighting),
+        new PropertyMetadata(false));
+
+    public static string? GetQuery(FrameworkElement element)
     {
         ArgumentNullException.ThrowIfNull(element);
         return (string?)element.GetValue(QueryProperty);
     }
 
-    public static void SetQuery(RichTextBlock element, string? value)
+    public static void SetQuery(FrameworkElement element, string? value)
     {
         ArgumentNullException.ThrowIfNull(element);
         element.SetValue(QueryProperty, value);
@@ -35,15 +43,35 @@ public static class SearchHighlighting
 
     private static void OnQueryChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
     {
-        var block = (RichTextBlock)sender;
+        var element = (FrameworkElement)sender;
 
         // subscribed once, however many times the query changes
-        block.ActualThemeChanged -= OnActualThemeChanged;
-        block.ActualThemeChanged += OnActualThemeChanged;
-        Update(block);
+        element.ActualThemeChanged -= OnActualThemeChanged;
+        element.ActualThemeChanged += OnActualThemeChanged;
+        if (element is TextBlock text && text.GetValue(IsTextWatchedProperty) is not true)
+        {
+            text.SetValue(IsTextWatchedProperty, true);
+            text.RegisterPropertyChangedCallback(TextBlock.TextProperty, static (sender, _) => Update((TextBlock)sender));
+        }
+
+        UpdateAny(element);
     }
 
-    private static void OnActualThemeChanged(FrameworkElement sender, object args) => Update((RichTextBlock)sender);
+    private static void OnActualThemeChanged(FrameworkElement sender, object args) => UpdateAny(sender);
+
+    private static void UpdateAny(FrameworkElement element)
+    {
+        switch (element)
+        {
+            case RichTextBlock block:
+                Update(block);
+                break;
+
+            case TextBlock text:
+                Update(text);
+                break;
+        }
+    }
 
     /// <summary>Highlights the text searched for in what <paramref name="block"/> shows now.</summary>
     public static void Update(RichTextBlock block)
@@ -61,8 +89,39 @@ public static class SearchHighlighting
             return;
         }
 
-        var text = GetText(block);
-        var resources = SyntaxHighlighting.GetThemeResources(block);
+        var highlighter = CreateHighlighter(block, GetText(block), query);
+        block.TextHighlighters.Clear();
+        if (highlighter is not null)
+        {
+            block.TextHighlighters.Add(highlighter);
+        }
+    }
+
+    private static void Update(TextBlock block)
+    {
+        var query = GetQuery(block);
+        if (string.IsNullOrEmpty(query))
+        {
+            if (block.TextHighlighters.Count > 0)
+            {
+                block.TextHighlighters.Clear();
+            }
+
+            return;
+        }
+
+        var highlighter = CreateHighlighter(block, block.Text ?? string.Empty, query);
+        block.TextHighlighters.Clear();
+        if (highlighter is not null)
+        {
+            block.TextHighlighters.Add(highlighter);
+        }
+    }
+
+    // a highlighter of where the query is found in the text, or null when it isn't found
+    private static TextHighlighter? CreateHighlighter(FrameworkElement element, string text, string query)
+    {
+        var resources = SyntaxHighlighting.GetThemeResources(element);
         var highlighter = new TextHighlighter
         {
             Background = (Brush)resources["SearchHighlightBackgroundBrush"],
@@ -73,11 +132,12 @@ public static class SearchHighlighting
             highlighter.Ranges.Add(new TextRange { StartIndex = index, Length = query.Length });
         }
 
-        block.TextHighlighters.Clear();
-        if (highlighter.Ranges.Count > 0)
+        if (highlighter.Ranges.Count is 0)
         {
-            block.TextHighlighters.Add(highlighter);
+            return null;
         }
+
+        return highlighter;
     }
 
     // The text as it is counted by the ranges of a highlighter: the runs of the paragraphs one after the other.
