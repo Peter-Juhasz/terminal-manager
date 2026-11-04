@@ -7,7 +7,7 @@ using Microsoft.UI.Xaml.Media;
 namespace App.Client.WinUI3.Controls;
 
 /// <summary>
-/// Highlights where the text searched for is found in a <see cref="RichTextBlock"/> or a <see cref="TextBlock"/>, in any case, with a text highlighter,
+/// Highlights where the text searched for is found in a <see cref="RichTextBlock"/> or a <see cref="TextBlock"/>, in any case unless <c>IsCaseSensitive</c> is set, with a text highlighter,
 /// so the runs it is shown in are left as they are.
 /// </summary>
 /// <remarks>
@@ -21,6 +21,12 @@ public static class SearchHighlighting
         typeof(string),
         typeof(SearchHighlighting),
         new PropertyMetadata(null, OnQueryChanged));
+
+    public static readonly DependencyProperty IsCaseSensitiveProperty = DependencyProperty.RegisterAttached(
+        "IsCaseSensitive",
+        typeof(bool),
+        typeof(SearchHighlighting),
+        new PropertyMetadata(false, OnQueryChanged));
 
     // whether a text block is highlighted again when its text changes, so it is watched once
     private static readonly DependencyProperty IsTextWatchedProperty = DependencyProperty.RegisterAttached(
@@ -39,6 +45,18 @@ public static class SearchHighlighting
     {
         ArgumentNullException.ThrowIfNull(element);
         element.SetValue(QueryProperty, value);
+    }
+
+    public static bool GetIsCaseSensitive(FrameworkElement element)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        return (bool)element.GetValue(IsCaseSensitiveProperty);
+    }
+
+    public static void SetIsCaseSensitive(FrameworkElement element, bool value)
+    {
+        ArgumentNullException.ThrowIfNull(element);
+        element.SetValue(IsCaseSensitiveProperty, value);
     }
 
     private static void OnQueryChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
@@ -127,7 +145,8 @@ public static class SearchHighlighting
             Background = (Brush)resources["SearchHighlightBackgroundBrush"],
             Foreground = (Brush)resources["SearchHighlightForegroundBrush"],
         };
-        for (var index = text.IndexOf(query, StringComparison.CurrentCultureIgnoreCase); index >= 0; index = text.IndexOf(query, index + query.Length, StringComparison.CurrentCultureIgnoreCase))
+        var comparison = GetIsCaseSensitive(element) ? StringComparison.CurrentCulture : StringComparison.CurrentCultureIgnoreCase;
+        for (var index = text.IndexOf(query, comparison); index >= 0; index = text.IndexOf(query, index + query.Length, comparison))
         {
             highlighter.Ranges.Add(new TextRange { StartIndex = index, Length = query.Length });
         }

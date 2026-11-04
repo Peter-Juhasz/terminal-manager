@@ -253,6 +253,10 @@
         <Grid
             Padding="32,20,24,12"
             ColumnSpacing="12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
@@ -291,17 +295,6 @@
                 VerticalAlignment="Center"
                 Orientation="Horizontal"
                 Spacing="4">
-                <!--  What is searched for in the history, while the search is on.  -->
-                <TextBox
-                    x:Name="SearchBox"
-                    Width="240"
-                    Margin="0,0,4,0"
-                    VerticalAlignment="Center"
-                    AutomationProperties.Name="Search history"
-                    KeyDown="OnSearchBoxKeyDown"
-                    PlaceholderText="Search history"
-                    TextChanged="OnSearchTextChanged"
-                    Visibility="Collapsed" />
                 <ToggleButton
                     x:Name="SearchToggleButton"
                     AutomationProperties.Name="Search history"
@@ -361,6 +354,40 @@
                     </Button.Flyout>
                 </Button>
             </StackPanel>
+
+            <!--  What is searched for in the history, while the search is on.  -->
+            <Grid
+                x:Name="SearchPanel"
+                Grid.Row="1"
+                Grid.ColumnSpan="2"
+                Margin="0,12,0,0"
+                ColumnSpacing="4"
+                Visibility="Collapsed">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBox
+                    x:Name="SearchBox"
+                    VerticalAlignment="Center"
+                    AutomationProperties.Name="Search history"
+                    KeyDown="OnSearchBoxKeyDown"
+                    PlaceholderText="Search history"
+                    TextChanged="OnSearchTextChanged" />
+                <ToggleButton
+                    x:Name="CaseSensitiveToggleButton"
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    AutomationProperties.Name="Match case"
+                    Click="OnCaseSensitiveClick"
+                    Style="{StaticResource IconToggleButtonStyle}"
+                    ToolTipService.ToolTip="Match case">
+                    <TextBlock
+                        FontSize="14"
+                        FontWeight="SemiBold"
+                        Text="Aa" />
+                </ToggleButton>
+            </Grid>
         </Grid>
 
         <!--  History; anchored to the bottom, so output that is being written stays in view.  -->

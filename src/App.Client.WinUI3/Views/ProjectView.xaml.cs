@@ -163,7 +163,7 @@ public sealed partial class ProjectView : UserControl
     private void OnToggleSearchClick(object sender, RoutedEventArgs e)
     {
         var isOn = SearchToggleButton.IsChecked is true;
-        SearchBox.Visibility = isOn ? Visibility.Visible : Visibility.Collapsed;
+        SearchPanel.Visibility = isOn ? Visibility.Visible : Visibility.Collapsed;
         if (isOn)
         {
             SearchBox.Focus(FocusState.Programmatic);
@@ -175,6 +175,10 @@ public sealed partial class ProjectView : UserControl
 
     private void OnSearchTextChanged(object sender, TextChangedEventArgs e) => ApplySearchQuery();
 
+    private void OnCaseSensitiveClick(object sender, RoutedEventArgs e) => ApplySearchQuery();
+
+    private bool IsSearchCaseSensitive => CaseSensitiveToggleButton.IsChecked is true;
+
     // escape ends the search, as it does in a browser
     private void OnSearchBoxKeyDown(object sender, KeyRoutedEventArgs e)
     {
@@ -185,7 +189,7 @@ public sealed partial class ProjectView : UserControl
 
         e.Handled = true;
         SearchToggleButton.IsChecked = false;
-        SearchBox.Visibility = Visibility.Collapsed;
+        SearchPanel.Visibility = Visibility.Collapsed;
         ApplySearchQuery();
         FocusInput();
     }
@@ -205,13 +209,16 @@ public sealed partial class ProjectView : UserControl
     private void ApplySearchQuery(FrameworkElement element)
     {
         var query = SearchQuery;
+        var isCaseSensitive = IsSearchCaseSensitive;
         if (element.FindName("CommandText") is RichTextBlock command)
         {
+            SearchHighlighting.SetIsCaseSensitive(command, isCaseSensitive);
             SearchHighlighting.SetQuery(command, query);
         }
 
         if (element.FindName("OutputText") is RichTextBlock output)
         {
+            SearchHighlighting.SetIsCaseSensitive(output, isCaseSensitive);
             SearchHighlighting.SetQuery(output, query);
         }
     }
