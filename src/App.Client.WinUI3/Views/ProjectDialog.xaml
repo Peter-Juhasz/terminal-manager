@@ -156,6 +156,20 @@
                             </StackPanel>
                         </StackPanel>
 
+                        <!-- Only projects run by PowerShell remoting have it. -->
+                        <StackPanel Spacing="4" Visibility="{x:Bind ViewModel.IsPowerShellRemoting, Mode=OneWay}">
+                            <TextBox
+                                Header="Computer name"
+                                IsSpellCheckEnabled="False"
+                                PlaceholderText="server01.contoso.com"
+                                Text="{x:Bind ViewModel.ComputerName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{ThemeResource CaptionTextBlockStyle}"
+                                Text="Each command is run by Invoke-Command, in a session of its own, as you, in the working folder on the computer. The computer needs to have PowerShell remoting enabled."
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+
                         <!-- Only projects run in a Docker container have them. -->
                         <StackPanel Spacing="16" Visibility="{x:Bind ViewModel.IsDocker, Mode=OneWay}">
                             <StackPanel Spacing="4">

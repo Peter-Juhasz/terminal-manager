@@ -5,7 +5,7 @@ namespace App.Client.WinUI3.Models;
 
 /// <summary>
 /// A folder that commands are run in, with the terminal they are run by: on this machine for a <see cref="LocalProject"/>,
-/// or elsewhere, such as on an Azure virtual machine for an <see cref="AzureVmProject"/>, or in a container for a <see cref="ContainerProject"/>.
+/// or elsewhere, such as on an Azure virtual machine for an <see cref="AzureVmProject"/>, in a container for a <see cref="ContainerProject"/>, or on another computer by PowerShell remoting for a <see cref="PowerShellRemotingProject"/>.
 /// </summary>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
 [JsonDerivedType(typeof(PowerShellProject), "pwsh")]
@@ -23,6 +23,7 @@ namespace App.Client.WinUI3.Models;
 [JsonDerivedType(typeof(DockerPowerShellProject), "dockerpwsh")]
 [JsonDerivedType(typeof(KubectlShellProject), "kubectlsh")]
 [JsonDerivedType(typeof(KubectlPowerShellProject), "kubectlpwsh")]
+[JsonDerivedType(typeof(PowerShellRemotingProject), "pwshremote")]
 public abstract record class Project
 {
     public required Guid Id { get; init; }

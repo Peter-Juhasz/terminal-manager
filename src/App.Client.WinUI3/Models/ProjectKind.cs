@@ -149,5 +149,14 @@ public sealed record class ProjectKind(string DisplayName, string Description, F
                 DisplayName = displayName,
                 WorkingFolder = workingFolder,
             }),
+        new(
+            DisplayName: "PowerShell remoting (Invoke-Command)",
+            Description: "Commands are run by PowerShell on another computer, over a remote session.",
+            Create: static (id, displayName, workingFolder) => new PowerShellRemotingProject
+            {
+                Id = id,
+                DisplayName = displayName,
+                WorkingFolder = workingFolder,
+            }),
     ];
 }

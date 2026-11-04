@@ -40,6 +40,7 @@
     <Compile Include="$(AppDirectory)Models\KubectlProject.cs" Link="App\Models\KubectlProject.cs" />
     <Compile Include="$(AppDirectory)Models\KubectlShellProject.cs" Link="App\Models\KubectlShellProject.cs" />
     <Compile Include="$(AppDirectory)Models\KubectlPowerShellProject.cs" Link="App\Models\KubectlPowerShellProject.cs" />
+    <Compile Include="$(AppDirectory)Models\PowerShellRemotingProject.cs" Link="App\Models\PowerShellRemotingProject.cs" />
     <Compile Include="$(AppDirectory)Models\SavedScript.cs" Link="App\Models\SavedScript.cs" />
     <Compile Include="$(AppDirectory)Services\CommandCompletion.cs" Link="App\Services\CommandCompletion.cs" />
     <Compile Include="$(AppDirectory)Services\CommandRunner.cs" Link="App\Services\CommandRunner.cs" />

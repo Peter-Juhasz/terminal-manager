@@ -565,6 +565,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         AzureVmPowerShellProject azureVm => azureVm.EditorPrefix,
         DockerPowerShellProject docker => docker.EditorPrefix,
         KubectlPowerShellProject kubectl => kubectl.EditorPrefix,
+        PowerShellRemotingProject remoting => remoting.EditorPrefix,
         _ => null,
     };
 

@@ -83,6 +83,13 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
             User = docker.User ?? string.Empty;
         }
 
+        if (project is PowerShellRemotingProject remoting)
+        {
+            ComputerName = remoting.ComputerName;
+            PrependScript = remoting.PrependScript ?? string.Empty;
+            AppendScript = remoting.AppendScript ?? string.Empty;
+        }
+
         if (project is KubectlProject kubectl)
         {
             Context = kubectl.Context ?? string.Empty;
@@ -103,14 +110,14 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(HasPrependAndAppend), nameof(ScriptsDescription), nameof(PrependScriptPlaceholder), nameof(AppendScriptPlaceholder))]
     [NotifyPropertyChangedFor(nameof(HasArguments), nameof(ArgumentsHeader), nameof(ArgumentsPlaceholder), nameof(ArgumentsDescription))]
     [NotifyPropertyChangedFor(nameof(IsAzureVm), nameof(IsWorkingFolderLocal), nameof(WorkingFolderHeader), nameof(WorkingFolderPlaceholder), nameof(IsWorkingFolderMissing))]
-    [NotifyPropertyChangedFor(nameof(IsDocker), nameof(IsKubectl), nameof(ContainerDescription))]
+    [NotifyPropertyChangedFor(nameof(IsDocker), nameof(IsKubectl), nameof(ContainerDescription), nameof(IsPowerShellRemoting))]
     [NotifyPropertyChangedFor(nameof(EnvironmentVariablesDescription), nameof(IsValid))]
     public partial ProjectKind Kind { get; set; }
 
     // the kind is told by what it creates, as that of a project being edited creates the project itself.
     private Project Sample => Kind.Create(Guid.Empty, string.Empty, string.Empty);
 
-    public bool HasPrependAndAppend => Sample is PowerShellProject or DotNetFileProject or InterpreterProject or AzureVmProject or ContainerProject;
+    public bool HasPrependAndAppend => Sample is PowerShellProject or DotNetFileProject or InterpreterProject or AzureVmProject or ContainerProject or PowerShellRemotingProject;
 
     /// <summary>Whether commands are run on an Azure virtual machine, which is told by its subscription, resource group and name.</summary>
     public bool IsAzureVm => Sample is AzureVmProject;
@@ -120,6 +127,14 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
 
     /// <summary>Whether commands are run in a container of a Kubernetes pod, which is told by its context, namespace, pod and container.</summary>
     public bool IsKubectl => Sample is KubectlProject;
+
+    /// <summary>Whether commands are run on another computer by PowerShell remoting, which is told by its name.</summary>
+    public bool IsPowerShellRemoting => Sample is PowerShellRemotingProject;
+
+    /// <summary>The name of the computer commands are run on by PowerShell remoting, which only projects run by it have, and which they need.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsValid))]
+    public partial string ComputerName { get; set; } = string.Empty;
 
     /// <summary>Whether the working folder is on this machine, so it can be browsed for, and is checked to exist; elsewhere, it is only changed to before each command.</summary>
     public bool IsWorkingFolderLocal => Sample is LocalProject;
@@ -199,7 +214,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         DotNetFileProject => "Put before and after each command, in the same file, so what the prepend script declares, such as #: and using directives, applies to commands.",
         PythonProject => "Put before and after each command, in the same script, so what the prepend script defines can be used by commands. Neither may be indented.",
         InterpreterProject => "Put before and after each command, in the same script, so what the prepend script defines can be used by commands.",
-        AzureVmProject => "Run on the machine before and after each command, in the same script, so what the prepend script defines can be used by commands.",
+        AzureVmProject or PowerShellRemotingProject => "Run on the machine before and after each command, in the same script, so what the prepend script defines can be used by commands.",
         ContainerProject => "Run in the container before and after each command, in the same script, so what the prepend script defines can be used by commands.",
         _ => "Run before and after each command, in the same scope, so what the prepend script defines can be used by commands, and is offered by completion.",
     };
@@ -316,7 +331,8 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     public bool IsValid => !string.IsNullOrWhiteSpace(DisplayName) && !string.IsNullOrWhiteSpace(WorkingFolder) && !IsWorkingFolderMissing && !HasEnvironmentVariablesError
         && (!IsAzureVm || (!string.IsNullOrWhiteSpace(ResourceGroup) && !string.IsNullOrWhiteSpace(VmName)))
         && (!IsDocker || !string.IsNullOrWhiteSpace(Container))
-        && (!IsKubectl || !string.IsNullOrWhiteSpace(Pod));
+        && (!IsKubectl || !string.IsNullOrWhiteSpace(Pod))
+        && (!IsPowerShellRemoting || !string.IsNullOrWhiteSpace(ComputerName));
 
     private IEnumerable<EnvironmentVariableEditorViewModel> FilledEnvironmentVariables => EnvironmentVariables.Where(static variable => !variable.IsEmpty);
 
@@ -396,6 +412,12 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
                 Context = NullIfEmpty(Context.Trim()),
                 Container = Container.Trim(),
                 User = NullIfEmpty(User.Trim()),
+                PrependScript = NullIfEmpty(PrependScript.TrimEnd()),
+                AppendScript = NullIfEmpty(AppendScript.TrimEnd()),
+            },
+            PowerShellRemotingProject remoting => remoting with
+            {
+                ComputerName = ComputerName.Trim(),
                 PrependScript = NullIfEmpty(PrependScript.TrimEnd()),
                 AppendScript = NullIfEmpty(AppendScript.TrimEnd()),
             },
