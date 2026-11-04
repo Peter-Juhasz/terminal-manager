@@ -366,6 +366,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBox
                     x:Name="SearchBox"
@@ -379,13 +380,27 @@
                     Grid.Column="1"
                     VerticalAlignment="Center"
                     AutomationProperties.Name="Match case"
-                    Click="OnCaseSensitiveClick"
+                    Click="OnSearchOptionClick"
                     Style="{StaticResource IconToggleButtonStyle}"
                     ToolTipService.ToolTip="Match case">
                     <TextBlock
                         FontSize="14"
                         FontWeight="SemiBold"
                         Text="Aa" />
+                </ToggleButton>
+                <ToggleButton
+                    x:Name="RegexToggleButton"
+                    Grid.Column="2"
+                    VerticalAlignment="Center"
+                    AutomationProperties.Name="Use regular expression"
+                    Click="OnSearchOptionClick"
+                    Style="{StaticResource IconToggleButtonStyle}"
+                    ToolTipService.ToolTip="Use regular expression">
+                    <TextBlock
+                        FontFamily="Consolas"
+                        FontSize="14"
+                        FontWeight="SemiBold"
+                        Text=".*" />
                 </ToggleButton>
             </Grid>
         </Grid>

@@ -175,9 +175,11 @@ public sealed partial class ProjectView : UserControl
 
     private void OnSearchTextChanged(object sender, TextChangedEventArgs e) => ApplySearchQuery();
 
-    private void OnCaseSensitiveClick(object sender, RoutedEventArgs e) => ApplySearchQuery();
+    private void OnSearchOptionClick(object sender, RoutedEventArgs e) => ApplySearchQuery();
 
     private bool IsSearchCaseSensitive => CaseSensitiveToggleButton.IsChecked is true;
+
+    private bool IsSearchRegex => RegexToggleButton.IsChecked is true;
 
     // escape ends the search, as it does in a browser
     private void OnSearchBoxKeyDown(object sender, KeyRoutedEventArgs e)
@@ -197,6 +199,10 @@ public sealed partial class ProjectView : UserControl
     // The entries laid out already; the others get it when they are prepared.
     private void ApplySearchQuery()
     {
+        SearchBox.Description = SearchQuery is { } query && IsSearchRegex && !SearchHighlighting.IsValidRegex(query, IsSearchCaseSensitive)
+            ? "Invalid regular expression"
+            : null;
+
         for (var i = 0; i < VisualTreeHelper.GetChildrenCount(HistoryRepeater); i++)
         {
             if (VisualTreeHelper.GetChild(HistoryRepeater, i) is FrameworkElement element)
@@ -210,15 +216,18 @@ public sealed partial class ProjectView : UserControl
     {
         var query = SearchQuery;
         var isCaseSensitive = IsSearchCaseSensitive;
+        var isRegex = IsSearchRegex;
         if (element.FindName("CommandText") is RichTextBlock command)
         {
             SearchHighlighting.SetIsCaseSensitive(command, isCaseSensitive);
+            SearchHighlighting.SetIsRegex(command, isRegex);
             SearchHighlighting.SetQuery(command, query);
         }
 
         if (element.FindName("OutputText") is RichTextBlock output)
         {
             SearchHighlighting.SetIsCaseSensitive(output, isCaseSensitive);
+            SearchHighlighting.SetIsRegex(output, isRegex);
             SearchHighlighting.SetQuery(output, query);
         }
     }
