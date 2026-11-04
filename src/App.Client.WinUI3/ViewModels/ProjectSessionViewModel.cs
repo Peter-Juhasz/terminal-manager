@@ -12,7 +12,7 @@ namespace App.Client.WinUI3.ViewModels;
 /// <summary>
 /// A project, with the commands run in it since the app was started, and before it if its history is kept.
 /// </summary>
-public sealed partial class ProjectSessionViewModel(Project project, CommandRunner runner, ElevatedCommandRunner elevatedRunner, ICommandCompleter completer, IQuickInfoProvider quickInfo, PowerShellHighlighter highlighter, ProjectStore store, HistoryStore history) : ObservableObject
+public sealed partial class ProjectSessionViewModel(Project project, CommandRunner runner, ElevatedCommandRunner elevatedRunner, ICommandCompleter completer, IQuickInfoProvider quickInfo, ISyntaxHighlighter highlighter, ProjectStore store, HistoryStore history) : ObservableObject
 {
     // Reading the saved history, which is started the first time the project is selected; until then it isn't saved either, so it isn't saved over.
     private Task? _loadingHistory;

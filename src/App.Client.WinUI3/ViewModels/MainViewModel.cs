@@ -5,7 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace App.Client.WinUI3.ViewModels;
 
-public sealed partial class MainViewModel(ProjectStore store, HistoryStore history, CommandRunner runner, ElevatedCommandRunner elevatedRunner, ICommandCompleter completer, IQuickInfoProvider quickInfo, PowerShellHighlighter highlighter) : ObservableObject
+public sealed partial class MainViewModel(ProjectStore store, HistoryStore history, CommandRunner runner, ElevatedCommandRunner elevatedRunner, ICommandCompleter completer, IQuickInfoProvider quickInfo, ISyntaxHighlighter highlighter) : ObservableObject
 {
     public ObservableCollection<ProjectSessionViewModel> Sessions { get; } = [];
 

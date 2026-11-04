@@ -8,7 +8,7 @@ namespace App.Client.WinUI3.Services;
 /// Parsing doesn't depend on the working folder, so the same pwsh parses for all the projects; it is another one than that of completion,
 /// so parsing never waits for a completion that takes long.
 /// </summary>
-public sealed class PowerShellHighlighter : IDisposable
+public sealed class PowerShellHighlighter : ISyntaxHighlighter, IDisposable
 {
     // Reads a script from each line it is given, and writes the spans to color in it on a line of its own.
     // The text of an expandable string is colored around what is expanded in it, which is colored as it would be outside of it.
@@ -70,10 +70,8 @@ public sealed class PowerShellHighlighter : IDisposable
     public Task<HighlightedCode?> HighlightAsync(string input, CancellationToken cancellationToken) =>
         HighlightAsync(prefix: string.Empty, input, cancellationToken);
 
-    /// <summary>
-    /// The spans to color in <paramref name="input"/>, parsed as if <paramref name="prefix"/> was before it, as what that leaves open, such as a here-string, changes what it means;
-    /// a span that starts in <paramref name="prefix"/> is colored from the start of <paramref name="input"/>.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>A span that starts in <paramref name="prefix"/> is colored from the start of <paramref name="input"/>.</remarks>
     public async Task<HighlightedCode?> HighlightAsync(string prefix, string input, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(prefix);

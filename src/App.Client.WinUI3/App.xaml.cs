@@ -101,6 +101,7 @@ public partial class App : Application
         services.AddSingleton<ICommandCompleter>(static provider => provider.GetRequiredService<PowerShellLanguageService>());
         services.AddSingleton<IQuickInfoProvider>(static provider => provider.GetRequiredService<PowerShellLanguageService>());
         services.AddSingleton<PowerShellHighlighter>();
+        services.AddSingleton<ISyntaxHighlighter>(static provider => provider.GetRequiredService<PowerShellHighlighter>());
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
 

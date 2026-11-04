@@ -56,6 +56,7 @@
     <Compile Include="$(AppDirectory)Services\ICommandRunner.cs" Link="App\Services\ICommandRunner.cs" />
     <Compile Include="$(AppDirectory)Services\IOutputSink.cs" Link="App\Services\IOutputSink.cs" />
     <Compile Include="$(AppDirectory)Services\IQuickInfoProvider.cs" Link="App\Services\IQuickInfoProvider.cs" />
+    <Compile Include="$(AppDirectory)Services\ISyntaxHighlighter.cs" Link="App\Services\ISyntaxHighlighter.cs" />
     <Compile Include="$(AppDirectory)Services\OutputBuffer.cs" Link="App\Services\OutputBuffer.cs" />
     <Compile Include="$(AppDirectory)Services\OutputChunk.cs" Link="App\Services\OutputChunk.cs" />
     <Compile Include="$(AppDirectory)Services\PowerShellHighlighter.cs" Link="App\Services\PowerShellHighlighter.cs" />
