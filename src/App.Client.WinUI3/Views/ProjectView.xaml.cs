@@ -929,7 +929,8 @@ public sealed partial class ProjectView : UserControl
             return;
         }
 
-        CompletionList.SelectedIndex = (CompletionList.SelectedIndex + offset + count) % count;
+        // stops at the ends instead of wrapping around
+        CompletionList.SelectedIndex = Math.Clamp(CompletionList.SelectedIndex + offset, 0, count - 1);
     }
 
     private void TakeListedCompletion(int match)
