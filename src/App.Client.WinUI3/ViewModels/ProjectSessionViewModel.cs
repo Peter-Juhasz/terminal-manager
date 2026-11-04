@@ -12,7 +12,7 @@ namespace App.Client.WinUI3.ViewModels;
 /// <summary>
 /// A project, with the commands run in it since the app was started, and before it if its history is kept.
 /// </summary>
-public sealed partial class ProjectSessionViewModel(Project project, CommandRunner runner, ElevatedCommandRunner elevatedRunner, ICommandCompleter completer, IQuickInfoProvider quickInfo, ISyntaxHighlighter highlighter, ProjectStore store, HistoryStore history) : ObservableObject
+public sealed partial class ProjectSessionViewModel(Project project, CommandRunner runner, ElevatedCommandRunner elevatedRunner, ICommandCompleter completer, CmdCompleter cmdCompleter, IQuickInfoProvider quickInfo, ISyntaxHighlighter highlighter, ProjectStore store, HistoryStore history) : ObservableObject
 {
     // Reading the saved history, which is started the first time the project is selected; until then it isn't saved either, so it isn't saved over.
     private Task? _loadingHistory;
@@ -536,18 +536,22 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         return true;
     }
 
-    /// <summary>Whether what is typed in the input can be completed, which it can be by PowerShell.</summary>
-    public bool CanComplete => Project is PowerShellProject;
+    /// <summary>Whether what is typed in the input can be completed, which it can be by PowerShell, and the first word of it for the Command Prompt.</summary>
+    public bool CanComplete => Project is PowerShellProject or CmdProject;
 
     /// <summary>Gets completion ready, so completing for the first time doesn't wait for it to start up.</summary>
     public void PrepareCompletion()
     {
-        if (Project is not PowerShellProject powerShell)
+        switch (Project)
         {
-            return;
-        }
+            case PowerShellProject powerShell:
+                completer.Prepare(powerShell.ExpandedWorkingFolder);
+                break;
 
-        completer.Prepare(powerShell.ExpandedWorkingFolder);
+            case CmdProject cmd:
+                cmdCompleter.Prepare(cmd.ExpandedWorkingFolder);
+                break;
+        }
     }
 
     /// <summary>Completes the text before <paramref name="cursor"/> in <paramref name="input"/>, or returns <see langword="null"/> when it can't be completed.</summary>
@@ -555,6 +559,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     public Task<CommandCompletion?> CompleteAsync(string input, int cursor, CancellationToken cancellationToken) => Project switch
     {
         PowerShellProject powerShell => completer.CompleteAsync(powerShell.ExpandedWorkingFolder, powerShell.EditorPrefix, input, cursor, cancellationToken),
+        CmdProject cmd => cmdCompleter.CompleteAsync(cmd.ExpandedWorkingFolder, prefix: "", input, cursor, cancellationToken),
         _ => Task.FromResult<CommandCompletion?>(null),
     };
 

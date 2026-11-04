@@ -5,7 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace App.Client.WinUI3.ViewModels;
 
-public sealed partial class MainViewModel(ProjectStore store, HistoryStore history, CommandRunner runner, ElevatedCommandRunner elevatedRunner, ICommandCompleter completer, IQuickInfoProvider quickInfo, ISyntaxHighlighter highlighter) : ObservableObject
+public sealed partial class MainViewModel(ProjectStore store, HistoryStore history, CommandRunner runner, ElevatedCommandRunner elevatedRunner, ICommandCompleter completer, CmdCompleter cmdCompleter, IQuickInfoProvider quickInfo, ISyntaxHighlighter highlighter) : ObservableObject
 {
     public ObservableCollection<ProjectSessionViewModel> Sessions { get; } = [];
 
@@ -68,7 +68,7 @@ public sealed partial class MainViewModel(ProjectStore store, HistoryStore histo
         var projects = await store.ListAsync(cancellationToken);
         foreach (var project in projects.OrderBy(static project => project.DisplayName, StringComparer.CurrentCultureIgnoreCase))
         {
-            Attach(new ProjectSessionViewModel(project, runner, elevatedRunner, completer, quickInfo, highlighter, store, history));
+            Attach(new ProjectSessionViewModel(project, runner, elevatedRunner, completer, cmdCompleter, quickInfo, highlighter, store, history));
         }
 
         HasProjects = Sessions.Count > 0;
@@ -79,7 +79,7 @@ public sealed partial class MainViewModel(ProjectStore store, HistoryStore histo
     {
         await store.AddAsync(project, cancellationToken);
 
-        var session = new ProjectSessionViewModel(project, runner, elevatedRunner, completer, quickInfo, highlighter, store, history);
+        var session = new ProjectSessionViewModel(project, runner, elevatedRunner, completer, cmdCompleter, quickInfo, highlighter, store, history);
         Attach(session);
         HasProjects = true;
         SelectedSession = session;

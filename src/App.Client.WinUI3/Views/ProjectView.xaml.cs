@@ -705,7 +705,7 @@ public sealed partial class ProjectView : UserControl
                 e.Handled = session.StopLatest();
                 break;
 
-            // otherwise it moves the focus on, as it does for the Command Prompt, which can't complete
+            // otherwise it moves the focus on, as it does for a project which can't complete
             case VirtualKey.Tab when session.CanComplete && !IsKeyDown(VirtualKey.Control):
                 e.Handled = true;
                 _ = CycleCompletionAsync(session, isBackward: IsKeyDown(VirtualKey.Shift));

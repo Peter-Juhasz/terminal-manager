@@ -43,6 +43,7 @@
     <Compile Include="$(AppDirectory)Models\PowerShellRemotingProject.cs" Link="App\Models\PowerShellRemotingProject.cs" />
     <Compile Include="$(AppDirectory)Models\WslProject.cs" Link="App\Models\WslProject.cs" />
     <Compile Include="$(AppDirectory)Models\SavedScript.cs" Link="App\Models\SavedScript.cs" />
+    <Compile Include="$(AppDirectory)Services\CmdCompleter.cs" Link="App\Services\CmdCompleter.cs" />
     <Compile Include="$(AppDirectory)Services\CommandCompletion.cs" Link="App\Services\CommandCompletion.cs" />
     <Compile Include="$(AppDirectory)Services\CommandRunner.cs" Link="App\Services\CommandRunner.cs" />
     <Compile Include="$(AppDirectory)Services\ProcessRunner.cs" Link="App\Services\ProcessRunner.cs" />
