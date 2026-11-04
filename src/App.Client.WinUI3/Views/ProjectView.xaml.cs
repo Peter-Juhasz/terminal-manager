@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using App.Client.WinUI3.Controls;
 using App.Client.WinUI3.Models;
 using App.Client.WinUI3.Services;
@@ -26,10 +27,20 @@ public sealed partial class ProjectView : UserControl
     public ProjectView()
     {
         InitializeComponent();
+        _inputHover = QuickInfoHover.Attach(InputBox, GetQuickInfoAsync);
 
         // the session is set before the view is loaded at startup, when it can't be focused yet
         Loaded += (_, _) => FocusInput();
     }
+
+    private readonly QuickInfoHover _inputHover;
+
+    // The commands of the history are attached to once, however many times their element is recycled.
+    private readonly ConditionalWeakTable<RichTextBlock, QuickInfoHover> _commandHovers = [];
+
+    // What a token of a command is, as told by the session the view shows now.
+    private Task<QuickInfo?> GetQuickInfoAsync(string text, int position, CancellationToken cancellationToken) =>
+        Session?.GetQuickInfoAsync(text, position, cancellationToken) ?? Task.FromResult<QuickInfo?>(null);
 
     public static readonly DependencyProperty SessionProperty = DependencyProperty.Register(
         nameof(Session),
@@ -154,6 +165,10 @@ public sealed partial class ProjectView : UserControl
             ApplyWrapOutput(element);
             ApplyMaxOutputHeight(element);
             ApplySearch(element, args.Index);
+            if (element.FindName("CommandText") is RichTextBlock command)
+            {
+                _commandHovers.GetValue(command, block => QuickInfoHover.Attach(block, GetQuickInfoAsync));
+            }
         }
     }
 
@@ -852,6 +867,9 @@ public sealed partial class ProjectView : UserControl
     private void ShowCompletionList(InputCompletion completion)
     {
         _listed = completion;
+
+        // both are shown above the input, so the list takes the place of the quick info
+        _inputHover.Close();
         CompletionList.ItemsSource = completion.Completion.Matches;
         CompletionList.SelectedIndex = 0;
 
@@ -1035,25 +1053,18 @@ public sealed partial class ProjectView : UserControl
     // The list is never focused, so the focus leaving the input means it is done with.
     private void OnInputLostFocus(object sender, RoutedEventArgs e) => CloseCompletionList();
 
-    // Where the character at index starts, from the left of the input; at the end of the input, where the last one ends.
     // Where the character at index starts in the window; at the end of the input, where the last one ends.
     private double GetCharacterLeftInWindow(int index)
     {
         var inputLeft = InputBox.TransformToVisual(null).TransformPoint(default).X;
-        var textLeft = InputBox.BorderThickness.Left + InputBox.Padding.Left;
         var length = InputBox.Text.Length;
-        if (length == 0)
+        var left = length switch
         {
-            return inputLeft + textLeft;
-        }
-
-        var left = index < length
-            ? InputBox.GetRectFromCharacterIndex(index, trailingEdge: false).X
-            : InputBox.GetRectFromCharacterIndex(length - 1, trailingEdge: true).X;
-
-        // the rectangles are relative to where the text starts, inside the border and the padding, when the first character isn't as far in as that
-        var isRelativeToText = InputBox.GetRectFromCharacterIndex(0, trailingEdge: false).X < textLeft / 2;
-        return inputLeft + left + (isRelativeToText ? textLeft : 0);
+            0 => InputBox.BorderThickness.Left + InputBox.Padding.Left,
+            _ when index < length => InputBox.GetCharacterEdge(index, trailingEdge: false).X,
+            _ => InputBox.GetCharacterEdge(length - 1, trailingEdge: true).X,
+        };
+        return inputLeft + left;
     }
 
     // The input as it was when the completion was asked for, with the match at Match put in.

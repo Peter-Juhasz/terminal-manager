@@ -52,13 +52,15 @@
     <Compile Include="$(AppDirectory)Services\ElevationProtocol.cs" Link="App\Services\ElevationProtocol.cs" />
     <Compile Include="$(AppDirectory)Services\ElevationServer.cs" Link="App\Services\ElevationServer.cs" />
     <Compile Include="$(AppDirectory)Services\HighlightedCode.cs" Link="App\Services\HighlightedCode.cs" />
+    <Compile Include="$(AppDirectory)Services\ICommandCompleter.cs" Link="App\Services\ICommandCompleter.cs" />
     <Compile Include="$(AppDirectory)Services\ICommandRunner.cs" Link="App\Services\ICommandRunner.cs" />
     <Compile Include="$(AppDirectory)Services\IOutputSink.cs" Link="App\Services\IOutputSink.cs" />
+    <Compile Include="$(AppDirectory)Services\IQuickInfoProvider.cs" Link="App\Services\IQuickInfoProvider.cs" />
     <Compile Include="$(AppDirectory)Services\OutputBuffer.cs" Link="App\Services\OutputBuffer.cs" />
     <Compile Include="$(AppDirectory)Services\OutputChunk.cs" Link="App\Services\OutputChunk.cs" />
-    <Compile Include="$(AppDirectory)Services\PowerShellCompleter.cs" Link="App\Services\PowerShellCompleter.cs" />
     <Compile Include="$(AppDirectory)Services\PowerShellHighlighter.cs" Link="App\Services\PowerShellHighlighter.cs" />
     <Compile Include="$(AppDirectory)Services\PowerShellHost.cs" Link="App\Services\PowerShellHost.cs" />
+    <Compile Include="$(AppDirectory)Services\PowerShellLanguageService.cs" Link="App\Services\PowerShellLanguageService.cs" />
     <Compile Include="$(AppDirectory)Services\ProgressSequenceParser.cs" Link="App\Services\ProgressSequenceParser.cs" />
     <Compile Include="$(AppDirectory)Services\ScriptTemplate.cs" Link="App\Services\ScriptTemplate.cs" />
     <Compile Include="$(AppDirectory)Services\SettingsService.cs" Link="App\Services\SettingsService.cs" />

@@ -12,7 +12,7 @@ namespace App.Client.WinUI3.ViewModels;
 /// <summary>
 /// A project, with the commands run in it since the app was started, and before it if its history is kept.
 /// </summary>
-public sealed partial class ProjectSessionViewModel(Project project, CommandRunner runner, ElevatedCommandRunner elevatedRunner, PowerShellCompleter completer, PowerShellHighlighter highlighter, ProjectStore store, HistoryStore history) : ObservableObject
+public sealed partial class ProjectSessionViewModel(Project project, CommandRunner runner, ElevatedCommandRunner elevatedRunner, ICommandCompleter completer, IQuickInfoProvider quickInfo, PowerShellHighlighter highlighter, ProjectStore store, HistoryStore history) : ObservableObject
 {
     // Reading the saved history, which is started the first time the project is selected; until then it isn't saved either, so it isn't saved over.
     private Task? _loadingHistory;
@@ -556,6 +556,14 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     {
         PowerShellProject powerShell => completer.CompleteAsync(powerShell.ExpandedWorkingFolder, powerShell.EditorPrefix, input, cursor, cancellationToken),
         _ => Task.FromResult<CommandCompletion?>(null),
+    };
+
+    /// <summary>What is at <paramref name="position"/> in <paramref name="input"/>, a command of the project, or <see langword="null"/> when there is nothing there to tell about.</summary>
+    /// <remarks>The prepend script of the project is taken into account, as it is for completion.</remarks>
+    public Task<QuickInfo?> GetQuickInfoAsync(string input, int position, CancellationToken cancellationToken) => Project switch
+    {
+        PowerShellProject powerShell => quickInfo.GetQuickInfoAsync(powerShell.ExpandedWorkingFolder, powerShell.EditorPrefix, input, position, cancellationToken),
+        _ => Task.FromResult<QuickInfo?>(null),
     };
 
     // What the commands of project are parsed after when they are highlighted, which they are only when they are run by PowerShell, or null when they aren't.

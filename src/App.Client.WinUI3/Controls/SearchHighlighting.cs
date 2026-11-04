@@ -128,16 +128,13 @@ public static class SearchHighlighting
         highlighters.Add(highlighter);
     }
 
-    // The text as it is counted by the ranges of a highlighter: the runs of the paragraphs one after the other.
+    // The text as it is counted by the ranges of a highlighter, and by the hit testing; built in a reused builder, as the output can be long.
     private static string GetText(RichTextBlock block)
     {
         Text.Clear();
-        foreach (var paragraph in block.Blocks.OfType<Paragraph>())
+        foreach (var run in block.GetRuns())
         {
-            foreach (var run in paragraph.Inlines.OfType<Run>())
-            {
-                Text.Append(run.Text);
-            }
+            Text.Append(run.Text);
         }
 
         return Text.ToString();

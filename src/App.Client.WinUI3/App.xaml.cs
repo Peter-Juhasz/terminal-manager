@@ -96,7 +96,10 @@ public partial class App : Application
 
         services.AddSingleton<CommandRunner>();
         services.AddSingleton<ElevatedCommandRunner>();
-        services.AddSingleton<PowerShellCompleter>();
+        // one instance for both, so completion and quick info share the pwsh of each working folder
+        services.AddSingleton<PowerShellLanguageService>();
+        services.AddSingleton<ICommandCompleter>(static provider => provider.GetRequiredService<PowerShellLanguageService>());
+        services.AddSingleton<IQuickInfoProvider>(static provider => provider.GetRequiredService<PowerShellLanguageService>());
         services.AddSingleton<PowerShellHighlighter>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();
