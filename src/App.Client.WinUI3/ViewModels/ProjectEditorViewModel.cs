@@ -16,7 +16,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     /// <summary>Starts adding a project.</summary>
     public ProjectEditorViewModel()
     {
-        Kind = Kinds[0];
+        Kind = ProjectKind.All[0];
         EnvironmentVariables.CollectionChanged += OnEnvironmentVariablesChanged;
     }
 
@@ -27,8 +27,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(project);
 
         _project = project;
-        Kind = new ProjectKind(project.TerminalDisplayName, (_, _, _) => project);
-        Kinds = (ProjectKind[])[Kind];
+        Kind = new ProjectKind(DisplayName: project.TerminalDisplayName, Description: string.Empty, Create: (_, _, _) => project);
         DisplayName = project.DisplayName;
         WorkingFolder = project.WorkingFolder;
         LoadEnvFile = project is LocalProject { LoadEnvFile: true };
@@ -99,8 +98,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
 
     public string PrimaryButtonText => IsNew ? "Add" : "Save";
 
-    public IReadOnlyList<ProjectKind> Kinds { get; } = ProjectKind.All;
-
+    /// <summary>The kind of the project, which is picked before the dialog is shown when one is added, and can't be changed in it.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasPrependAndAppend), nameof(ScriptsDescription), nameof(PrependScriptPlaceholder), nameof(AppendScriptPlaceholder))]
     [NotifyPropertyChangedFor(nameof(HasArguments), nameof(ArgumentsHeader), nameof(ArgumentsPlaceholder), nameof(ArgumentsDescription))]

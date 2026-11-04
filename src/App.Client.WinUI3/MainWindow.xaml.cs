@@ -269,6 +269,15 @@ public sealed partial class MainWindow : Window
 
 	private async Task AddProjectAsync(ProjectEditorViewModel editor)
 	{
+		// the terminal is picked first, as what else is filled in depends on it
+		var picker = new TerminalPickerDialog { XamlRoot = Content.XamlRoot };
+		await Dialogs.ShowAsync(picker);
+		if (picker.SelectedKind is not { } kind)
+		{
+			return;
+		}
+
+		editor.Kind = kind;
 		var dialog = new ProjectDialog(editor) { XamlRoot = Content.XamlRoot };
 		if (await Dialogs.ShowAsync(dialog) is ContentDialogResult.Primary)
 		{

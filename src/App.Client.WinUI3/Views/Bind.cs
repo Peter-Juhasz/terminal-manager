@@ -76,4 +76,9 @@ public static class Bind
     public static IconElement TerminalIcon(Uri? source) => source is null
         ? new FontIcon { Glyph = "\uE756" }
         : new ImageIcon { Source = new SvgImageSource(source) };
+
+    /// <summary>The logo at <paramref name="source"/>, or the generic terminal glyph without one, <paramref name="size"/> pixels wide and high.</summary>
+    public static IconElement TerminalIcon(Uri? source, double size) => source is null
+        ? new FontIcon { Glyph = "\uE756", FontSize = size, Width = size, Height = size }
+        : new ImageIcon { Source = new SvgImageSource(source), Width = size, Height = size };
 }

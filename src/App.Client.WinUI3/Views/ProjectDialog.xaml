@@ -6,12 +6,29 @@
     xmlns:local="using:App.Client.WinUI3.Views"
     xmlns:models="using:App.Client.WinUI3.Models"
     xmlns:viewModels="using:App.Client.WinUI3.ViewModels"
-    Title="{x:Bind ViewModel.Title}"
     CloseButtonText="Cancel"
     DefaultButton="Primary"
     IsPrimaryButtonEnabled="{x:Bind ViewModel.IsValid, Mode=OneWay}"
     PrimaryButtonText="{x:Bind ViewModel.PrimaryButtonText}"
     Style="{StaticResource DefaultContentDialogStyle}">
+
+    <!-- The terminal is picked before the dialog is shown, and can't be changed in it, so it is only told here. -->
+    <ContentDialog.Title>
+        <Grid ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <ContentPresenter VerticalAlignment="Center" Content="{x:Bind local:Bind.TerminalIcon(ViewModel.Kind.IconUri, 32), Mode=OneWay}" />
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                <TextBlock Text="{x:Bind ViewModel.Title}" />
+                <TextBlock
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{ThemeResource CaptionTextBlockStyle}"
+                    Text="{x:Bind ViewModel.Kind.DisplayName, Mode=OneWay}" />
+            </StackPanel>
+        </Grid>
+    </ContentDialog.Title>
 
     <ContentDialog.Resources>
         <!-- Wide enough for the navigation pane next to the page. -->
@@ -74,19 +91,6 @@
             <ScrollViewer Margin="24,0,0,0" Padding="0,0,16,0">
                 <Grid>
                     <StackPanel Spacing="16" Visibility="{x:Bind GeneralPageItem.IsSelected, Mode=OneWay}">
-                        <ComboBox
-                            HorizontalAlignment="Stretch"
-                            Header="Terminal"
-                            IsEnabled="{x:Bind ViewModel.IsNew}"
-                            ItemsSource="{x:Bind ViewModel.Kinds}"
-                            SelectedItem="{x:Bind ViewModel.Kind, Mode=TwoWay}">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate x:DataType="models:ProjectKind">
-                                    <TextBlock Text="{x:Bind DisplayName}" />
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
-
                         <TextBox
                             x:Name="DisplayNameBox"
                             Header="Name"
