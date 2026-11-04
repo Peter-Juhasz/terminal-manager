@@ -75,7 +75,7 @@ public sealed class AzureVmProjectTests(TestContext testContext)
     [TestMethod]
     public void PowerShellScriptQuotesAllSingleQuotes()
     {
-        Assert.AreEqual("'it''s ‘‘a’’'", AzureVmPowerShellProject.Quote("it's ‘a’"));
+        Assert.AreEqual("'it''s ‘‘a’’'", PowerShellScript.Quote("it's ‘a’"));
     }
 
     [TestMethod]

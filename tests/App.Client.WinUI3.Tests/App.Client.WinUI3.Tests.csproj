@@ -31,6 +31,15 @@
     <Compile Include="$(AppDirectory)Models\AzureVmProject.cs" Link="App\Models\AzureVmProject.cs" />
     <Compile Include="$(AppDirectory)Models\AzureVmShellProject.cs" Link="App\Models\AzureVmShellProject.cs" />
     <Compile Include="$(AppDirectory)Models\AzureVmPowerShellProject.cs" Link="App\Models\AzureVmPowerShellProject.cs" />
+    <Compile Include="$(AppDirectory)Models\ShellScript.cs" Link="App\Models\ShellScript.cs" />
+    <Compile Include="$(AppDirectory)Models\PowerShellScript.cs" Link="App\Models\PowerShellScript.cs" />
+    <Compile Include="$(AppDirectory)Models\ContainerProject.cs" Link="App\Models\ContainerProject.cs" />
+    <Compile Include="$(AppDirectory)Models\DockerProject.cs" Link="App\Models\DockerProject.cs" />
+    <Compile Include="$(AppDirectory)Models\DockerShellProject.cs" Link="App\Models\DockerShellProject.cs" />
+    <Compile Include="$(AppDirectory)Models\DockerPowerShellProject.cs" Link="App\Models\DockerPowerShellProject.cs" />
+    <Compile Include="$(AppDirectory)Models\KubectlProject.cs" Link="App\Models\KubectlProject.cs" />
+    <Compile Include="$(AppDirectory)Models\KubectlShellProject.cs" Link="App\Models\KubectlShellProject.cs" />
+    <Compile Include="$(AppDirectory)Models\KubectlPowerShellProject.cs" Link="App\Models\KubectlPowerShellProject.cs" />
     <Compile Include="$(AppDirectory)Models\SavedScript.cs" Link="App\Models\SavedScript.cs" />
     <Compile Include="$(AppDirectory)Services\CommandCompletion.cs" Link="App\Services\CommandCompletion.cs" />
     <Compile Include="$(AppDirectory)Services\CommandRunner.cs" Link="App\Services\CommandRunner.cs" />

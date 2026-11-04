@@ -55,7 +55,7 @@
                         <InfoBadge Style="{ThemeResource CriticalIconInfoBadgeStyle}" Visibility="{x:Bind ViewModel.HasEnvironmentVariablesError, Mode=OneWay}" />
                     </NavigationViewItem.InfoBadge>
                 </NavigationViewItem>
-                <!-- Only projects run by PowerShell, or whose commands are code, have them, and the terminal can't be changed from this page. -->
+                <!-- Only projects run by PowerShell or a shell, or whose commands are code, have them, and the terminal can't be changed from this page. -->
                 <NavigationViewItem
                     x:Name="ScriptsPageItem"
                     Content="Prepend and append"
@@ -148,6 +148,98 @@
                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                     Style="{ThemeResource CaptionTextBlockStyle}"
                                     Text="Each command is run by az vm run-command invoke, as root or the local system account, in the working folder on the machine. Its output is shown once it ended."
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Only projects run in a Docker container have them. -->
+                        <StackPanel Spacing="16" Visibility="{x:Bind ViewModel.IsDocker, Mode=OneWay}">
+                            <StackPanel Spacing="4">
+                                <TextBox
+                                    Header="Container"
+                                    IsSpellCheckEnabled="False"
+                                    PlaceholderText="Name or id"
+                                    Text="{x:Bind ViewModel.Container, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                    Text="{x:Bind ViewModel.ContainerDescription, Mode=OneWay}"
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                            <StackPanel Spacing="4">
+                                <TextBox
+                                    Header="User"
+                                    IsSpellCheckEnabled="False"
+                                    PlaceholderText="name or uid:gid"
+                                    Text="{x:Bind ViewModel.User, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                    Text="Leave it empty for the user of the container."
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                            <StackPanel Spacing="4">
+                                <TextBox
+                                    Header="Context"
+                                    IsSpellCheckEnabled="False"
+                                    PlaceholderText="default"
+                                    Text="{x:Bind ViewModel.Context, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                    Text="Leave it empty for the current context of the Docker CLI."
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Only projects run in a container of a Kubernetes pod have them. -->
+                        <StackPanel Spacing="16" Visibility="{x:Bind ViewModel.IsKubectl, Mode=OneWay}">
+                            <StackPanel Spacing="4">
+                                <TextBox
+                                    Header="Pod"
+                                    IsSpellCheckEnabled="False"
+                                    PlaceholderText="my-pod or deploy/my-app"
+                                    Text="{x:Bind ViewModel.Pod, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                    Text="{x:Bind ViewModel.ContainerDescription, Mode=OneWay}"
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                            <StackPanel Spacing="4">
+                                <TextBox
+                                    Header="Container"
+                                    IsSpellCheckEnabled="False"
+                                    PlaceholderText="my-container"
+                                    Text="{x:Bind ViewModel.Container, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                    Text="Leave it empty for the default container of the pod."
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                            <StackPanel Spacing="4">
+                                <TextBox
+                                    Header="Namespace"
+                                    IsSpellCheckEnabled="False"
+                                    PlaceholderText="default"
+                                    Text="{x:Bind ViewModel.Namespace, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                    Text="Leave it empty for the namespace of the context."
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                            <StackPanel Spacing="4">
+                                <TextBox
+                                    Header="Context"
+                                    IsSpellCheckEnabled="False"
+                                    PlaceholderText="my-cluster"
+                                    Text="{x:Bind ViewModel.Context, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                    Text="Leave it empty for the current context of kubectl."
                                     TextWrapping="Wrap" />
                             </StackPanel>
                         </StackPanel>

@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
 
 namespace App.Client.WinUI3.Models;
 
@@ -10,7 +9,7 @@ namespace App.Client.WinUI3.Models;
 /// <remarks>
 /// The command is run in a <c>try</c> block, so its exit code can still be written after it; a terminating error ends it with an exit code of 1.
 /// </remarks>
-public sealed partial record class AzureVmPowerShellProject : AzureVmProject
+public sealed record class AzureVmPowerShellProject : AzureVmProject
 {
     [JsonIgnore]
     public override string CommandId => "RunPowerShellScript";
@@ -34,12 +33,7 @@ public sealed partial record class AzureVmPowerShellProject : AzureVmProject
         script.Append("$ProgressPreference = 'SilentlyContinue'\n");
         script.Append("$global:LASTEXITCODE = 0\n");
         script.Append("try {\n");
-        script.Append("Set-Location -LiteralPath ").Append(Quote(WorkingFolder)).Append(" -ErrorAction Stop\n");
-        foreach (var (name, value) in environmentVariables)
-        {
-            script.Append("${env:").Append(name.Replace("}", "`}", StringComparison.Ordinal)).Append("} = ").Append(Quote(value)).Append('\n');
-        }
-
+        script.AppendPowerShellPreamble(WorkingFolder, environmentVariables);
         script.Append(body).Append('\n');
         script.Append("}\n");
         script.Append("catch {\n");
@@ -47,14 +41,8 @@ public sealed partial record class AzureVmPowerShellProject : AzureVmProject
         script.Append("$global:LASTEXITCODE = 1\n");
         script.Append("}\n");
         script.Append("finally {\n");
-        script.Append("[Console]::Out.Write(\"`n\" + ").Append(Quote(exitCodeMarker)).Append(" + [string]$global:LASTEXITCODE + \"`n\")\n");
+        script.Append("[Console]::Out.Write(\"`n\" + ").Append(PowerShellScript.Quote(exitCodeMarker)).Append(" + [string]$global:LASTEXITCODE + \"`n\")\n");
         script.Append("}\n");
         return script.ToString();
     }
-
-    /// <summary>Quotes <paramref name="value"/> for PowerShell, so it is taken as it is; each kind of single quote it takes is doubled.</summary>
-    internal static string Quote(string value) => $"'{SingleQuotes().Replace(value, "$0$0")}'";
-
-    [GeneratedRegex("['‘’‚‛]")]
-    private static partial Regex SingleQuotes();
 }

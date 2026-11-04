@@ -73,5 +73,29 @@ public sealed record class ProjectKind(string DisplayName, Func<Guid, string, st
             DisplayName = displayName,
             WorkingFolder = workingFolder,
         }),
+        new("Docker container, shell (docker exec)", static (id, displayName, workingFolder) => new DockerShellProject
+        {
+            Id = id,
+            DisplayName = displayName,
+            WorkingFolder = workingFolder,
+        }),
+        new("Docker container, PowerShell (docker exec)", static (id, displayName, workingFolder) => new DockerPowerShellProject
+        {
+            Id = id,
+            DisplayName = displayName,
+            WorkingFolder = workingFolder,
+        }),
+        new("Kubernetes pod, shell (kubectl exec)", static (id, displayName, workingFolder) => new KubectlShellProject
+        {
+            Id = id,
+            DisplayName = displayName,
+            WorkingFolder = workingFolder,
+        }),
+        new("Kubernetes pod, PowerShell (kubectl exec)", static (id, displayName, workingFolder) => new KubectlPowerShellProject
+        {
+            Id = id,
+            DisplayName = displayName,
+            WorkingFolder = workingFolder,
+        }),
     ];
 }

@@ -70,6 +70,27 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
             PrependScript = azureVm.PrependScript ?? string.Empty;
             AppendScript = azureVm.AppendScript ?? string.Empty;
         }
+
+        if (project is ContainerProject container)
+        {
+            PrependScript = container.PrependScript ?? string.Empty;
+            AppendScript = container.AppendScript ?? string.Empty;
+        }
+
+        if (project is DockerProject docker)
+        {
+            Context = docker.Context ?? string.Empty;
+            Container = docker.Container;
+            User = docker.User ?? string.Empty;
+        }
+
+        if (project is KubectlProject kubectl)
+        {
+            Context = kubectl.Context ?? string.Empty;
+            Namespace = kubectl.Namespace ?? string.Empty;
+            Pod = kubectl.Pod;
+            Container = kubectl.Container ?? string.Empty;
+        }
     }
 
     public bool IsNew => _project is null;
@@ -84,31 +105,82 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(HasPrependAndAppend), nameof(ScriptsDescription), nameof(PrependScriptPlaceholder), nameof(AppendScriptPlaceholder))]
     [NotifyPropertyChangedFor(nameof(HasArguments), nameof(ArgumentsHeader), nameof(ArgumentsPlaceholder), nameof(ArgumentsDescription))]
     [NotifyPropertyChangedFor(nameof(IsAzureVm), nameof(IsWorkingFolderLocal), nameof(WorkingFolderHeader), nameof(WorkingFolderPlaceholder), nameof(IsWorkingFolderMissing))]
+    [NotifyPropertyChangedFor(nameof(IsDocker), nameof(IsKubectl), nameof(ContainerDescription))]
     [NotifyPropertyChangedFor(nameof(EnvironmentVariablesDescription), nameof(IsValid))]
     public partial ProjectKind Kind { get; set; }
 
     // the kind is told by what it creates, as that of a project being edited creates the project itself.
     private Project Sample => Kind.Create(Guid.Empty, string.Empty, string.Empty);
 
-    public bool HasPrependAndAppend => Sample is PowerShellProject or DotNetFileProject or InterpreterProject or AzureVmProject;
+    public bool HasPrependAndAppend => Sample is PowerShellProject or DotNetFileProject or InterpreterProject or AzureVmProject or ContainerProject;
 
     /// <summary>Whether commands are run on an Azure virtual machine, which is told by its subscription, resource group and name.</summary>
     public bool IsAzureVm => Sample is AzureVmProject;
 
+    /// <summary>Whether commands are run in a Docker container, which is told by its context, name and the user they are run as.</summary>
+    public bool IsDocker => Sample is DockerProject;
+
+    /// <summary>Whether commands are run in a container of a Kubernetes pod, which is told by its context, namespace, pod and container.</summary>
+    public bool IsKubectl => Sample is KubectlProject;
+
     /// <summary>Whether the working folder is on this machine, so it can be browsed for, and is checked to exist; elsewhere, it is only changed to before each command.</summary>
     public bool IsWorkingFolderLocal => Sample is LocalProject;
 
-    public string WorkingFolderHeader => IsWorkingFolderLocal ? "Working folder" : "Working folder on the machine";
+    public string WorkingFolderHeader => Sample switch
+    {
+        LocalProject => "Working folder",
+        ContainerProject => "Working folder in the container",
+        _ => "Working folder on the machine",
+    };
 
     public string WorkingFolderPlaceholder => Sample switch
     {
         AzureVmShellProject => "/home/azureuser/my-project",
+        ContainerProject => "/app",
         _ => @"C:\src\my-project",
     };
 
-    public string EnvironmentVariablesDescription => IsWorkingFolderLocal
-        ? "Commands are run with these, in addition to the variables of the app. Use %NAME% in a value to include another variable."
-        : "These are set on the machine before each command. Use %NAME% in a value to include a variable of this machine.";
+    public string EnvironmentVariablesDescription => Sample switch
+    {
+        LocalProject => "Commands are run with these, in addition to the variables of the app. Use %NAME% in a value to include another variable.",
+        ContainerProject => "These are set in the container before each command. Use %NAME% in a value to include a variable of this machine.",
+        _ => "These are set on the machine before each command. Use %NAME% in a value to include a variable of this machine.",
+    };
+
+    /// <summary>How each command is run in the container.</summary>
+    public string ContainerDescription => Sample switch
+    {
+        DockerShellProject => "Each command is run by docker exec, as a script of sh, in the working folder in the running container.",
+        DockerPowerShellProject => "Each command is run by docker exec, as a script of pwsh, in the working folder in the running container.",
+        KubectlShellProject => "Each command is run by kubectl exec, as a script of sh, in the working folder in the container.",
+        KubectlPowerShellProject => "Each command is run by kubectl exec, as a script of pwsh, in the working folder in the container.",
+        _ => string.Empty,
+    };
+
+    /// <summary>The Docker or kubeconfig context the container is in, or empty for the current one, which only projects run in a container have.</summary>
+    [ObservableProperty]
+    public partial string Context { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The name or id of the Docker container, which only projects run in one have, and which they need; or the container in the Kubernetes pod,
+    /// or empty for its default container.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsValid))]
+    public partial string Container { get; set; } = string.Empty;
+
+    /// <summary>The user commands are run as in the Docker container, or empty for that of the container, which only projects run in one have.</summary>
+    [ObservableProperty]
+    public partial string User { get; set; } = string.Empty;
+
+    /// <summary>The namespace the Kubernetes pod is in, or empty for that of the context, which only projects run in one have.</summary>
+    [ObservableProperty]
+    public partial string Namespace { get; set; } = string.Empty;
+
+    /// <summary>The Kubernetes pod, or a resource kubectl picks one of, which only projects run in one have.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsValid))]
+    public partial string Pod { get; set; } = string.Empty;
 
     /// <summary>The name or id of the subscription the machine is in, or empty for the default subscription of the Azure CLI, which only projects run on an Azure virtual machine have.</summary>
     [ObservableProperty]
@@ -130,6 +202,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         PythonProject => "Put before and after each command, in the same script, so what the prepend script defines can be used by commands. Neither may be indented.",
         InterpreterProject => "Put before and after each command, in the same script, so what the prepend script defines can be used by commands.",
         AzureVmProject => "Run on the machine before and after each command, in the same script, so what the prepend script defines can be used by commands.",
+        ContainerProject => "Run in the container before and after each command, in the same script, so what the prepend script defines can be used by commands.",
         _ => "Run before and after each command, in the same scope, so what the prepend script defines can be used by commands, and is offered by completion.",
     };
 
@@ -138,7 +211,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         DotNetFileProject => "#:package Humanizer@2.14.1\nusing Humanizer;",
         PythonProject => "import json",
         NodeProject => "const fs = require('node:fs');",
-        AzureVmShellProject => ". ./env.sh",
+        AzureVmShellProject or DockerShellProject or KubectlShellProject => ". ./env.sh",
         _ => "Import-Module ./build.psm1",
     };
 
@@ -147,7 +220,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         DotNetFileProject => "Console.WriteLine(\"Done.\");",
         PythonProject => "print(\"Done.\")",
         NodeProject => "console.log('Done.');",
-        AzureVmShellProject => "echo \"Exit code: $?\"",
+        AzureVmShellProject or DockerShellProject or KubectlShellProject => "echo \"Exit code: $?\"",
         _ => "Write-Host \"Exit code: $LASTEXITCODE\"",
     };
 
@@ -243,7 +316,9 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     public bool HasEnvironmentVariablesError => EnvironmentVariablesError is not null;
 
     public bool IsValid => !string.IsNullOrWhiteSpace(DisplayName) && !string.IsNullOrWhiteSpace(WorkingFolder) && !IsWorkingFolderMissing && !HasEnvironmentVariablesError
-        && (!IsAzureVm || (!string.IsNullOrWhiteSpace(ResourceGroup) && !string.IsNullOrWhiteSpace(VmName)));
+        && (!IsAzureVm || (!string.IsNullOrWhiteSpace(ResourceGroup) && !string.IsNullOrWhiteSpace(VmName)))
+        && (!IsDocker || !string.IsNullOrWhiteSpace(Container))
+        && (!IsKubectl || !string.IsNullOrWhiteSpace(Pod));
 
     private IEnumerable<EnvironmentVariableEditorViewModel> FilledEnvironmentVariables => EnvironmentVariables.Where(static variable => !variable.IsEmpty);
 
@@ -315,6 +390,23 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
                 Subscription = NullIfEmpty(Subscription.Trim()),
                 ResourceGroup = ResourceGroup.Trim(),
                 VmName = VmName.Trim(),
+                PrependScript = NullIfEmpty(PrependScript.TrimEnd()),
+                AppendScript = NullIfEmpty(AppendScript.TrimEnd()),
+            },
+            DockerProject docker => docker with
+            {
+                Context = NullIfEmpty(Context.Trim()),
+                Container = Container.Trim(),
+                User = NullIfEmpty(User.Trim()),
+                PrependScript = NullIfEmpty(PrependScript.TrimEnd()),
+                AppendScript = NullIfEmpty(AppendScript.TrimEnd()),
+            },
+            KubectlProject kubectl => kubectl with
+            {
+                Context = NullIfEmpty(Context.Trim()),
+                Namespace = NullIfEmpty(Namespace.Trim()),
+                Pod = Pod.Trim(),
+                Container = NullIfEmpty(Container.Trim()),
                 PrependScript = NullIfEmpty(PrependScript.TrimEnd()),
                 AppendScript = NullIfEmpty(AppendScript.TrimEnd()),
             },

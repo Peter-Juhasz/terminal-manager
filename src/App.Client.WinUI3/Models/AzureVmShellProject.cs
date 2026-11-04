@@ -23,26 +23,10 @@ public sealed record class AzureVmShellProject : AzureVmProject
     {
         var script = new StringBuilder();
         script.Append("(\n");
-        script.Append("cd -- ").Append(QuoteFolder(WorkingFolder)).Append(" || exit\n");
-        foreach (var (name, value) in environmentVariables)
-        {
-            script.Append("export ").Append(name).Append('=').Append(Quote(value)).Append('\n');
-        }
-
+        script.AppendShellPreamble(WorkingFolder, environmentVariables);
         script.Append(body).Append('\n');
         script.Append(")\n");
-        script.Append("printf '\\n%s%d\\n' ").Append(Quote(exitCodeMarker)).Append(" \"$?\"\n");
+        script.Append("printf '\\n%s%d\\n' ").Append(ShellScript.Quote(exitCodeMarker)).Append(" \"$?\"\n");
         return script.ToString();
     }
-
-    /// <summary>Quotes <paramref name="value"/> for the shell, so it is taken as it is.</summary>
-    internal static string Quote(string value) => $"'{value.Replace("'", @"'\''", StringComparison.Ordinal)}'";
-
-    // a folder in the home folder is still found in it, as ~ is only expanded unquoted
-    private static string QuoteFolder(string folder) => folder switch
-    {
-        "~" => "~",
-        _ when folder.StartsWith("~/", StringComparison.Ordinal) => "~/" + Quote(folder[2..]),
-        _ => Quote(folder),
-    };
 }
