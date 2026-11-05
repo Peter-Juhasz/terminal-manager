@@ -173,5 +173,14 @@ public sealed record class ProjectKind(string DisplayName, string Description, F
                 DisplayName = displayName,
                 WorkingFolder = workingFolder,
             }),
+        new(
+            DisplayName: "Telnet, shell (telnet)",
+            Description: "Commands are run by the shell of another computer, over an unencrypted Telnet connection.",
+            Create: static (id, displayName, workingFolder) => new TelnetProject
+            {
+                Id = id,
+                DisplayName = displayName,
+                WorkingFolder = workingFolder,
+            }),
     ];
 }

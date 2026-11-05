@@ -4,3 +4,7 @@ TaskbarList
 FlashWindowEx
 GetNamedPipeClientProcessId
 GetNamedPipeServerProcessId
+CredRead
+CredWrite
+CredFree
+WIN32_ERROR

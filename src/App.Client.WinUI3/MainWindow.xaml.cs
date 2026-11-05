@@ -24,11 +24,13 @@ public sealed partial class MainWindow : Window
 	private const int DefaultHeight = 800;
 
 	private readonly SettingsService _settingsService;
+	private readonly ICredentialStore _credentials;
 
-	public MainWindow(MainViewModel viewModel, SettingsService settingsService)
+	public MainWindow(MainViewModel viewModel, SettingsService settingsService, ICredentialStore credentials)
 	{
 		ViewModel = viewModel;
 		_settingsService = settingsService;
+		_credentials = credentials;
 		InitializeComponent();
 		NavView.Loaded += (_, _) =>
 		{
@@ -149,7 +151,9 @@ public sealed partial class MainWindow : Window
 		var dialog = new ProjectDialog(new ProjectEditorViewModel(session.Project)) { XamlRoot = Content.XamlRoot };
 		if (await Dialogs.ShowAsync(dialog) is ContentDialogResult.Primary)
 		{
-			await ViewModel.UpdateAsync(session, dialog.ViewModel.Build(), CancellationToken.None);
+			var project = dialog.ViewModel.Build();
+			dialog.ViewModel.SavePassword(project, _credentials);
+			await ViewModel.UpdateAsync(session, project, CancellationToken.None);
 		}
 	}
 
@@ -281,7 +285,9 @@ public sealed partial class MainWindow : Window
 		var dialog = new ProjectDialog(editor) { XamlRoot = Content.XamlRoot };
 		if (await Dialogs.ShowAsync(dialog) is ContentDialogResult.Primary)
 		{
-			await ViewModel.AddAsync(dialog.ViewModel.Build(), CancellationToken.None);
+			var project = dialog.ViewModel.Build();
+			dialog.ViewModel.SavePassword(project, _credentials);
+			await ViewModel.AddAsync(project, CancellationToken.None);
 		}
 	}
 }

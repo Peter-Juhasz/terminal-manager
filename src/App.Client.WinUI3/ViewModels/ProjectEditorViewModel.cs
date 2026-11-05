@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using App.Client.WinUI3.Models;
+using App.Client.WinUI3.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -74,6 +75,13 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
             ComputerName = remoting.ComputerName;
         }
 
+        if (project is TelnetProject telnet)
+        {
+            Host = telnet.Host;
+            Port = telnet.Port ?? double.NaN;
+            User = telnet.User ?? string.Empty;
+        }
+
         if (project is KubectlProject kubectl)
         {
             Context = kubectl.Context ?? string.Empty;
@@ -94,7 +102,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(HasPrependAndAppend), nameof(ScriptsDescription), nameof(PrependScriptPlaceholder), nameof(AppendScriptPlaceholder))]
     [NotifyPropertyChangedFor(nameof(HasArguments), nameof(ArgumentsHeader), nameof(ArgumentsPlaceholder), nameof(ArgumentsDescription))]
     [NotifyPropertyChangedFor(nameof(IsAzureVm), nameof(IsWorkingFolderLocal), nameof(WorkingFolderHeader), nameof(WorkingFolderPlaceholder), nameof(IsWorkingFolderMissing))]
-    [NotifyPropertyChangedFor(nameof(IsDocker), nameof(IsKubectl), nameof(ContainerDescription), nameof(IsPowerShellRemoting), nameof(IsWsl))]
+    [NotifyPropertyChangedFor(nameof(IsDocker), nameof(IsKubectl), nameof(ContainerDescription), nameof(IsPowerShellRemoting), nameof(IsWsl), nameof(IsTelnet))]
     [NotifyPropertyChangedFor(nameof(EnvironmentVariablesDescription), nameof(IsValid))]
     public partial ProjectKind Kind { get; set; }
 
@@ -126,6 +134,28 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsValid))]
     public partial string ComputerName { get; set; } = string.Empty;
 
+    /// <summary>Whether commands are run on another computer over Telnet, which is told by its host, port, and the user that is logged in as.</summary>
+    public bool IsTelnet => Sample is TelnetProject;
+
+    /// <summary>The name or address of the computer commands are run on over Telnet, which only projects run by it have, and which they need.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsValid))]
+    public partial string Host { get; set; } = string.Empty;
+
+    /// <summary>The port Telnet is served on, or <see cref="double.NaN"/> when it isn't filled in, for the default port, as a number box tells it.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsValid))]
+    public partial double Port { get; set; } = double.NaN;
+
+    /// <summary>
+    /// The password of <see cref="User"/>, which is saved in the Credential Manager of Windows, rather than in the project, once the project is;
+    /// empty to keep the one saved before, if there is one.
+    /// </summary>
+    [ObservableProperty]
+    public partial string Password { get; set; } = string.Empty;
+
+    private bool IsPortValid => double.IsNaN(Port) || Port is >= 1 and <= 65535;
+
     /// <summary>Whether the working folder is on this machine, so it can be browsed for, and is checked to exist; elsewhere, it is only changed to before each command.</summary>
     public bool IsWorkingFolderLocal => Sample is LocalProject;
 
@@ -140,6 +170,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     public string WorkingFolderPlaceholder => Sample switch
     {
         AzureVmShellProject => "/home/azureuser/my-project",
+        TelnetProject => "~/my-project",
         WslProject => @"C:\src\my-project or ~/src/my-project",
         ContainerProject => "/app",
         _ => @"C:\src\my-project",
@@ -176,8 +207,8 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     public partial string Container { get; set; } = string.Empty;
 
     /// <summary>
-    /// The user commands are run as in the Docker container, or in the WSL distribution, or empty for that of the container, or the default user of the distribution,
-    /// which only projects run in one of them have.
+    /// The user commands are run as in the Docker container, or in the WSL distribution, or empty for that of the container, or the default user of the distribution;
+    /// or the user that is logged in as over Telnet, or empty when the computer doesn't ask for one. Only projects run in one of them have it.
     /// </summary>
     [ObservableProperty]
     public partial string User { get; set; } = string.Empty;
@@ -210,7 +241,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         DotNetFileProject => "Put before and after each command, in the same file, so what the prepend script declares, such as #: and using directives, applies to commands.",
         PythonProject => "Put before and after each command, in the same script, so what the prepend script defines can be used by commands. Neither may be indented.",
         InterpreterProject => "Put before and after each command, in the same script, so what the prepend script defines can be used by commands.",
-        AzureVmProject or PowerShellRemotingProject => "Run on the machine before and after each command, in the same script, so what the prepend script defines can be used by commands.",
+        AzureVmProject or PowerShellRemotingProject or TelnetProject => "Run on the machine before and after each command, in the same script, so what the prepend script defines can be used by commands.",
         ContainerProject => "Run in the container before and after each command, in the same script, so what the prepend script defines can be used by commands.",
         WslProject => "Run in Linux before and after each command, in the same script, so what the prepend script defines can be used by commands.",
         _ => "Run before and after each command, in the same scope, so what the prepend script defines can be used by commands, and is offered by completion.",
@@ -221,7 +252,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         DotNetFileProject => "#:package Humanizer@2.14.1\nusing Humanizer;",
         PythonProject => "import json",
         NodeProject => "const fs = require('node:fs');",
-        AzureVmShellProject or DockerShellProject or KubectlShellProject or WslProject => ". ./env.sh",
+        AzureVmShellProject or DockerShellProject or KubectlShellProject or WslProject or TelnetProject => ". ./env.sh",
         _ => "Import-Module ./build.psm1",
     };
 
@@ -230,7 +261,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         DotNetFileProject => "Console.WriteLine(\"Done.\");",
         PythonProject => "print(\"Done.\")",
         NodeProject => "console.log('Done.');",
-        AzureVmShellProject or DockerShellProject or KubectlShellProject or WslProject => "echo \"Exit code: $?\"",
+        AzureVmShellProject or DockerShellProject or KubectlShellProject or WslProject or TelnetProject => "echo \"Exit code: $?\"",
         _ => "Write-Host \"Exit code: $LASTEXITCODE\"",
     };
 
@@ -330,7 +361,8 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         && (!IsAzureVm || (!string.IsNullOrWhiteSpace(ResourceGroup) && !string.IsNullOrWhiteSpace(VmName)))
         && (!IsDocker || !string.IsNullOrWhiteSpace(Container))
         && (!IsKubectl || !string.IsNullOrWhiteSpace(Pod))
-        && (!IsPowerShellRemoting || !string.IsNullOrWhiteSpace(ComputerName));
+        && (!IsPowerShellRemoting || !string.IsNullOrWhiteSpace(ComputerName))
+        && (!IsTelnet || (!string.IsNullOrWhiteSpace(Host) && IsPortValid));
 
     private IEnumerable<EnvironmentVariableEditorViewModel> FilledEnvironmentVariables => EnvironmentVariables.Where(static variable => !variable.IsEmpty);
 
@@ -412,6 +444,12 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
                 User = NullIfEmpty(User.Trim()),
             },
             PowerShellRemotingProject remoting => remoting with { ComputerName = ComputerName.Trim() },
+            TelnetProject telnet => telnet with
+            {
+                Host = Host.Trim(),
+                Port = double.IsNaN(Port) || (int)Port is TelnetProject.DefaultPort ? null : (int)Port,
+                User = NullIfEmpty(User.Trim()),
+            },
             KubectlProject kubectl => kubectl with
             {
                 Context = NullIfEmpty(Context.Trim()),
@@ -421,6 +459,23 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
             },
             _ => built,
         };
+    }
+
+    /// <summary>
+    /// Saves <see cref="Password"/> to <paramref name="credentials"/>, for the user of <paramref name="project"/>, which <see cref="Build"/> returned,
+    /// when one was filled in, and the project logs in as a user.
+    /// </summary>
+    public void SavePassword(Project project, ICredentialStore credentials)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        ArgumentNullException.ThrowIfNull(credentials);
+
+        if (Password is not { Length: > 0 } || project is not TelnetProject { User: { Length: > 0 } user } telnet)
+        {
+            return;
+        }
+
+        credentials.Write(telnet.CredentialTarget, user, Password);
     }
 
     private static string? NullIfEmpty(string value) => value switch

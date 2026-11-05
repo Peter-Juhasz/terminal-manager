@@ -170,6 +170,53 @@
                                 TextWrapping="Wrap" />
                         </StackPanel>
 
+                        <!-- Only projects run over Telnet have them. -->
+                        <StackPanel Spacing="16" Visibility="{x:Bind ViewModel.IsTelnet, Mode=OneWay}">
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="120" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox
+                                    Header="Host"
+                                    IsSpellCheckEnabled="False"
+                                    PlaceholderText="server01.contoso.com"
+                                    Text="{x:Bind ViewModel.Host, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <NumberBox
+                                    Grid.Column="1"
+                                    Header="Port"
+                                    Maximum="65535"
+                                    Minimum="1"
+                                    PlaceholderText="23"
+                                    Value="{x:Bind ViewModel.Port, Mode=TwoWay}" />
+                            </Grid>
+                            <StackPanel Spacing="4">
+                                <TextBox
+                                    Header="User"
+                                    IsSpellCheckEnabled="False"
+                                    PlaceholderText="admin"
+                                    Text="{x:Bind ViewModel.User, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                    Text="Leave it empty when the computer doesn't ask for one."
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                            <StackPanel Spacing="4">
+                                <PasswordBox Header="Password" Password="{x:Bind ViewModel.Password, Mode=TwoWay}" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                    Text="Saved in the Windows Credential Manager, not in the project. Leave it empty to keep the one saved before, or when no password is asked for."
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                            <InfoBar
+                                IsClosable="False"
+                                IsOpen="True"
+                                Message="Each command is run over a connection of its own, by the shell of the user, which is expected to be bash or sh, in the working folder. Telnet isn't encrypted: the password, the commands and their output can be read on the network."
+                                Severity="Warning" />
+                        </StackPanel>
+
                         <!-- Only projects run by WSL have them. -->
                         <StackPanel Spacing="16" Visibility="{x:Bind ViewModel.IsWsl, Mode=OneWay}">
                             <StackPanel Spacing="4">

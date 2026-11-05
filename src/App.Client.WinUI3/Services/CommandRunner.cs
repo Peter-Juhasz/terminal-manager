@@ -5,9 +5,10 @@ namespace App.Client.WinUI3.Services;
 /// <summary>
 /// Runs commands by the terminal of their project, in its working folder, with the rights of the app: by a process on this machine for a <see cref="LocalProject"/>,
 /// by <see cref="AzureVmCommandRunner"/> for an <see cref="AzureVmProject"/>, by a process of the client of the container on this machine for a <see cref="ContainerProject"/>,
-/// or by a process of PowerShell on this machine for a <see cref="PowerShellRemotingProject"/>.
+/// by a process of PowerShell on this machine for a <see cref="PowerShellRemotingProject"/>, or by <see cref="TelnetCommandRunner"/> for a <see cref="TelnetProject"/>,
+/// logged in by the password <paramref name="credentials"/> keep, when there are any.
 /// </summary>
-public sealed class CommandRunner : ICommandRunner
+public sealed class CommandRunner(ICredentialStore? credentials = null) : ICommandRunner
 {
     /// <inheritdoc/>
     public async Task<int> RunAsync(Project project, string command, IOutputSink output, CancellationToken cancellationToken)
@@ -27,6 +28,7 @@ public sealed class CommandRunner : ICommandRunner
 
                 // the environment variables are set by the script too, as those of PowerShell here don't reach the computer
                 PowerShellRemotingProject remoting => await ProcessRunner.RunAsync(remoting.CreateStartInfo(command), input: null, output, cancellationToken).ConfigureAwait(false),
+                TelnetProject telnet => await TelnetCommandRunner.RunAsync(telnet, command, ReadPassword(telnet), output, cancellationToken).ConfigureAwait(false),
                 _ => throw new InvalidOperationException($"Commands of '{project.TerminalDisplayName}' projects can't be run."),
             };
         }
@@ -35,6 +37,9 @@ public sealed class CommandRunner : ICommandRunner
             output.Complete();
         }
     }
+
+    // only a user is logged in by a password
+    private string? ReadPassword(TelnetProject project) => project.User is { Length: > 0 } ? credentials?.Read(project.CredentialTarget) : null;
 
     private static Task<int> RunLocalAsync(LocalProject project, string command, IOutputSink output, CancellationToken cancellationToken)
     {

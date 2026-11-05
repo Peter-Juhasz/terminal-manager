@@ -94,6 +94,7 @@ public partial class App : Application
                 .WithLocking()
                 .AsJsonObjectRepository<IReadOnlyList<HistoryEntry>>(AppJsonSerializerContext.Default.IReadOnlyListHistoryEntry)));
 
+        services.AddSingleton<ICredentialStore, WindowsCredentialStore>();
         services.AddSingleton<CommandRunner>();
         services.AddSingleton<ElevatedCommandRunner>();
         // one instance for both, so completion and quick info share the pwsh of each working folder

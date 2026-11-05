@@ -42,6 +42,11 @@
     <Compile Include="$(AppDirectory)Models\KubectlPowerShellProject.cs" Link="App\Models\KubectlPowerShellProject.cs" />
     <Compile Include="$(AppDirectory)Models\PowerShellRemotingProject.cs" Link="App\Models\PowerShellRemotingProject.cs" />
     <Compile Include="$(AppDirectory)Models\WslProject.cs" Link="App\Models\WslProject.cs" />
+    <Compile Include="$(AppDirectory)Models\TelnetProject.cs" Link="App\Models\TelnetProject.cs" />
+    <Compile Include="$(AppDirectory)Services\ICredentialStore.cs" Link="App\Services\ICredentialStore.cs" />
+    <Compile Include="$(AppDirectory)Services\TelnetCommandRunner.cs" Link="App\Services\TelnetCommandRunner.cs" />
+    <Compile Include="$(AppDirectory)Services\TelnetOutputScanner.cs" Link="App\Services\TelnetOutputScanner.cs" />
+    <Compile Include="$(AppDirectory)Services\TelnetProtocol.cs" Link="App\Services\TelnetProtocol.cs" />
     <Compile Include="$(AppDirectory)Models\SavedScript.cs" Link="App\Models\SavedScript.cs" />
     <Compile Include="$(AppDirectory)Services\CmdCompleter.cs" Link="App\Services\CmdCompleter.cs" />
     <Compile Include="$(AppDirectory)Services\CommandCompletion.cs" Link="App\Services\CommandCompletion.cs" />
