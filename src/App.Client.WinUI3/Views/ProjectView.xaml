@@ -676,6 +676,7 @@
             BorderThickness="1,0,0,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
@@ -684,18 +685,44 @@
                     VerticalAlignment="Center"
                     Style="{ThemeResource BodyStrongTextBlockStyle}"
                     Text="Scripts" />
-                <Button
+                <StackPanel
                     HorizontalAlignment="Right"
-                    AutomationProperties.Name="Save script"
-                    Click="OnAddScriptClick"
-                    Style="{StaticResource IconButtonStyle}"
-                    ToolTipService.ToolTip="Save a script; what is typed in the input is filled in">
-                    <FontIcon FontSize="14" Glyph="&#xE710;" />
-                </Button>
+                    Orientation="Horizontal"
+                    Spacing="4">
+                    <ToggleButton
+                        x:Name="ScriptSearchToggleButton"
+                        AutomationProperties.Name="Search scripts"
+                        Click="OnToggleScriptSearchClick"
+                        Style="{StaticResource IconToggleButtonStyle}"
+                        ToolTipService.ToolTip="Search scripts">
+                        <FontIcon FontSize="14" Glyph="&#xE721;" />
+                    </ToggleButton>
+                    <Button
+                        AutomationProperties.Name="Save script"
+                        Click="OnAddScriptClick"
+                        Style="{StaticResource IconButtonStyle}"
+                        ToolTipService.ToolTip="Save a script; what is typed in the input is filled in">
+                        <FontIcon FontSize="14" Glyph="&#xE710;" />
+                    </Button>
+                </StackPanel>
             </Grid>
 
-            <ScrollViewer Grid.Row="1" Padding="8,0,8,12">
-                <ItemsRepeater ElementPrepared="OnScriptElementPrepared" ItemsSource="{x:Bind Session.Scripts, Mode=OneWay}">
+            <!--  What the scripts are filtered by, in their names and commands, while the search is on.  -->
+            <TextBox
+                x:Name="ScriptSearchBox"
+                Grid.Row="1"
+                Margin="16,0,16,12"
+                AutomationProperties.Name="Search scripts"
+                KeyDown="OnScriptSearchBoxKeyDown"
+                PlaceholderText="Search scripts"
+                Text="{x:Bind Session.ScriptFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                Visibility="Collapsed" />
+
+            <ScrollViewer Grid.Row="2" Padding="8,0,8,12">
+                <ItemsRepeater
+                    x:Name="ScriptsRepeater"
+                    ElementPrepared="OnScriptElementPrepared"
+                    ItemsSource="{x:Bind Session.FilteredScripts, Mode=OneWay}">
                     <ItemsRepeater.Layout>
                         <StackLayout Spacing="2" />
                     </ItemsRepeater.Layout>
@@ -787,8 +814,12 @@
                                             Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
                                             Glyph="&#xE768;" />
                                         <StackPanel Grid.Column="1" Spacing="2">
-                                            <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
                                             <TextBlock
+                                                x:Name="ScriptNameText"
+                                                Text="{x:Bind Name}"
+                                                TextTrimming="CharacterEllipsis" />
+                                            <TextBlock
+                                                x:Name="ScriptCommandText"
                                                 FontFamily="{StaticResource MonospaceFontFamily}"
                                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                 MaxLines="2"
@@ -816,13 +847,22 @@
             </ScrollViewer>
 
             <TextBlock
-                Grid.Row="1"
+                Grid.Row="2"
                 Margin="20,0,20,0"
                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                 Style="{ThemeResource CaptionTextBlockStyle}"
                 Text="Save commands you run often, and run them here with a single click."
                 TextWrapping="Wrap"
                 Visibility="{x:Bind local:Bind.CollapsedIf(Session.HasScripts), Mode=OneWay}" />
+
+            <TextBlock
+                Grid.Row="2"
+                Margin="20,0,20,0"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Style="{ThemeResource CaptionTextBlockStyle}"
+                Text="No scripts match the search."
+                TextWrapping="Wrap"
+                Visibility="{x:Bind Session.HasNoScriptMatches, Mode=OneWay}" />
         </Grid>
     </Grid>
 </UserControl>

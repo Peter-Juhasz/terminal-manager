@@ -72,6 +72,7 @@ public sealed partial class ProjectView : UserControl
 
             // the pane is out of the way until there is a script to show in it
             view.SetScriptsPaneVisible(session.HasScripts);
+            view.SetScriptSearchVisible(session.ScriptFilter is not "");
             view.ScrollToEnd();
             view.FocusInput();
             session.PrepareCompletion();
@@ -337,6 +338,72 @@ public sealed partial class ProjectView : UserControl
         {
             session.PrepareCompletion();
         }
+
+        if (e.PropertyName is nameof(ProjectSessionViewModel.ScriptSearch))
+        {
+            ApplyScriptSearchToRealized();
+        }
+    }
+
+    private void OnToggleScriptSearchClick(object sender, RoutedEventArgs e)
+    {
+        var isOn = ScriptSearchToggleButton.IsChecked is true;
+        SetScriptSearchVisible(isOn);
+        if (isOn)
+        {
+            ScriptSearchBox.Focus(FocusState.Programmatic);
+            ScriptSearchBox.SelectAll();
+            return;
+        }
+
+        // all the scripts are shown again once the search is off
+        Session?.ScriptFilter = string.Empty;
+    }
+
+    private void SetScriptSearchVisible(bool show)
+    {
+        ScriptSearchToggleButton.IsChecked = show;
+        ScriptSearchBox.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    // escape ends the search, as it does for the history
+    private void OnScriptSearchBoxKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key is not VirtualKey.Escape)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        SetScriptSearchVisible(false);
+        Session?.ScriptFilter = string.Empty;
+        FocusInput();
+    }
+
+    // the scripts laid out already; the others get it when they are prepared
+    private void ApplyScriptSearchToRealized()
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(ScriptsRepeater); i++)
+        {
+            if (VisualTreeHelper.GetChild(ScriptsRepeater, i) is FrameworkElement element)
+            {
+                ApplyScriptSearch(element);
+            }
+        }
+    }
+
+    private void ApplyScriptSearch(FrameworkElement element)
+    {
+        var search = Session?.ScriptSearch;
+        if (element.FindName("ScriptNameText") is TextBlock name)
+        {
+            SearchHighlighting.SetSearch(name, search);
+        }
+
+        if (element.FindName("ScriptCommandText") is TextBlock command)
+        {
+            SearchHighlighting.SetSearch(command, search);
+        }
     }
 
     private void OnToggleScriptsClick(object sender, RoutedEventArgs e) =>
@@ -359,6 +426,11 @@ public sealed partial class ProjectView : UserControl
         {
             // a template is run by the click, once its variables are filled in
             run.Command = sender.ItemsSourceView.GetAt(args.Index) is SavedScript { IsTemplate: true } ? null : Session?.RunScriptCommand;
+        }
+
+        if (args.Element is FrameworkElement element)
+        {
+            ApplyScriptSearch(element);
         }
     }
 

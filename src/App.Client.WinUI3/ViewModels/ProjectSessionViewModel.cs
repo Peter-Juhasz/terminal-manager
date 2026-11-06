@@ -49,7 +49,44 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     public ObservableCollection<SavedScript> Scripts { get; } = new(project.Scripts ?? []);
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasNoScriptMatches))]
     public partial bool HasScripts { get; private set; } = project.Scripts is { Count: > 0 };
+
+    /// <summary>The text the scripts are searched for, in their names and commands, in any case; when empty, all of them are shown.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ScriptSearch))]
+    public partial string ScriptFilter { get; set; } = string.Empty;
+
+    /// <summary>What <see cref="ScriptFilter"/> is searched for with, and highlighted by; null when it is empty.</summary>
+    public TextSearch? ScriptSearch { get; private set; }
+
+    /// <summary>The scripts that match <see cref="ScriptFilter"/>, in the order they were saved.</summary>
+    public ObservableCollection<SavedScript> FilteredScripts { get; } = new(project.Scripts ?? []);
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasNoScriptMatches))]
+    public partial bool HasScriptMatches { get; private set; } = project.Scripts is { Count: > 0 };
+
+    /// <summary>Whether there are scripts, but none of them match the search.</summary>
+    public bool HasNoScriptMatches => HasScripts && !HasScriptMatches;
+
+    partial void OnScriptFilterChanged(string value)
+    {
+        ScriptSearch = TextSearch.Create(value, isCaseSensitive: false, isRegex: false);
+        UpdateFilteredScripts();
+    }
+
+    private void UpdateFilteredScripts()
+    {
+        var search = ScriptSearch;
+        FilteredScripts.Clear();
+        foreach (var script in Scripts.Where(script => search is null || search.IsMatch(script.Name) || search.IsMatch(script.Command)))
+        {
+            FilteredScripts.Add(script);
+        }
+
+        HasScriptMatches = FilteredScripts.Count > 0;
+    }
 
     [ObservableProperty]
     public partial bool HasEntries { get; private set; }
@@ -230,7 +267,8 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     private Task SaveScriptsAsync(CancellationToken cancellationToken)
     {
         HasScripts = Scripts.Count > 0;
-        Project = Project with { Scripts = Scripts switch { [] => null, _ => Scripts.ToArray() } };
+        UpdateFilteredScripts();
+        Project =Project with { Scripts = Scripts switch { [] => null, _ => Scripts.ToArray() } };
         return store.UpdateAsync(Project, cancellationToken);
     }
 
