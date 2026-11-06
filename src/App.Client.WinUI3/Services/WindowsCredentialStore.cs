@@ -17,13 +17,18 @@ public sealed class WindowsCredentialStore : ICredentialStore
     {
         ArgumentException.ThrowIfNullOrEmpty(target);
 
-        if (!PInvoke.CredRead(target, CRED_TYPE.CRED_TYPE_GENERIC, out var credential))
+        // the raw pointer overload is used, as newer versions of CsWin32 wrap the friendly one in a safe handle
+        CREDENTIALW* credential;
+        fixed (char* targetName = target)
         {
-            return (WIN32_ERROR)Marshal.GetLastPInvokeError() switch
+            if (!PInvoke.CredRead(targetName, CRED_TYPE.CRED_TYPE_GENERIC, 0, &credential))
             {
-                WIN32_ERROR.ERROR_NOT_FOUND => null,
-                var error => throw new Win32Exception((int)error),
-            };
+                return (WIN32_ERROR)Marshal.GetLastPInvokeError() switch
+                {
+                    WIN32_ERROR.ERROR_NOT_FOUND => null,
+                    var error => throw new Win32Exception((int)error),
+                };
+            }
         }
 
         try
