@@ -9,7 +9,7 @@ namespace App.Client.WinUI3.Services;
 
 /// <summary>
 /// Completes the first word of a command of the Command Prompt, the command, to the name of a folder or a file in the working folder,
-/// or a command <c>help</c> lists; what comes after it isn't completed.
+/// a command <c>help</c> lists, or an executable in PATH, or, after a folder, to a name in that folder; what comes after it isn't completed.
 /// </summary>
 public sealed partial class CmdCompleter : ICommandCompleter
 {
@@ -23,7 +23,7 @@ public sealed partial class CmdCompleter : ICommandCompleter
 
     // the executables of the folders in PATH, by the PATH and PATHEXT they were looked for with, as projects can set their own;
     // each is only looked for once, as there are many of them
-    private readonly ConcurrentDictionary<(string? Path, string? PathExtensions), Lazy<Task<IReadOnlyList<CompletionMatch>>>> _executables = [];
+    private readonly ConcurrentDictionary<(string? Path, string? PathExtensions), Lazy<Task<PathExecutables>>> _executables = [];
 
     /// <summary>Starts asking <c>help</c> for the commands, and looking for the executables in PATH of this process, so the first completion doesn't wait for them.</summary>
     public void Prepare(string workingFolder) => Prepare(workingFolder, ReadOnlyDictionary<string, string>.Empty);
@@ -59,7 +59,7 @@ public sealed partial class CmdCompleter : ICommandCompleter
         return await Task.Run(() => Complete(workingFolder, commands, executables, input, cursor, cancellationToken), cancellationToken);
     }
 
-    private Task<IReadOnlyList<CompletionMatch>> GetExecutablesAsync(IReadOnlyDictionary<string, string> environmentVariables)
+    private Task<PathExecutables> GetExecutablesAsync(IReadOnlyDictionary<string, string> environmentVariables)
     {
         var key = (Path: GetVariable(environmentVariables, "PATH"), PathExtensions: GetVariable(environmentVariables, "PATHEXT"));
         return _executables.GetOrAdd(key, static key => new(() => Task.Run(() => FindExecutables(key.Path, key.PathExtensions, CancellationToken.None)))).Value;
@@ -72,14 +72,17 @@ public sealed partial class CmdCompleter : ICommandCompleter
             : Environment.GetEnvironmentVariable(name);
 
     /// <summary>
-    /// Completes the first word of <paramref name="input"/>, when <paramref name="cursor"/> is in it,
-    /// to the folders and files of <paramref name="workingFolder"/>, the <paramref name="commands"/>, and the <paramref name="executables"/>, it starts, sorted by name.
+    /// Completes the first word of <paramref name="input"/>, when <paramref name="cursor"/> is in it, sorted by name: when it has no folder,
+    /// to the folders and files of <paramref name="workingFolder"/>, the <paramref name="commands"/>, and the executables of <paramref name="path"/>, it starts;
+    /// when it has a relative folder, to the folders and files of that folder of <paramref name="workingFolder"/>, and the folders and executables of that folder
+    /// of each folder of <paramref name="path"/>, as cmd looks for it in them as well; and when it has a full path, to the folders and files of its folder.
+    /// The whole word is replaced, but a match is listed by its name alone.
     /// </summary>
-    public static CommandCompletion? Complete(string workingFolder, IReadOnlyList<CompletionMatch> commands, IReadOnlyList<CompletionMatch> executables, string input, int cursor, CancellationToken cancellationToken)
+    public static CommandCompletion? Complete(string workingFolder, IReadOnlyList<CompletionMatch> commands, PathExecutables path, string input, int cursor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(workingFolder);
         ArgumentNullException.ThrowIfNull(commands);
-        ArgumentNullException.ThrowIfNull(executables);
+        ArgumentNullException.ThrowIfNull(path);
         ArgumentNullException.ThrowIfNull(input);
 
         if (cursor < 0 || cursor > input.Length)
@@ -96,57 +99,49 @@ public sealed partial class CmdCompleter : ICommandCompleter
         // only the first word is completed, so there is nothing to complete once the caret is past it
         var typed = input.AsSpan(start, cursor - start);
         var isQuoted = typed is ['"', ..];
-        var name = isQuoted ? typed[1..] : typed;
-        if (isQuoted ? name.Contains('"') : name.ContainsAny(' ', '\t'))
+        var word = isQuoted ? typed[1..] : typed;
+        if (isQuoted ? word.Contains('"') : word.ContainsAny(' ', '\t'))
         {
             return null;
         }
 
-        // only the names in the working folder itself are offered
-        if (name.ContainsAny('\\', '/', ':') || name.ContainsAny('*', '?'))
+        // cmd takes a slash for the start of a switch, not for a folder, and what a wildcard matches isn't known
+        if (word.ContainsAny('/', '*', '?'))
         {
             return null;
         }
 
-        var folders = new List<CompletionMatch>();
-        var files = new List<CompletionMatch>();
-        if (Directory.Exists(workingFolder))
-        {
-            foreach (var entry in new DirectoryInfo(workingFolder).EnumerateFileSystemInfos("*", Options))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (!entry.Name.AsSpan().StartsWith(name, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
+        var separator = word.LastIndexOf('\\');
+        var relativeFolder = word[..(separator + 1)].ToString();
+        var name = word[(separator + 1)..].ToString();
 
-                var isFolder = entry.Attributes.HasFlag(FileAttributes.Directory);
-                var match = new CompletionMatch(
-                    CompletionText: Quote(entry.Name, isQuoted),
-                    ListItemText: entry.Name,
-                    ResultType: isFolder ? "ProviderContainer" : "ProviderItem",
-                    ToolTip: entry.FullName,
-                    MatchedLength: name.Length);
-                (isFolder ? folders : files).Add(match);
-            }
+        // a drive without a folder, or a folder relative to a drive or to the root of one, isn't completed
+        if (name.Contains(':') || relativeFolder is not "" && Path.IsPathRooted(relativeFolder) && !Path.IsPathFullyQualified(relativeFolder))
+        {
+            return null;
         }
 
-        // a built-in command isn't found by cmd when it is quoted
-        var nameText = name.ToString();
-        var matchingCommands = isQuoted
-            ? Enumerable.Empty<CompletionMatch>()
-            : commands.Where(command => command.ListItemText.StartsWith(nameText, StringComparison.OrdinalIgnoreCase)).Select(command => command with { MatchedLength = nameText.Length });
+        var isFullPath = relativeFolder is not "" && Path.IsPathFullyQualified(relativeFolder);
+        var folder = isFullPath ? relativeFolder : Path.Combine(workingFolder, relativeFolder);
+        var entries = Enumerate(folder, relativeFolder, name, isQuoted, static _ => true, cancellationToken).ToArray();
 
-        // an executable is found by cmd quoted as well
-        var matchingExecutables = executables
-            .Where(executable => executable.ListItemText.StartsWith(nameText, StringComparison.OrdinalIgnoreCase))
-            .Select(executable => executable with { CompletionText = Quote(executable.ListItemText, isQuoted), MatchedLength = nameText.Length });
+        IEnumerable<CompletionMatch> others = (relativeFolder, isQuoted) switch
+        {
+            // a built-in command isn't found by cmd when it is quoted, but an executable is
+            ("", false) => commands.Where(command => command.ListItemText.StartsWith(name, StringComparison.OrdinalIgnoreCase)).Select(command => command with { MatchedLength = name.Length })
+                .Concat(path.Match(name, isQuoted)),
+            ("", true) => path.Match(name, isQuoted),
+
+            // what is in the working folder is found first, so the same name of a folder in PATH isn't listed again
+            _ when !isFullPath => path.FindIn(relativeFolder, name, isQuoted, cancellationToken).ExceptBy(entries.Select(static entry => entry.Match.ListItemText), static match => match.ListItemText, StringComparer.OrdinalIgnoreCase),
+            _ => [],
+        };
 
         // all sorted by name together; the sort is stable, so of the same name, a folder comes before a file, a file before a command, and a command before an executable
-        var matches = folders
-            .Concat(files)
-            .Concat(matchingCommands)
-            .Concat(matchingExecutables)
+        var matches = entries
+            .OrderBy(static entry => entry.IsFolder ? 0 : 1)
+            .Select(static entry => entry.Match)
+            .Concat(others)
             .OrderBy(static match => match.ListItemText, StringComparer.OrdinalIgnoreCase)
             .ToArray();
         if (matches is [])
@@ -197,53 +192,78 @@ public sealed partial class CmdCompleter : ICommandCompleter
     }
 
     /// <summary>
-    /// The files of the folders in <paramref name="path"/> whose extension is one of <paramref name="pathExtensions"/>, sorted by name;
-    /// of the same name, only the first one is kept, as that is the one cmd runs.
+    /// The folders in <paramref name="path"/>, those that are fully qualified once the environment variables in them are expanded,
+    /// the extensions in <paramref name="pathExtensions"/>, or those cmd has by default without it, and the executables in the folders.
     /// </summary>
-    public static IReadOnlyList<CompletionMatch> FindExecutables(string? path, string? pathExtensions, CancellationToken cancellationToken)
+    public static PathExecutables FindExecutables(string? path, string? pathExtensions, CancellationToken cancellationToken)
     {
         var extensions = (pathExtensions ?? ".COM;.EXE;.BAT;.CMD")
             .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(static extension => extension.StartsWith('.'))
             .ToFrozenSet(StringComparer.OrdinalIgnoreCase);
-        if (path is null || extensions.Count is 0)
-        {
-            return [];
-        }
 
-        var executables = new Dictionary<string, CompletionMatch>(StringComparer.OrdinalIgnoreCase);
-        foreach (var entry in path.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            // a folder in PATH may be quoted, and may refer to environment variables
-            var folder = Environment.ExpandEnvironmentVariables(entry.Trim('"'));
-            if (folder is "" || !Path.IsPathFullyQualified(folder) || !Directory.Exists(folder))
-            {
-                continue;
-            }
-
-            try
-            {
-                foreach (var file in new DirectoryInfo(folder).EnumerateFiles("*", Options))
-                {
-                    if (!extensions.Contains(file.Extension))
-                    {
-                        continue;
-                    }
-
-                    executables.TryAdd(file.Name, new(CompletionText: file.Name, ListItemText: file.Name, ResultType: "Command", ToolTip: file.FullName));
-                }
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Security.SecurityException)
-            {
-                // a folder that can't be read is left out
-            }
-        }
-
-        return executables.Values
-            .OrderBy(static executable => executable.ListItemText, StringComparer.OrdinalIgnoreCase)
+        // a folder in PATH may be quoted, and may refer to environment variables
+        var folders = (path ?? "")
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(static entry => Environment.ExpandEnvironmentVariables(entry.Trim('"')))
+            .Where(static folder => folder is not "" && Path.IsPathFullyQualified(folder))
             .ToArray();
+
+        var executables = new PathExecutables(Folders: folders, Extensions: extensions, Executables: []);
+        return executables with { Executables = executables.FindIn(relativeFolder: "", name: "", isQuoted: false, cancellationToken) };
+    }
+
+    // the folders and files in folder whose name starts with name, each put in as relativeFolder and its name, and taken by include
+    internal static IEnumerable<(CompletionMatch Match, bool IsFolder)> Enumerate(string folder, string relativeFolder, string name, bool isQuoted, Func<FileSystemInfo, bool> include, CancellationToken cancellationToken)
+    {
+        if (!Directory.Exists(folder))
+        {
+            yield break;
+        }
+
+        IEnumerator<FileSystemInfo> entries;
+        try
+        {
+            entries = new DirectoryInfo(folder).EnumerateFileSystemInfos("*", Options).GetEnumerator();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            // a folder that can't be read is left out
+            yield break;
+        }
+
+        using (entries)
+        {
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                try
+                {
+                    if (!entries.MoveNext())
+                    {
+                        yield break;
+                    }
+                }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+                {
+                    yield break;
+                }
+
+                var entry = entries.Current;
+                if (!entry.Name.StartsWith(name, StringComparison.OrdinalIgnoreCase) || !include(entry))
+                {
+                    continue;
+                }
+
+                var isFolder = entry.Attributes.HasFlag(FileAttributes.Directory);
+                yield return (new(
+                    CompletionText: Quote(relativeFolder + entry.Name, isQuoted),
+                    ListItemText: entry.Name,
+                    ResultType: isFolder ? "ProviderContainer" : "ProviderItem",
+                    ToolTip: entry.FullName,
+                    MatchedLength: name.Length), isFolder);
+            }
+        }
     }
 
     // the name of a command, then its description after at least two spaces, which the text around the list doesn't have
@@ -290,5 +310,49 @@ public sealed partial class CmdCompleter : ICommandCompleter
     }
 
     // quoted when it was started with a quote, or cmd would take it apart without one
-    private static string Quote(string name, bool isQuoted) => isQuoted || name.AsSpan().IndexOfAny(CharactersToQuote) >= 0 ? $"\"{name}\"" : name;
+    internal static string Quote(string name, bool isQuoted) => isQuoted || name.AsSpan().IndexOfAny(CharactersToQuote) >= 0 ? $"\"{name}\"" : name;
+}
+
+/// <summary>
+/// The fully qualified <paramref name="Folders"/> of PATH, in order, the <paramref name="Extensions"/> of PATHEXT, with their dots,
+/// and the <paramref name="Executables"/> in the folders, sorted by name, of which only the first of the same name is kept, as that is the one cmd runs.
+/// </summary>
+public sealed record PathExecutables(IReadOnlyList<string> Folders, FrozenSet<string> Extensions, IReadOnlyList<CompletionMatch> Executables)
+{
+    /// <summary>The <see cref="Executables"/> whose name starts with <paramref name="name"/>.</summary>
+    public IEnumerable<CompletionMatch> Match(string name, bool isQuoted) => Executables
+        .Where(executable => executable.ListItemText.StartsWith(name, StringComparison.OrdinalIgnoreCase))
+        .Select(executable => executable with { CompletionText = CmdCompleter.Quote(executable.ListItemText, isQuoted), MatchedLength = name.Length });
+
+    /// <summary>
+    /// The executables, and the folders when <paramref name="relativeFolder"/> isn't empty, whose name starts with <paramref name="name"/>,
+    /// in <paramref name="relativeFolder"/> of each of the <see cref="Folders"/>, sorted by name, of which only the first of the same name is kept.
+    /// </summary>
+    public IReadOnlyList<CompletionMatch> FindIn(string relativeFolder, string name, bool isQuoted, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(relativeFolder);
+        ArgumentNullException.ThrowIfNull(name);
+
+        // the folders in the folders of PATH are only offered to go on into, as the folders in PATH themselves would be too many
+        var includeFolders = relativeFolder is not "";
+        var matches = new Dictionary<string, CompletionMatch>(StringComparer.OrdinalIgnoreCase);
+        foreach (var folder in Folders)
+        {
+            var entries = CmdCompleter.Enumerate(
+                Path.Combine(folder, relativeFolder),
+                relativeFolder,
+                name,
+                isQuoted,
+                entry => entry.Attributes.HasFlag(FileAttributes.Directory) ? includeFolders : Extensions.Contains(entry.Extension),
+                cancellationToken);
+            foreach (var (match, isFolder) in entries)
+            {
+                matches.TryAdd(match.ListItemText, isFolder ? match : match with { ResultType = "Command" });
+            }
+        }
+
+        return matches.Values
+            .OrderBy(static match => match.ListItemText, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
 }

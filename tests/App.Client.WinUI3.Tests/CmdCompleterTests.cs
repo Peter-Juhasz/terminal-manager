@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using App.Client.WinUI3.Services;
 
 namespace App.Client.WinUI3.Tests;
@@ -15,11 +16,14 @@ public sealed class CmdCompleterTests
         For more information on tools see the command-line reference in the online help.
         """);
 
-    private static readonly IReadOnlyList<CompletionMatch> Executables =
-    [
-        new(CompletionText: "bash.exe", ListItemText: "bash.exe", ResultType: "Command", ToolTip: @"C:\bin\bash.exe"),
-        new(CompletionText: "code.cmd", ListItemText: "code.cmd", ResultType: "Command", ToolTip: @"C:\bin\code.cmd"),
-    ];
+    private static readonly PathExecutables Executables = new(
+        Folders: [],
+        Extensions: FrozenSet<string>.Empty,
+        Executables:
+        [
+            new(CompletionText: "bash.exe", ListItemText: "bash.exe", ResultType: "Command", ToolTip: @"C:\bin\bash.exe"),
+            new(CompletionText: "code.cmd", ListItemText: "code.cmd", ResultType: "Command", ToolTip: @"C:\bin\code.cmd"),
+        ]);
 
     private string _folder = null!;
 
@@ -46,10 +50,60 @@ public sealed class CmdCompleterTests
         File.WriteAllText(Path.Combine(second, "TOOL.EXE"), "");
         File.WriteAllText(Path.Combine(second, "run.Cmd"), "");
 
-        var executables = CmdCompleter.FindExecutables($"{first};\"{second}\";;{Path.Combine(_folder, "missing")};relative", ".EXE;.CMD", CancellationToken.None);
+        var path = CmdCompleter.FindExecutables($"{first};\"{second}\";;{Path.Combine(_folder, "missing")};relative", ".EXE;.CMD", CancellationToken.None);
 
-        Assert.AreSequenceEqual(["run.Cmd", "tool.exe"], executables.Select(static executable => executable.CompletionText));
-        Assert.AreEqual(Path.Combine(first, "tool.exe"), executables[1].ToolTip);
+        Assert.AreSequenceEqual([first, second, Path.Combine(_folder, "missing")], path.Folders);
+        Assert.AreSequenceEqual(["run.Cmd", "tool.exe"], path.Executables.Select(static executable => executable.CompletionText));
+        Assert.AreEqual(Path.Combine(first, "tool.exe"), path.Executables[1].ToolTip);
+    }
+
+    [TestMethod]
+    public void CompletesTheNameInARelativeFolderOfTheWorkingFolderAndOfPath()
+    {
+        var tools = Directory.CreateDirectory(Path.Combine(_folder, "tools")).FullName;
+        Directory.CreateDirectory(Path.Combine(_folder, "src", "sub"));
+        File.WriteAllText(Path.Combine(_folder, "src", "start.exe"), "");
+        File.WriteAllText(Path.Combine(_folder, "src", "same.txt"), "");
+        Directory.CreateDirectory(Path.Combine(tools, "src", "sdk"));
+        File.WriteAllText(Path.Combine(tools, "src", "setup.exe"), "");
+        File.WriteAllText(Path.Combine(tools, "src", "same.txt"), "");
+        File.WriteAllText(Path.Combine(tools, "src", "skip.txt"), "");
+        var path = CmdCompleter.FindExecutables(tools, ".EXE", CancellationToken.None);
+
+        var completion = CmdCompleter.Complete(_folder, Commands, path, @"src\s arg", cursor: 5, CancellationToken.None);
+
+        Assert.IsNotNull(completion);
+        Assert.AreEqual(0, completion.ReplacementIndex);
+        Assert.AreEqual(5, completion.ReplacementLength);
+        Assert.AreSequenceEqual(["same.txt", "sdk", "setup.exe", "start.exe", "sub"], completion.Matches.Select(static match => match.ListItemText));
+        Assert.AreSequenceEqual([@"src\same.txt", @"src\sdk", @"src\setup.exe", @"src\start.exe", @"src\sub"], completion.Matches.Select(static match => match.CompletionText));
+        Assert.AreEqual(Path.Combine(_folder, "src", "same.txt"), completion.Matches[0].ToolTip);
+        Assert.AreEqual("Command", completion.Matches[2].ResultType);
+        Assert.IsTrue(completion.Matches.All(static match => match.MatchedLength is 1));
+        Assert.AreEqual(@"src\setup.exe arg", completion.Apply(@"src\s arg", match: 2));
+    }
+
+    [TestMethod]
+    public void QuotesTheWholePathOfANameInAFolder()
+    {
+        File.WriteAllText(Path.Combine(_folder, "My Folder", "run.cmd"), "");
+
+        var unquoted = CmdCompleter.Complete(_folder, Commands, Executables, @"my folder\r", cursor: 11, CancellationToken.None);
+        var quoted = CmdCompleter.Complete(_folder, Commands, Executables, "\"My Folder\\r\"", cursor: 12, CancellationToken.None);
+
+        Assert.IsNull(unquoted);
+        Assert.IsNotNull(quoted);
+        Assert.AreEqual("\"My Folder\\run.cmd\"", quoted.Matches.Single().CompletionText);
+        Assert.AreEqual(13, quoted.ReplacementLength);
+    }
+
+    [TestMethod]
+    public void CompletesTheNameInAFullPath()
+    {
+        var completion = CmdCompleter.Complete(_folder, Commands, Executables, _folder + @"\b", cursor: _folder.Length + 2, CancellationToken.None);
+
+        Assert.IsNotNull(completion);
+        Assert.AreSequenceEqual([_folder + @"\build", _folder + @"\build.cmd"], completion.Matches.Select(static match => match.CompletionText));
     }
 
     [TestMethod]
