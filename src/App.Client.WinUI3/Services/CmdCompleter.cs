@@ -1,3 +1,6 @@
+using System.Collections.Concurrent;
+using System.Collections.Frozen;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -18,27 +21,65 @@ public sealed partial class CmdCompleter : ICommandCompleter
     // the commands help lists, which are the same everywhere, so they are only asked for once
     private readonly Lazy<Task<IReadOnlyList<CompletionMatch>>> _commands = new(static () => LoadCommandsAsync(CancellationToken.None));
 
-    /// <summary>Starts asking <c>help</c> for the commands, so the first completion doesn't wait for it.</summary>
-    public void Prepare(string workingFolder) => _ = _commands.Value;
+    // the executables of the folders in PATH, by the PATH and PATHEXT they were looked for with, as projects can set their own;
+    // each is only looked for once, as there are many of them
+    private readonly ConcurrentDictionary<(string? Path, string? PathExtensions), Lazy<Task<IReadOnlyList<CompletionMatch>>>> _executables = [];
+
+    /// <summary>Starts asking <c>help</c> for the commands, and looking for the executables in PATH of this process, so the first completion doesn't wait for them.</summary>
+    public void Prepare(string workingFolder) => Prepare(workingFolder, ReadOnlyDictionary<string, string>.Empty);
+
+    /// <summary>
+    /// Starts asking <c>help</c> for the commands, and looking for the executables in PATH, so the first completion doesn't wait for them;
+    /// PATH and PATHEXT are taken from <paramref name="environmentVariables"/> when they are set there, as commands are run with them.
+    /// </summary>
+    public void Prepare(string workingFolder, IReadOnlyDictionary<string, string> environmentVariables)
+    {
+        ArgumentNullException.ThrowIfNull(environmentVariables);
+
+        _ = _commands.Value;
+        _ = GetExecutablesAsync(environmentVariables);
+    }
 
     /// <remarks><paramref name="prefix"/> is ignored, as what it defines isn't a file or a folder.</remarks>
-    public async Task<CommandCompletion?> CompleteAsync(string workingFolder, string prefix, string input, int cursor, CancellationToken cancellationToken)
+    public Task<CommandCompletion?> CompleteAsync(string workingFolder, string prefix, string input, int cursor, CancellationToken cancellationToken) =>
+        CompleteAsync(workingFolder, ReadOnlyDictionary<string, string>.Empty, input, cursor, cancellationToken);
+
+    /// <summary>
+    /// Completes the first word of <paramref name="input"/>; the executables are those in PATH, with the extensions in PATHEXT,
+    /// taken from <paramref name="environmentVariables"/> when they are set there, as commands are run with them, otherwise from this process.
+    /// </summary>
+    public async Task<CommandCompletion?> CompleteAsync(string workingFolder, IReadOnlyDictionary<string, string> environmentVariables, string input, int cursor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(workingFolder);
+        ArgumentNullException.ThrowIfNull(environmentVariables);
         ArgumentNullException.ThrowIfNull(input);
 
         var commands = await _commands.Value.WaitAsync(cancellationToken);
-        return await Task.Run(() => Complete(workingFolder, commands, input, cursor, cancellationToken), cancellationToken);
+        var executables = await GetExecutablesAsync(environmentVariables).WaitAsync(cancellationToken);
+        return await Task.Run(() => Complete(workingFolder, commands, executables, input, cursor, cancellationToken), cancellationToken);
     }
+
+    private Task<IReadOnlyList<CompletionMatch>> GetExecutablesAsync(IReadOnlyDictionary<string, string> environmentVariables)
+    {
+        var key = (Path: GetVariable(environmentVariables, "PATH"), PathExtensions: GetVariable(environmentVariables, "PATHEXT"));
+        return _executables.GetOrAdd(key, static key => new(() => Task.Run(() => FindExecutables(key.Path, key.PathExtensions, CancellationToken.None)))).Value;
+    }
+
+    // the variable as commands are run with it: as the project sets it, or else as this process has it
+    private static string? GetVariable(IReadOnlyDictionary<string, string> environmentVariables, string name) =>
+        environmentVariables.FirstOrDefault(pair => pair.Key.Equals(name, StringComparison.OrdinalIgnoreCase)) is { Key: not null, Value: var value }
+            ? value
+            : Environment.GetEnvironmentVariable(name);
 
     /// <summary>
     /// Completes the first word of <paramref name="input"/>, when <paramref name="cursor"/> is in it,
-    /// to the folders and files of <paramref name="workingFolder"/>, and the <paramref name="commands"/>, it starts, sorted by name.
+    /// to the folders and files of <paramref name="workingFolder"/>, the <paramref name="commands"/>, and the <paramref name="executables"/>, it starts, sorted by name.
     /// </summary>
-    public static CommandCompletion? Complete(string workingFolder, IReadOnlyList<CompletionMatch> commands, string input, int cursor, CancellationToken cancellationToken)
+    public static CommandCompletion? Complete(string workingFolder, IReadOnlyList<CompletionMatch> commands, IReadOnlyList<CompletionMatch> executables, string input, int cursor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(workingFolder);
         ArgumentNullException.ThrowIfNull(commands);
+        ArgumentNullException.ThrowIfNull(executables);
         ArgumentNullException.ThrowIfNull(input);
 
         if (cursor < 0 || cursor > input.Length)
@@ -96,10 +137,16 @@ public sealed partial class CmdCompleter : ICommandCompleter
             ? Enumerable.Empty<CompletionMatch>()
             : commands.Where(command => command.ListItemText.StartsWith(nameText, StringComparison.OrdinalIgnoreCase)).Select(command => command with { MatchedLength = nameText.Length });
 
-        // all sorted by name together; the sort is stable, so of the same name, a folder comes before a file, and a file before a command
+        // an executable is found by cmd quoted as well
+        var matchingExecutables = executables
+            .Where(executable => executable.ListItemText.StartsWith(nameText, StringComparison.OrdinalIgnoreCase))
+            .Select(executable => executable with { CompletionText = Quote(executable.ListItemText, isQuoted), MatchedLength = nameText.Length });
+
+        // all sorted by name together; the sort is stable, so of the same name, a folder comes before a file, a file before a command, and a command before an executable
         var matches = folders
             .Concat(files)
             .Concat(matchingCommands)
+            .Concat(matchingExecutables)
             .OrderBy(static match => match.ListItemText, StringComparer.OrdinalIgnoreCase)
             .ToArray();
         if (matches is [])
@@ -146,6 +193,56 @@ public sealed partial class CmdCompleter : ICommandCompleter
             .DistinctBy(static command => command.Name)
             .Select(static command => new CompletionMatch(CompletionText: command.Name, ListItemText: command.Name, ResultType: "Command", ToolTip: command.Description.ToString()))
             .OrderBy(static command => command.ListItemText, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    /// <summary>
+    /// The files of the folders in <paramref name="path"/> whose extension is one of <paramref name="pathExtensions"/>, sorted by name;
+    /// of the same name, only the first one is kept, as that is the one cmd runs.
+    /// </summary>
+    public static IReadOnlyList<CompletionMatch> FindExecutables(string? path, string? pathExtensions, CancellationToken cancellationToken)
+    {
+        var extensions = (pathExtensions ?? ".COM;.EXE;.BAT;.CMD")
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(static extension => extension.StartsWith('.'))
+            .ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+        if (path is null || extensions.Count is 0)
+        {
+            return [];
+        }
+
+        var executables = new Dictionary<string, CompletionMatch>(StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in path.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // a folder in PATH may be quoted, and may refer to environment variables
+            var folder = Environment.ExpandEnvironmentVariables(entry.Trim('"'));
+            if (folder is "" || !Path.IsPathFullyQualified(folder) || !Directory.Exists(folder))
+            {
+                continue;
+            }
+
+            try
+            {
+                foreach (var file in new DirectoryInfo(folder).EnumerateFiles("*", Options))
+                {
+                    if (!extensions.Contains(file.Extension))
+                    {
+                        continue;
+                    }
+
+                    executables.TryAdd(file.Name, new(CompletionText: file.Name, ListItemText: file.Name, ResultType: "Command", ToolTip: file.FullName));
+                }
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+            {
+                // a folder that can't be read is left out
+            }
+        }
+
+        return executables.Values
+            .OrderBy(static executable => executable.ListItemText, StringComparer.OrdinalIgnoreCase)
             .ToArray();
     }
 

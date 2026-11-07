@@ -587,7 +587,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
                 break;
 
             case CmdProject cmd:
-                cmdCompleter.Prepare(cmd.ExpandedWorkingFolder);
+                cmdCompleter.Prepare(cmd.ExpandedWorkingFolder, cmd.ResolveEnvironmentVariables());
                 break;
         }
     }
@@ -597,7 +597,8 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     public Task<CommandCompletion?> CompleteAsync(string input, int cursor, CancellationToken cancellationToken) => Project switch
     {
         PowerShellProject powerShell => completer.CompleteAsync(powerShell.ExpandedWorkingFolder, powerShell.EditorPrefix, input, cursor, cancellationToken),
-        CmdProject cmd => cmdCompleter.CompleteAsync(cmd.ExpandedWorkingFolder, prefix: "", input, cursor, cancellationToken),
+        // PATH and PATHEXT can be set by the project, so the executables are those the commands find
+        CmdProject cmd => cmdCompleter.CompleteAsync(cmd.ExpandedWorkingFolder, cmd.ResolveEnvironmentVariables(), input, cursor, cancellationToken),
         _ => Task.FromResult<CommandCompletion?>(null),
     };
 
