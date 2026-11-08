@@ -669,6 +669,22 @@ public sealed partial class ProjectView : UserControl
         Clipboard.SetContent(package);
     }
 
+    /// <summary>Saves a copy of the script as a new one, after its name and command can be changed.</summary>
+    private async void OnDuplicateScriptClick(object sender, RoutedEventArgs e)
+    {
+        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not SavedScript script)
+        {
+            return;
+        }
+
+        var viewModel = new ScriptEditorViewModel(script.Command) { Name = $"{script.Name} (copy)", IsTemplate = script.IsTemplate };
+        var dialog = new ScriptDialog(viewModel) { XamlRoot = XamlRoot };
+        if (await Dialogs.ShowAsync(dialog) is ContentDialogResult.Primary)
+        {
+            await session.SaveScriptAsync(dialog.ViewModel.Build(), CancellationToken.None);
+        }
+    }
+
     private async void OnEditScriptClick(object sender, RoutedEventArgs e)
     {
         if (Session is not { } session || (sender as FrameworkElement)?.Tag is not SavedScript script)

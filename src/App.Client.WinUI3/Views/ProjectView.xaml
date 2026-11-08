@@ -768,9 +768,17 @@
                                         <MenuFlyoutItem
                                             Click="OnCopyScriptClick"
                                             Tag="{x:Bind}"
-                                            Text="Copy">
+                                            Text="Copy script">
                                             <MenuFlyoutItem.Icon>
                                                 <FontIcon Glyph="&#xE8C8;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem
+                                            Click="OnDuplicateScriptClick"
+                                            Tag="{x:Bind}"
+                                            Text="Duplicate script">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE8A5;" />
                                             </MenuFlyoutItem.Icon>
                                         </MenuFlyoutItem>
                                         <MenuFlyoutItem
