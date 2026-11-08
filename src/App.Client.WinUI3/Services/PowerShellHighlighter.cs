@@ -8,7 +8,7 @@ namespace App.Client.WinUI3.Services;
 /// Parsing doesn't depend on the working folder, so the same pwsh parses for all the projects; it is another one than that of completion,
 /// so parsing never waits for a completion that takes long.
 /// </summary>
-public sealed class PowerShellHighlighter : ISyntaxHighlighter, IDisposable
+public sealed partial class PowerShellHighlighter : ISyntaxHighlighter, IDisposable
 {
     // Reads a script from each line it is given, and writes the spans to color in it on a line of its own.
     // The text of an expandable string is colored around what is expanded in it, which is colored as it would be outside of it.

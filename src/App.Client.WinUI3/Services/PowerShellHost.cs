@@ -8,7 +8,7 @@ namespace App.Client.WinUI3.Services;
 /// A pwsh that keeps running <paramref name="script"/> in <paramref name="workingFolder"/>, which reads a request from each line it is given,
 /// and writes the answer on a line of its own; it answers one request at a time.
 /// </summary>
-internal sealed class PowerShellHost(string script, string? workingFolder) : IDisposable
+internal sealed partial class PowerShellHost(string script, string? workingFolder) : IDisposable
 {
     // How long an answer is waited for, after which the pwsh is stopped, and started again for the next one.
     private static readonly TimeSpan ResponseTimeout = TimeSpan.FromSeconds(15);

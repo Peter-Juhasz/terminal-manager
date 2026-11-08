@@ -19,6 +19,12 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Main is in Program.cs, so the app can also be started as the elevated host. -->
     <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <!-- Published ahead of time compiled, for a faster startup. -->
+    <PublishAot>true</PublishAot>
+    <!-- The optimized publish of the .NET 11 SDK prepares resources before references are resolved, so the XAML compiler gets none. -->
+    <UseOptimizedPublish>false</UseOptimizedPublish>
+    <!-- Reports types given to WinRT that can't be with AOT, such as one that isn't partial, which would otherwise only show at runtime as a list left empty. -->
+    <CsWinRTAotWarningLevel>2</CsWinRTAotWarningLevel>
   </PropertyGroup>
 
   <ItemGroup>

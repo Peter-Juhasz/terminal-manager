@@ -16,7 +16,7 @@ namespace App.Client.WinUI3.Controls;
 /// The text block lays out all of its text again whenever any of it changes, so showing more takes the longer the more there is,
 /// which is why more is shown only at an interval.
 /// </remarks>
-public static class TerminalOutput
+public static partial class TerminalOutput
 {
     // The subscriptions of each text block, so they can be undone when it is recycled to show other output.
     private static readonly ConditionalWeakTable<RichTextBlock, Subscription> Subscriptions = [];
@@ -58,7 +58,7 @@ public static class TerminalOutput
         SearchHighlighting.Update(block);
     }
 
-    private sealed class Subscription : IDisposable
+    private sealed partial class Subscription : IDisposable
     {
         private readonly RichTextBlock _block;
         private readonly Paragraph _paragraph = new();

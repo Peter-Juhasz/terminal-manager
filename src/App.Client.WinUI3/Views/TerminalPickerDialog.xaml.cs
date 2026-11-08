@@ -70,7 +70,7 @@ public sealed record class ProjectKindMatch(ProjectKind Kind, TextSearch? Search
 /// <summary>
 /// A group of <see cref="ProjectKindMatch"/>es under a header, which is itself the list of its kinds, as a grouped <see cref="Microsoft.UI.Xaml.Data.CollectionViewSource"/> takes it.
 /// </summary>
-public sealed class ProjectKindGroup(string name, IEnumerable<ProjectKindMatch> matches) : List<ProjectKindMatch>(matches)
+public sealed partial class ProjectKindGroup(string name, IEnumerable<ProjectKindMatch> matches) : List<ProjectKindMatch>(matches)
 {
     public string Name { get; } = name;
 }

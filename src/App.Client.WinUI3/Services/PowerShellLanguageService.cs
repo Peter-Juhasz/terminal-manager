@@ -8,7 +8,7 @@ namespace App.Client.WinUI3.Services;
 /// Completes commands, and tells what their tokens are, the way PowerShell does, by asking a pwsh that keeps running in the working folder, so it only starts up once.
 /// Completion and quick info are asked of the same pwsh, as quick info is found by completing, which goes by what that pwsh has loaded already.
 /// </summary>
-public sealed class PowerShellLanguageService : ICommandCompleter, IQuickInfoProvider, IDisposable
+public sealed partial class PowerShellLanguageService : ICommandCompleter, IQuickInfoProvider, IDisposable
 {
     // Reads a request from each line it is given, and writes the answer on a line of its own: a completion, or quick info, when it asks for that.
     // The variables are private, so they aren't offered by the completion of variables; for the same reason nothing is defined as a function,
