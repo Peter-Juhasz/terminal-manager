@@ -49,4 +49,51 @@ public sealed class CommandOutputTests
 
     [TestMethod]
     public void ToStringOfNothingIsEmpty() => Assert.AreEqual(string.Empty, new CommandOutput().ToString());
+
+    [TestMethod]
+    public void HasNoLinksUntilComplete()
+    {
+        var output = new CommandOutput();
+        output.Append([new(Out, "see https://example.com\n")]);
+
+        Assert.IsEmpty(output.Links);
+    }
+
+    [TestMethod]
+    public void FindsTheLinksAcrossChunksOnceComplete()
+    {
+        var output = new CommandOutput();
+        var completed = 0;
+        output.Completed += (_, _) => completed++;
+        output.Append([new(Out, "see https://exa"), new(Error, "mple.com/a now")]);
+
+        output.Complete();
+        output.Complete();
+
+        Assert.AreEqual(1, completed);
+        Assert.AreSequenceEqual(new[] { new UrlMatch(Start: 4, Length: 21, Uri: new("https://example.com/a")) }, output.Links);
+    }
+
+    [TestMethod]
+    public void FindsTheLinksAgainWhenAppendedToOnceComplete()
+    {
+        var output = new CommandOutput();
+        output.Append([new(Out, "http://a.com")]);
+        output.Complete();
+        Assert.HasCount(1, output.Links);
+
+        output.Append([new(Error, " http://b.com")]);
+
+        Assert.HasCount(2, output.Links);
+    }
+
+    [TestMethod]
+    public void FindsNoMoreThanTheMostLinks()
+    {
+        var output = new CommandOutput();
+        output.Append([new(Out, string.Concat(Enumerable.Repeat("http://a.com ", CommandOutput.MaxLinks + 1)))]);
+        output.Complete();
+
+        Assert.HasCount(CommandOutput.MaxLinks, output.Links);
+    }
 }

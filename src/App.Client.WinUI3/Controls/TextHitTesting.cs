@@ -78,8 +78,29 @@ internal static class TextHitTesting
             return null;
         }
 
-        /// <summary>The runs its characters are counted in, those of the paragraphs one after the other.</summary>
-        public IEnumerable<Run> GetRuns() => block.Blocks.OfType<Paragraph>().SelectMany(static paragraph => paragraph.Inlines.OfType<Run>());
+        /// <summary>The runs its characters are counted in, those of the paragraphs one after the other, with those in spans such as hyperlinks.</summary>
+        public IEnumerable<Run> GetRuns() => block.Blocks.OfType<Paragraph>().SelectMany(static paragraph => GetRuns(paragraph.Inlines));
+    }
+
+    private static IEnumerable<Run> GetRuns(InlineCollection inlines)
+    {
+        foreach (var inline in inlines)
+        {
+            switch (inline)
+            {
+                case Run run:
+                    yield return run;
+                    break;
+
+                case Span span:
+                    foreach (var run in GetRuns(span.Inlines))
+                    {
+                        yield return run;
+                    }
+
+                    break;
+            }
+        }
     }
 
     extension(TextBox box)

@@ -67,6 +67,7 @@ public sealed class OutputLineFilter(TextSearch search)
         }
 
         Flush();
+        Output.Complete();
     }
 
     private void SearchChunk(OutputChunk chunk)

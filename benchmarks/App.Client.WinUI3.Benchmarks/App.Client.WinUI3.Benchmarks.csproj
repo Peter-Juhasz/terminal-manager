@@ -16,6 +16,7 @@
     <Compile Include="$(AppDirectory)Services\OutputChunk.cs" Link="App\Services\OutputChunk.cs" />
     <Compile Include="$(AppDirectory)Services\ProgressSequenceParser.cs" Link="App\Services\ProgressSequenceParser.cs" />
     <Compile Include="$(AppDirectory)ViewModels\CommandOutput.cs" Link="App\ViewModels\CommandOutput.cs" />
+    <Compile Include="$(AppDirectory)Services\UrlDetector.cs" Link="App\Services\UrlDetector.cs" />
   </ItemGroup>
 
   <ItemGroup>

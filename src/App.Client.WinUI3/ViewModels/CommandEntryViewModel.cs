@@ -215,6 +215,7 @@ public sealed partial class CommandEntryViewModel(string command, bool isElevate
         ExitCode = exitCode;
         WasStopped = wasStopped;
         IsRunning = false;
+        Output.Complete();
 
         // the last line ended with the output
         if (_lineFilter is { } filter)
