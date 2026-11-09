@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
@@ -72,6 +72,7 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.*" />
     <!-- Only preview builds are published so far. -->
     <PackageReference Include="PeterJuhasz.Repositories.FileSystem" Version="2.*-*" />
+    <PackageReference Include="PeterJuhasz.Repositories.Json" Version="1.*-*" />
   </ItemGroup>
 
   <!--
