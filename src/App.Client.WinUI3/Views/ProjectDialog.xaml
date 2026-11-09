@@ -418,6 +418,17 @@
                             Style="{ThemeResource CaptionTextBlockStyle}"
                             Text="{x:Bind ViewModel.ScriptsDescription, Mode=OneWay}"
                             TextWrapping="Wrap" />
+                        <!-- Files are only read from a folder on this machine. -->
+                        <StackPanel Spacing="4" Visibility="{x:Bind ViewModel.IsWorkingFolderLocal, Mode=OneWay}">
+                            <CheckBox IsChecked="{x:Bind ViewModel.LoadScriptFiles, Mode=TwoWay}">
+                                <TextBlock Text="Show scripts from files in the working folder" TextWrapping="Wrap" />
+                            </CheckBox>
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{ThemeResource CaptionTextBlockStyle}"
+                                Text="The scripts in .terminal-manager.yml and package.json are shown with those saved to the project, and kept up to date as the files change."
+                                TextWrapping="Wrap" />
+                        </StackPanel>
                         <TextBox
                             MinHeight="96"
                             MaxHeight="200"

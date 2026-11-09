@@ -32,6 +32,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         DisplayName = project.DisplayName;
         WorkingFolder = project.WorkingFolder;
         LoadEnvFile = project is LocalProject { LoadEnvFile: true };
+        LoadScriptFiles = project is LocalProject { IgnoreScriptFiles: false };
         PersistHistory = project.PersistHistory;
         PrependScript = project.PrependScript ?? string.Empty;
         AppendScript = project.AppendScript ?? string.Empty;
@@ -324,6 +325,10 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     [ObservableProperty]
     public partial bool LoadEnvFile { get; set; }
 
+    /// <summary>Whether the scripts in well known files in the working folder, such as .terminal-manager.yml and package.json, are shown too.</summary>
+    [ObservableProperty]
+    public partial bool LoadScriptFiles { get; set; } = true;
+
     /// <summary>Whether the commands that were run, with what they wrote, are saved, and shown again after the app is started.</summary>
     [ObservableProperty]
     public partial bool PersistHistory { get; set; }
@@ -419,7 +424,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
 
         if (built is LocalProject local)
         {
-            built = local with { LoadEnvFile = LoadEnvFile };
+            built = local with { LoadEnvFile = LoadEnvFile, IgnoreScriptFiles = !LoadScriptFiles };
         }
 
         return built switch

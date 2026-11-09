@@ -47,7 +47,12 @@
     <Compile Include="$(AppDirectory)Services\TelnetCommandRunner.cs" Link="App\Services\TelnetCommandRunner.cs" />
     <Compile Include="$(AppDirectory)Services\TelnetOutputScanner.cs" Link="App\Services\TelnetOutputScanner.cs" />
     <Compile Include="$(AppDirectory)Services\TelnetProtocol.cs" Link="App\Services\TelnetProtocol.cs" />
-    <Compile Include="$(AppDirectory)Models\SavedScript.cs" Link="App\Models\SavedScript.cs" />
+    <Compile Include="$(AppDirectory)Models\Script.cs" Link="App\Models\Script.cs" />
+    <Compile Include="$(AppDirectory)Models\ScriptFileSnapshot.cs" Link="App\Models\ScriptFileSnapshot.cs" />
+    <Compile Include="$(AppDirectory)Services\IScriptFileFormat.cs" Link="App\Services\IScriptFileFormat.cs" />
+    <Compile Include="$(AppDirectory)Services\TerminalManagerScriptFile.cs" Link="App\Services\TerminalManagerScriptFile.cs" />
+    <Compile Include="$(AppDirectory)Services\PackageJsonScriptFile.cs" Link="App\Services\PackageJsonScriptFile.cs" />
+    <Compile Include="$(AppDirectory)Services\ScriptFileWatcher.cs" Link="App\Services\ScriptFileWatcher.cs" />
     <Compile Include="$(AppDirectory)Services\CmdCompleter.cs" Link="App\Services\CmdCompleter.cs" />
     <Compile Include="$(AppDirectory)Services\CommandCompletion.cs" Link="App\Services\CommandCompletion.cs" />
     <Compile Include="$(AppDirectory)Services\CommandRunner.cs" Link="App\Services\CommandRunner.cs" />
@@ -80,6 +85,8 @@
   <ItemGroup>
     <PackageReference Include="MSTest" Version="4.*" />
     <PackageReference Include="PeterJuhasz.Repositories.FileSystem" Version="2.*-*" />
+    <PackageReference Include="PeterJuhasz.Repositories.Json" Version="1.*-*" />
+    <PackageReference Include="PeterJuhasz.Text.Yaml" Version="1.*-*" />
   </ItemGroup>
 
 </Project>

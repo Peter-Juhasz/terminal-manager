@@ -665,7 +665,7 @@
             </SplitButton>
         </Grid>
 
-        <!--  Saved scripts, each run with a single click, and edited or deleted from its menu.  -->
+        <!--  Scripts, saved to the project or read from files in its working folder, each run with a single click, and edited or deleted from its menu.  -->
         <Grid
             x:Name="ScriptsPane"
             Grid.RowSpan="3"
@@ -718,137 +718,224 @@
                 Text="{x:Bind Session.ScriptFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                 Visibility="Collapsed" />
 
+            <!--  The scripts by where they are from, each group with its name above it, which collapses it, once there is more than one.  -->
             <ScrollViewer Grid.Row="2" Padding="8,0,8,12">
-                <ItemsRepeater
-                    x:Name="ScriptsRepeater"
-                    ElementPrepared="OnScriptElementPrepared"
-                    ItemsSource="{x:Bind Session.FilteredScripts, Mode=OneWay}">
-                    <ItemsRepeater.Layout>
-                        <StackLayout Spacing="2" />
-                    </ItemsRepeater.Layout>
+                <ItemsRepeater x:Name="ScriptGroupsRepeater" ItemsSource="{x:Bind Session.ScriptGroups, Mode=OneWay}">
                     <ItemsRepeater.ItemTemplate>
-                        <DataTemplate x:DataType="models:SavedScript">
-                            <!--  The menu is on the item rather than the button, so it is available whatever the state of the button.  -->
-                            <Grid>
-                                <Grid.ContextFlyout>
-                                    <MenuFlyout>
-                                        <MenuFlyoutItem
-                                            Click="OnRunScriptClick"
-                                            Tag="{x:Bind}"
-                                            Text="Run">
-                                            <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xE768;" />
-                                            </MenuFlyoutItem.Icon>
-                                        </MenuFlyoutItem>
-                                        <MenuFlyoutItem
-                                            Click="OnRunScriptElevatedClick"
-                                            Tag="{x:Bind}"
-                                            Text="Run as administrator">
-                                            <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xEA18;" />
-                                            </MenuFlyoutItem.Icon>
-                                        </MenuFlyoutItem>
-                                        <MenuFlyoutItem
-                                            Click="OnEnqueueScriptClick"
-                                            Tag="{x:Bind}"
-                                            Text="Queue">
-                                            <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xE823;" />
-                                            </MenuFlyoutItem.Icon>
-                                        </MenuFlyoutItem>
-                                        <MenuFlyoutItem
-                                            Click="OnLoadScriptClick"
-                                            Tag="{x:Bind}"
-                                            Text="Load">
-                                            <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xE77F;" />
-                                            </MenuFlyoutItem.Icon>
-                                        </MenuFlyoutItem>
-                                        <MenuFlyoutSeparator />
-                                        <MenuFlyoutItem
-                                            Click="OnCopyScriptClick"
-                                            Tag="{x:Bind}"
-                                            Text="Copy script">
-                                            <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xE8C8;" />
-                                            </MenuFlyoutItem.Icon>
-                                        </MenuFlyoutItem>
-                                        <MenuFlyoutItem
-                                            Click="OnDuplicateScriptClick"
-                                            Tag="{x:Bind}"
-                                            Text="Duplicate script">
-                                            <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xE8A5;" />
-                                            </MenuFlyoutItem.Icon>
-                                        </MenuFlyoutItem>
-                                        <MenuFlyoutItem
-                                            Click="OnEditScriptClick"
-                                            Tag="{x:Bind}"
-                                            Text="Edit">
-                                            <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xE70F;" />
-                                            </MenuFlyoutItem.Icon>
-                                        </MenuFlyoutItem>
-                                        <MenuFlyoutItem
-                                            Click="OnDeleteScriptClick"
-                                            Tag="{x:Bind}"
-                                            Text="Delete">
-                                            <MenuFlyoutItem.Icon>
-                                                <FontIcon Glyph="&#xE74D;" />
-                                            </MenuFlyoutItem.Icon>
-                                        </MenuFlyoutItem>
-                                    </MenuFlyout>
-                                </Grid.ContextFlyout>
-
-                                <!--  Its command is the session's, set when the item is prepared.  -->
-                                <Button
-                                    Padding="12,8,40,8"
-                                    HorizontalAlignment="Stretch"
-                                    HorizontalContentAlignment="Stretch"
-                                    AutomationProperties.Name="{x:Bind Name}"
-                                    Click="OnScriptButtonClick"
-                                    CommandParameter="{x:Bind}"
-                                    Style="{StaticResource IconButtonStyle}"
-                                    ToolTipService.ToolTip="{x:Bind Command}">
-                                    <Grid ColumnSpacing="12">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        <FontIcon
-                                            Margin="0,3,0,0"
-                                            VerticalAlignment="Top"
-                                            FontSize="12"
-                                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                                            Glyph="&#xE768;" />
-                                        <StackPanel Grid.Column="1" Spacing="2">
-                                            <TextBlock
-                                                x:Name="ScriptNameText"
-                                                Text="{x:Bind Name}"
-                                                TextTrimming="CharacterEllipsis" />
-                                            <TextBlock
-                                                x:Name="ScriptCommandText"
-                                                FontFamily="{StaticResource MonospaceFontFamily}"
+                        <DataTemplate x:DataType="vm:ScriptGroupViewModel">
+                            <!--  Spaced by its margin, as the spacing of the layout would be left for a group that is hidden too.  -->
+                            <StackPanel
+                                Margin="0,0,0,8"
+                                Spacing="2"
+                                Visibility="{x:Bind IsVisible, Mode=OneWay}">
+                                <Grid Visibility="{x:Bind IsHeaderVisible, Mode=OneWay}">
+                                    <Button
+                                        Padding="8,6,36,6"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Stretch"
+                                        AutomationProperties.Name="{x:Bind ExpandLabel, Mode=OneWay}"
+                                        Command="{x:Bind ToggleExpandedCommand}"
+                                        Style="{StaticResource IconButtonStyle}"
+                                        ToolTipService.ToolTip="{x:Bind FilePath}">
+                                        <Grid ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <FontIcon
+                                                VerticalAlignment="Center"
+                                                FontSize="10"
                                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                MaxLines="2"
+                                                Glyph="{x:Bind ExpandGlyph, Mode=OneWay}" />
+                                            <TextBlock
+                                                Grid.Column="1"
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                 Style="{ThemeResource CaptionTextBlockStyle}"
-                                                Text="{x:Bind Command}"
-                                                TextTrimming="CharacterEllipsis"
-                                                TextWrapping="Wrap" />
-                                        </StackPanel>
-                                    </Grid>
-                                </Button>
-                                <Button
-                                    Margin="0,4,4,0"
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Top"
-                                    AutomationProperties.Name="{x:Bind local:Bind.Format('More options for {0}', Name)}"
-                                    Click="OnScriptMoreClick"
-                                    Style="{StaticResource IconButtonStyle}"
-                                    ToolTipService.ToolTip="More options">
-                                    <FontIcon FontSize="12" Glyph="&#xE712;" />
-                                </Button>
-                            </Grid>
+                                                Text="{x:Bind DisplayName}"
+                                                TextTrimming="CharacterEllipsis" />
+                                        </Grid>
+                                    </Button>
+                                    <!--  A file can be opened, to change its scripts there.  -->
+                                    <Button
+                                        Margin="0,0,4,0"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Center"
+                                        AutomationProperties.Name="{x:Bind local:Bind.Format('Open {0}', FilePath)}"
+                                        Click="OnOpenScriptFileClick"
+                                        Style="{StaticResource IconButtonStyle}"
+                                        Tag="{x:Bind}"
+                                        ToolTipService.ToolTip="Open file"
+                                        Visibility="{x:Bind local:Bind.VisibleIf(IsReadOnly)}">
+                                        <FontIcon FontSize="12" Glyph="&#xE8A7;" />
+                                    </Button>
+                                </Grid>
+
+                                <!--  Why the scripts couldn't be read from the file, as it is until it is fixed.  -->
+                                <TextBlock
+                                    Margin="12,0,12,4"
+                                    Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                    Text="{x:Bind Error, Mode=OneWay}"
+                                    TextWrapping="Wrap"
+                                    Visibility="{x:Bind IsErrorVisible, Mode=OneWay}" />
+
+                                <ItemsRepeater
+                                    x:Name="GroupScriptsRepeater"
+                                    ElementPrepared="OnScriptElementPrepared"
+                                    ItemsSource="{x:Bind FilteredScripts}"
+                                    Visibility="{x:Bind IsContentVisible, Mode=OneWay}">
+                                    <ItemsRepeater.Layout>
+                                        <StackLayout Spacing="2" />
+                                    </ItemsRepeater.Layout>
+                                    <ItemsRepeater.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:ScriptItem">
+                                            <!--  The menu is on the item rather than the button, so it is available whatever the state of the button.  -->
+                                            <Grid>
+                                                <Grid.ContextFlyout>
+                                                    <MenuFlyout>
+                                                        <MenuFlyoutItem
+                                                            Click="OnRunScriptClick"
+                                                            Tag="{x:Bind}"
+                                                            Text="Run">
+                                                            <MenuFlyoutItem.Icon>
+                                                                <FontIcon Glyph="&#xE768;" />
+                                                            </MenuFlyoutItem.Icon>
+                                                        </MenuFlyoutItem>
+                                                        <MenuFlyoutItem
+                                                            Click="OnRunScriptElevatedClick"
+                                                            Tag="{x:Bind}"
+                                                            Text="Run as administrator">
+                                                            <MenuFlyoutItem.Icon>
+                                                                <FontIcon Glyph="&#xEA18;" />
+                                                            </MenuFlyoutItem.Icon>
+                                                        </MenuFlyoutItem>
+                                                        <MenuFlyoutItem
+                                                            Click="OnEnqueueScriptClick"
+                                                            Tag="{x:Bind}"
+                                                            Text="Queue">
+                                                            <MenuFlyoutItem.Icon>
+                                                                <FontIcon Glyph="&#xE823;" />
+                                                            </MenuFlyoutItem.Icon>
+                                                        </MenuFlyoutItem>
+                                                        <MenuFlyoutItem
+                                                            Click="OnLoadScriptClick"
+                                                            Tag="{x:Bind}"
+                                                            Text="Load">
+                                                            <MenuFlyoutItem.Icon>
+                                                                <FontIcon Glyph="&#xE77F;" />
+                                                            </MenuFlyoutItem.Icon>
+                                                        </MenuFlyoutItem>
+                                                        <MenuFlyoutSeparator />
+                                                        <MenuFlyoutItem
+                                                            Click="OnCopyScriptClick"
+                                                            Tag="{x:Bind}"
+                                                            Text="Copy script">
+                                                            <MenuFlyoutItem.Icon>
+                                                                <FontIcon Glyph="&#xE8C8;" />
+                                                            </MenuFlyoutItem.Icon>
+                                                        </MenuFlyoutItem>
+                                                        <!--  For a script read from a file, the copy is saved to the project, where it can be changed.  -->
+                                                        <MenuFlyoutItem
+                                                            Click="OnDuplicateScriptClick"
+                                                            Tag="{x:Bind}"
+                                                            Text="Duplicate script"
+                                                            Visibility="{x:Bind local:Bind.CollapsedIf(Group.IsReadOnly)}">
+                                                            <MenuFlyoutItem.Icon>
+                                                                <FontIcon Glyph="&#xE8A5;" />
+                                                            </MenuFlyoutItem.Icon>
+                                                        </MenuFlyoutItem>
+                                                        <MenuFlyoutItem
+                                                            Click="OnDuplicateScriptClick"
+                                                            Tag="{x:Bind}"
+                                                            Text="Save to project"
+                                                            Visibility="{x:Bind local:Bind.VisibleIf(Group.IsReadOnly)}">
+                                                            <MenuFlyoutItem.Icon>
+                                                                <FontIcon Glyph="&#xE74E;" />
+                                                            </MenuFlyoutItem.Icon>
+                                                        </MenuFlyoutItem>
+                                                        <MenuFlyoutItem
+                                                            Click="OnEditScriptClick"
+                                                            Tag="{x:Bind}"
+                                                            Text="Edit"
+                                                            Visibility="{x:Bind local:Bind.CollapsedIf(Group.IsReadOnly)}">
+                                                            <MenuFlyoutItem.Icon>
+                                                                <FontIcon Glyph="&#xE70F;" />
+                                                            </MenuFlyoutItem.Icon>
+                                                        </MenuFlyoutItem>
+                                                        <MenuFlyoutItem
+                                                            Click="OnDeleteScriptClick"
+                                                            Tag="{x:Bind}"
+                                                            Text="Delete"
+                                                            Visibility="{x:Bind local:Bind.CollapsedIf(Group.IsReadOnly)}">
+                                                            <MenuFlyoutItem.Icon>
+                                                                <FontIcon Glyph="&#xE74D;" />
+                                                            </MenuFlyoutItem.Icon>
+                                                        </MenuFlyoutItem>
+                                                        <MenuFlyoutItem
+                                                            Click="OnOpenScriptFileClick"
+                                                            Tag="{x:Bind Group}"
+                                                            Text="Open file"
+                                                            Visibility="{x:Bind local:Bind.VisibleIf(Group.IsReadOnly)}">
+                                                            <MenuFlyoutItem.Icon>
+                                                                <FontIcon Glyph="&#xE8A7;" />
+                                                            </MenuFlyoutItem.Icon>
+                                                        </MenuFlyoutItem>
+                                                    </MenuFlyout>
+                                                </Grid.ContextFlyout>
+
+                                                <!--  Its command is the session's, set when the item is prepared.  -->
+                                                <Button
+                                                    Padding="12,8,40,8"
+                                                    HorizontalAlignment="Stretch"
+                                                    HorizontalContentAlignment="Stretch"
+                                                    AutomationProperties.Name="{x:Bind Script.Name}"
+                                                    Click="OnScriptButtonClick"
+                                                    CommandParameter="{x:Bind Script}"
+                                                    Style="{StaticResource IconButtonStyle}"
+                                                    ToolTipService.ToolTip="{x:Bind Script.Command}">
+                                                    <Grid ColumnSpacing="12">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <FontIcon
+                                                            Margin="0,3,0,0"
+                                                            VerticalAlignment="Top"
+                                                            FontSize="12"
+                                                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                            Glyph="&#xE768;" />
+                                                        <StackPanel Grid.Column="1" Spacing="2">
+                                                            <TextBlock
+                                                                x:Name="ScriptNameText"
+                                                                Text="{x:Bind Script.Name}"
+                                                                TextTrimming="CharacterEllipsis" />
+                                                            <TextBlock
+                                                                x:Name="ScriptCommandText"
+                                                                FontFamily="{StaticResource MonospaceFontFamily}"
+                                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                                MaxLines="2"
+                                                                Style="{ThemeResource CaptionTextBlockStyle}"
+                                                                Text="{x:Bind Script.Summary}"
+                                                                TextTrimming="CharacterEllipsis"
+                                                                TextWrapping="Wrap" />
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </Button>
+                                                <Button
+                                                    Margin="0,4,4,0"
+                                                    HorizontalAlignment="Right"
+                                                    VerticalAlignment="Top"
+                                                    AutomationProperties.Name="{x:Bind local:Bind.Format('More options for {0}', Script.Name)}"
+                                                    Click="OnScriptMoreClick"
+                                                    Style="{StaticResource IconButtonStyle}"
+                                                    ToolTipService.ToolTip="More options">
+                                                    <FontIcon FontSize="12" Glyph="&#xE712;" />
+                                                </Button>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsRepeater.ItemTemplate>
+                                </ItemsRepeater>
+                            </StackPanel>
                         </DataTemplate>
                     </ItemsRepeater.ItemTemplate>
                 </ItemsRepeater>

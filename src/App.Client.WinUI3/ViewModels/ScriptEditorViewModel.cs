@@ -8,7 +8,7 @@ namespace App.Client.WinUI3.ViewModels;
 /// </summary>
 public sealed partial class ScriptEditorViewModel : ObservableObject
 {
-    private readonly SavedScript? _script;
+    private readonly Script? _script;
 
     /// <summary>Starts saving <paramref name="command"/> as a new script.</summary>
     public ScriptEditorViewModel(string command)
@@ -17,7 +17,7 @@ public sealed partial class ScriptEditorViewModel : ObservableObject
     }
 
     /// <summary>Starts editing <paramref name="script"/>.</summary>
-    public ScriptEditorViewModel(SavedScript script)
+    public ScriptEditorViewModel(Script script)
     {
         ArgumentNullException.ThrowIfNull(script);
 
@@ -47,9 +47,9 @@ public sealed partial class ScriptEditorViewModel : ObservableObject
 
     public bool IsValid => !string.IsNullOrWhiteSpace(Name) && !string.IsNullOrWhiteSpace(Command);
 
-    public SavedScript Build() => _script switch
+    public Script Build() => _script switch
     {
-        null => new SavedScript { Id = Guid.NewGuid(), Name = Name.Trim(), Command = Command.Trim(), IsTemplate = IsTemplate },
+        null => new Script { Id = Guid.NewGuid(), Name = Name.Trim(), Command = Command.Trim(), IsTemplate = IsTemplate },
         { } script => script with { Name = Name.Trim(), Command = Command.Trim(), IsTemplate = IsTemplate },
     };
 }

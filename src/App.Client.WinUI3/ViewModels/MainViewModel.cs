@@ -12,8 +12,17 @@ public sealed partial class MainViewModel(ProjectStore store, HistoryStore histo
     [ObservableProperty]
     public partial ProjectSessionViewModel? SelectedSession { get; set; }
 
-    // the history of a project is only read once it is shown
-    partial void OnSelectedSessionChanged(ProjectSessionViewModel? value) => _ = value?.LoadHistoryAsync(CancellationToken.None);
+    // the history of a project, and the files of scripts in its working folder, are only read once it is shown
+    partial void OnSelectedSessionChanged(ProjectSessionViewModel? value)
+    {
+        if (value is null)
+        {
+            return;
+        }
+
+        _ = value.LoadHistoryAsync(CancellationToken.None);
+        value.StartWatchingScriptFiles();
+    }
 
     [ObservableProperty]
     public partial bool HasProjects { get; private set; }
@@ -123,6 +132,7 @@ public sealed partial class MainViewModel(ProjectStore store, HistoryStore histo
         }
 
         session.StopAll();
+        session.StopWatchingScriptFiles();
         var index = Sessions.IndexOf(session);
         Sessions.Remove(session);
         session.RunningProgressChanged -= OnRunningProgressChanged;

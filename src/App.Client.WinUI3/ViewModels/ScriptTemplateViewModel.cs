@@ -9,10 +9,10 @@ namespace App.Client.WinUI3.ViewModels;
 /// </summary>
 public sealed class ScriptTemplateViewModel
 {
-    private readonly SavedScript _script;
+    private readonly Script _script;
 
     /// <param name="primaryButtonText">What is done with the script once filled in, such as Run.</param>
-    public ScriptTemplateViewModel(SavedScript script, string primaryButtonText)
+    public ScriptTemplateViewModel(Script script, string primaryButtonText)
     {
         ArgumentNullException.ThrowIfNull(script);
 
@@ -28,7 +28,7 @@ public sealed class ScriptTemplateViewModel
     public TemplateVariableViewModel[] Variables { get; }
 
     /// <summary>The script with its variables replaced by the values filled in.</summary>
-    public SavedScript Build() => _script with
+    public Script Build() => _script with
     {
         Command = ScriptTemplate.Expand(_script.Command, Variables.ToDictionary(variable => variable.Name, variable => variable.Value, StringComparer.Ordinal)),
         IsTemplate = false,

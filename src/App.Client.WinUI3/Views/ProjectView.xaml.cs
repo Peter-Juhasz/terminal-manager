@@ -380,14 +380,22 @@ public sealed partial class ProjectView : UserControl
         FocusInput();
     }
 
-    // the scripts laid out already; the others get it when they are prepared
+    // the scripts laid out already, in each group; the others get it when they are prepared
     private void ApplyScriptSearchToRealized()
     {
-        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(ScriptsRepeater); i++)
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(ScriptGroupsRepeater); i++)
         {
-            if (VisualTreeHelper.GetChild(ScriptsRepeater, i) is FrameworkElement element)
+            if (VisualTreeHelper.GetChild(ScriptGroupsRepeater, i) is not FrameworkElement group || group.FindName("GroupScriptsRepeater") is not ItemsRepeater scripts)
             {
-                ApplyScriptSearch(element);
+                continue;
+            }
+
+            for (var j = 0; j < VisualTreeHelper.GetChildrenCount(scripts); j++)
+            {
+                if (VisualTreeHelper.GetChild(scripts, j) is FrameworkElement element)
+                {
+                    ApplyScriptSearch(element);
+                }
             }
         }
     }
@@ -425,7 +433,7 @@ public sealed partial class ProjectView : UserControl
         if (args.Element is Panel { Children: [Button run, ..] })
         {
             // a template is run by the click, once its variables are filled in
-            run.Command = sender.ItemsSourceView.GetAt(args.Index) is SavedScript { IsTemplate: true } ? null : Session?.RunScriptCommand;
+            run.Command = sender.ItemsSourceView.GetAt(args.Index) is ScriptItem { Script.IsTemplate: true } ? null : Session?.RunScriptCommand;
         }
 
         if (args.Element is FrameworkElement element)
@@ -437,7 +445,7 @@ public sealed partial class ProjectView : UserControl
     // The command runs the script, and the input is focused to type the next one.
     private async void OnScriptButtonClick(object sender, RoutedEventArgs e)
     {
-        if (Session is { } session && (sender as Button)?.CommandParameter is SavedScript { IsTemplate: true } template
+        if (Session is { } session && (sender as Button)?.CommandParameter is Script { IsTemplate: true } template
             && await ExpandTemplateAsync(template, "Run", CancellationToken.None) is { } script)
         {
             session.RunScriptCommand.Execute(script);
@@ -447,7 +455,7 @@ public sealed partial class ProjectView : UserControl
     }
 
     /// <summary>Asks for the values of the variables of <paramref name="script"/> if it is a template, and returns it with them filled in; <see langword="null"/> when that is cancelled.</summary>
-    private async Task<SavedScript?> ExpandTemplateAsync(SavedScript script, string primaryButtonText, CancellationToken cancellationToken)
+    private async Task<Script?> ExpandTemplateAsync(Script script, string primaryButtonText, CancellationToken cancellationToken)
     {
         if (!script.IsTemplate)
         {
@@ -474,7 +482,7 @@ public sealed partial class ProjectView : UserControl
     }
 
     /// <summary>Shows the command of <paramref name="script"/> as it is going to be run, and returns whether it is confirmed.</summary>
-    private async Task<bool> ConfirmScriptAsync(SavedScript script, string primaryButtonText, CancellationToken cancellationToken)
+    private async Task<bool> ConfirmScriptAsync(Script script, string primaryButtonText, CancellationToken cancellationToken)
     {
         var command = new TextBox
         {
@@ -501,6 +509,24 @@ public sealed partial class ProjectView : UserControl
             DefaultButton = ContentDialogButton.Primary,
         };
         return await Dialogs.ShowAsync(dialog) is ContentDialogResult.Primary && !cancellationToken.IsCancellationRequested;
+    }
+
+    // opened by the app the file is opened by, to change its scripts there; they are shown as they are once it is saved
+    private void OnOpenScriptFileClick(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is not ScriptGroupViewModel { FilePath: { } path } || !File.Exists(path))
+        {
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose();
+        }
+        catch (Win32Exception)
+        {
+            // there is no app to open it by, which Windows asks for itself
+        }
     }
 
     private void OnScriptMoreClick(object sender, RoutedEventArgs e)
@@ -572,7 +598,7 @@ public sealed partial class ProjectView : UserControl
 
     private async void OnRunScriptClick(object sender, RoutedEventArgs e)
     {
-        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not SavedScript template
+        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not ScriptItem { Script: var template }
             || await ExpandTemplateAsync(template, "Run", CancellationToken.None) is not { } script)
         {
             return;
@@ -584,7 +610,7 @@ public sealed partial class ProjectView : UserControl
 
     private async void OnEnqueueScriptClick(object sender, RoutedEventArgs e)
     {
-        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not SavedScript template
+        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not ScriptItem { Script: var template }
             || await ExpandTemplateAsync(template, "Queue", CancellationToken.None) is not { } script)
         {
             return;
@@ -596,7 +622,7 @@ public sealed partial class ProjectView : UserControl
 
     private async void OnRunScriptElevatedClick(object sender, RoutedEventArgs e)
     {
-        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not SavedScript template
+        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not ScriptItem { Script: var template }
             || await ExpandTemplateAsync(template, "Run as administrator", CancellationToken.None) is not { } script)
         {
             return;
@@ -609,7 +635,7 @@ public sealed partial class ProjectView : UserControl
     /// <summary>Puts the script into the input without running it, so it can be changed first.</summary>
     private async void OnLoadScriptClick(object sender, RoutedEventArgs e)
     {
-        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not SavedScript script)
+        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not ScriptItem { Script: var script })
         {
             return;
         }
@@ -659,7 +685,7 @@ public sealed partial class ProjectView : UserControl
 
     private void OnCopyScriptClick(object sender, RoutedEventArgs e)
     {
-        if ((sender as FrameworkElement)?.Tag is not SavedScript script)
+        if ((sender as FrameworkElement)?.Tag is not ScriptItem { Script: var script })
         {
             return;
         }
@@ -669,15 +695,18 @@ public sealed partial class ProjectView : UserControl
         Clipboard.SetContent(package);
     }
 
-    /// <summary>Saves a copy of the script as a new one, after its name and command can be changed.</summary>
+    /// <summary>
+    /// Saves a copy of the script as a new one, after its name and command can be changed; a script read from a file is saved to the project by the same name,
+    /// so it can be changed there.
+    /// </summary>
     private async void OnDuplicateScriptClick(object sender, RoutedEventArgs e)
     {
-        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not SavedScript script)
+        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not ScriptItem { Script: var script, Group: var group })
         {
             return;
         }
 
-        var viewModel = new ScriptEditorViewModel(script.Command) { Name = $"{script.Name} (copy)", IsTemplate = script.IsTemplate };
+        var viewModel = new ScriptEditorViewModel(script.Command) { Name = group.IsReadOnly ? script.Name : $"{script.Name} (copy)", IsTemplate = script.IsTemplate };
         var dialog = new ScriptDialog(viewModel) { XamlRoot = XamlRoot };
         if (await Dialogs.ShowAsync(dialog) is ContentDialogResult.Primary)
         {
@@ -687,7 +716,7 @@ public sealed partial class ProjectView : UserControl
 
     private async void OnEditScriptClick(object sender, RoutedEventArgs e)
     {
-        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not SavedScript script)
+        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not ScriptItem { Script: var script })
         {
             return;
         }
@@ -701,7 +730,7 @@ public sealed partial class ProjectView : UserControl
 
     private async void OnDeleteScriptClick(object sender, RoutedEventArgs e)
     {
-        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not SavedScript script)
+        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not ScriptItem { Script: var script })
         {
             return;
         }

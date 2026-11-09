@@ -92,7 +92,7 @@ public sealed class ElevationClientServerTests(TestContext testContext)
             Id = Guid.NewGuid(),
             DisplayName = "Test",
             WorkingFolder = @"C:\Work",
-            Scripts = [new SavedScript { Id = Guid.NewGuid(), Name = "Build", Command = "dotnet build" }],
+            Scripts = [new Script { Id = Guid.NewGuid(), Name = "Build", Command = "dotnet build" }],
         };
 
         await connection.Client.RunAsync(project, "Write-Output 'é'", new OutputBuffer(), testContext.CancellationToken);

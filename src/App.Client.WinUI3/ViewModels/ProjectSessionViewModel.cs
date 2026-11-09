@@ -46,46 +46,184 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
 
     public ObservableCollection<CommandEntryViewModel> Entries { get; } = [];
 
-    public ObservableCollection<SavedScript> Scripts { get; } = new(project.Scripts ?? []);
+    /// <summary>The scripts saved to the project, in the order they are shown, which can be changed.</summary>
+    public ObservableCollection<Script> Scripts { get; } = new(project.Scripts ?? []);
 
+    /// <summary>
+    /// The scripts shown, by where they are from: those saved to the project first, which is always there, even when it has none,
+    /// then those of each file in the working folder there is, in the order of <see cref="ScriptFileWatcher.DefaultFormats"/>.
+    /// </summary>
+    public ObservableCollection<ScriptGroupViewModel> ScriptGroups { get; } = [CreateProjectGroup(project.Scripts ?? [])];
+
+    private ScriptGroupViewModel ProjectGroup => ScriptGroups[0];
+
+    /// <summary>Whether there are any scripts to show, saved to the project or read from files, or a file they couldn't be read from.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasNoScriptMatches))]
     public partial bool HasScripts { get; private set; } = project.Scripts is { Count: > 0 };
 
-    /// <summary>The text the scripts are searched for, in their names and commands, in any case; when empty, all of them are shown.</summary>
+    /// <summary>The text the scripts are searched for, in their names, commands and descriptions, in any case; when empty, all of them are shown.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ScriptSearch))]
+    [NotifyPropertyChangedFor(nameof(ScriptSearch), nameof(HasNoScriptMatches))]
     public partial string ScriptFilter { get; set; } = string.Empty;
 
     /// <summary>What <see cref="ScriptFilter"/> is searched for with, and highlighted by; null when it is empty.</summary>
     public TextSearch? ScriptSearch { get; private set; }
-
-    /// <summary>The scripts that match <see cref="ScriptFilter"/>, in the order they were saved.</summary>
-    public ObservableCollection<SavedScript> FilteredScripts { get; } = new(project.Scripts ?? []);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasNoScriptMatches))]
     public partial bool HasScriptMatches { get; private set; } = project.Scripts is { Count: > 0 };
 
     /// <summary>Whether there are scripts, but none of them match the search.</summary>
-    public bool HasNoScriptMatches => HasScripts && !HasScriptMatches;
+    public bool HasNoScriptMatches => HasScripts && ScriptSearch is not null && !HasScriptMatches;
 
     partial void OnScriptFilterChanged(string value)
     {
         ScriptSearch = TextSearch.Create(value, isCaseSensitive: false, isRegex: false);
-        UpdateFilteredScripts();
-    }
-
-    private void UpdateFilteredScripts()
-    {
-        var search = ScriptSearch;
-        FilteredScripts.Clear();
-        foreach (var script in Scripts.Where(script => search is null || search.IsMatch(script.Name) || search.IsMatch(script.Command)))
+        foreach (var group in ScriptGroups)
         {
-            FilteredScripts.Add(script);
+            group.Filter(ScriptSearch);
         }
 
-        HasScriptMatches = FilteredScripts.Count > 0;
+        UpdateScriptGroups();
+    }
+
+    private static ScriptGroupViewModel CreateProjectGroup(IReadOnlyList<Script> scripts)
+    {
+        var group = new ScriptGroupViewModel(ScriptGroupViewModel.ProjectKey, "Project", filePath: null);
+        group.Update(scripts, error: null, search: null);
+        return group;
+    }
+
+    // the names of the groups are only shown when there are others than that of the project, so the scripts look as they always did without them
+    private void UpdateScriptGroups()
+    {
+        HasScripts = ScriptGroups.Any(static group => group.Count > 0 || group.HasError);
+        HasScriptMatches = ScriptGroups.Any(static group => group.FilteredScripts.Count > 0);
+        var isHeaderVisible = ScriptGroups.Count > 1;
+        foreach (var group in ScriptGroups)
+        {
+            group.IsHeaderVisible = isHeaderVisible;
+        }
+    }
+
+    // Whether the scripts of the files in the working folder are shown, which they are from the first time the project is selected.
+    private bool _isWatchingScriptFiles;
+
+    // Where the changes of the watcher are handled, which is the UI thread it was started on.
+    private SynchronizationContext? _scriptFilesContext;
+
+    private ScriptFileWatcher? _scriptFileWatcher;
+
+    // What the files were read for, so they are only read again when that changes.
+    private (string? Folder, CommandLanguage Language) _scriptFilesKey;
+
+    /// <summary>Shows the scripts of the files in the working folder, as they are when they change, from the first time this is called, on the UI thread.</summary>
+    public void StartWatchingScriptFiles()
+    {
+        if (_isWatchingScriptFiles)
+        {
+            return;
+        }
+
+        _isWatchingScriptFiles = true;
+        _scriptFilesContext = SynchronizationContext.Current;
+        RestartScriptFileWatcher();
+    }
+
+    /// <summary>Stops watching the files in the working folder, such as when the project is deleted.</summary>
+    public void StopWatchingScriptFiles()
+    {
+        _isWatchingScriptFiles = false;
+        _scriptFileWatcher?.Dispose();
+        _scriptFileWatcher = null;
+    }
+
+    // the working folder, whether the files are read, or the language the scripts are written for may have changed
+    partial void OnProjectChanged(Project value)
+    {
+        if (_isWatchingScriptFiles && GetScriptFilesKey(value) != _scriptFilesKey)
+        {
+            RestartScriptFileWatcher();
+        }
+    }
+
+    private static (string? Folder, CommandLanguage Language) GetScriptFilesKey(Project project) => ((project as LocalProject)?.ScriptFilesFolder, project.Language);
+
+    private void RestartScriptFileWatcher()
+    {
+        _scriptFileWatcher?.Dispose();
+        _scriptFileWatcher = null;
+        _scriptFilesKey = GetScriptFilesKey(Project);
+
+        // those of the files as they were are no longer shown, until the files are read again
+        ApplyScriptFiles(Array.Empty<ScriptFileSnapshot>());
+        if (_scriptFilesKey.Folder is not { } folder)
+        {
+            return;
+        }
+
+        var watcher = new ScriptFileWatcher(folder, Project);
+        watcher.Changed += OnScriptFilesChanged;
+        _scriptFileWatcher = watcher;
+        watcher.Start();
+    }
+
+    // raised on a background thread
+    private void OnScriptFilesChanged(object? sender, EventArgs e)
+    {
+        if (sender is not ScriptFileWatcher watcher)
+        {
+            return;
+        }
+
+        if (_scriptFilesContext is not { } context)
+        {
+            ApplyScriptFiles(watcher);
+            return;
+        }
+
+        context.Post(state => ApplyScriptFiles((ScriptFileWatcher)state!), watcher);
+    }
+
+    // one that was replaced, or stopped, before this was handled is left out
+    private void ApplyScriptFiles(ScriptFileWatcher watcher)
+    {
+        if (watcher != _scriptFileWatcher)
+        {
+            return;
+        }
+
+        ApplyScriptFiles(watcher.Snapshots);
+    }
+
+    // The groups are kept by file while it is there, so whether each is collapsed is kept too.
+    private void ApplyScriptFiles(IReadOnlyList<ScriptFileSnapshot> snapshots)
+    {
+        for (var index = ScriptGroups.Count - 1; index > 0; index--)
+        {
+            var group = ScriptGroups[index];
+            if (!snapshots.Any(snapshot => snapshot.Format.FileName == group.Key))
+            {
+                ScriptGroups.RemoveAt(index);
+            }
+        }
+
+        // the snapshots are in the order of the formats, as are the groups left, so each is inserted where it is shown
+        for (var index = 0; index < snapshots.Count; index++)
+        {
+            var snapshot = snapshots[index];
+            var group = ScriptGroups.Skip(1).FirstOrDefault(group => group.Key == snapshot.Format.FileName);
+            if (group is null)
+            {
+                group = new(snapshot.Format.FileName, snapshot.Format.DisplayName, snapshot.Path);
+                ScriptGroups.Insert(index + 1, group);
+            }
+
+            group.Update(snapshot.Scripts, snapshot.Error, ScriptSearch);
+        }
+
+        UpdateScriptGroups();
     }
 
     [ObservableProperty]
@@ -160,15 +298,15 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         return ExecuteAsync(command, isElevated);
     }
 
-    private bool CanRunScript(SavedScript? script) => script is not null;
+    private bool CanRunScript(Script? script) => script is not null;
 
     /// <summary>Runs <paramref name="script"/>, and leaves what was typed in the input as it is.</summary>
     [RelayCommand(CanExecute = nameof(CanRunScript), AllowConcurrentExecutions = true)]
-    private Task RunScriptAsync(SavedScript? script) => script is null ? Task.CompletedTask : ExecuteAsync(script.Command, isElevated: false);
+    private Task RunScriptAsync(Script? script) => script is null ? Task.CompletedTask : ExecuteAsync(script.Command, isElevated: false);
 
     /// <summary>Runs <paramref name="script"/> as an administrator, and leaves what was typed in the input as it is.</summary>
     [RelayCommand(CanExecute = nameof(CanRunScript), AllowConcurrentExecutions = true)]
-    private Task RunScriptElevatedAsync(SavedScript? script) => script is null ? Task.CompletedTask : ExecuteAsync(script.Command, isElevated: true);
+    private Task RunScriptElevatedAsync(Script? script) => script is null ? Task.CompletedTask : ExecuteAsync(script.Command, isElevated: true);
 
     /// <summary>Queues what was typed in the input, to be run once the commands running have ended, or right away if none are.</summary>
     [RelayCommand(CanExecute = nameof(CanRun))]
@@ -181,7 +319,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
 
     /// <summary>Queues <paramref name="script"/>, and leaves what was typed in the input as it is.</summary>
     [RelayCommand(CanExecute = nameof(CanRunScript))]
-    private void EnqueueScript(SavedScript? script)
+    private void EnqueueScript(Script? script)
     {
         if (script is null)
         {
@@ -193,7 +331,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
 
     /// <summary>Queues <paramref name="script"/> to be run as an administrator, and leaves what was typed in the input as it is.</summary>
     [RelayCommand(CanExecute = nameof(CanRunScript))]
-    private void EnqueueScriptElevated(SavedScript? script)
+    private void EnqueueScriptElevated(Script? script)
     {
         if (script is null)
         {
@@ -239,7 +377,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     }
 
     /// <summary>Adds <paramref name="script"/>, or replaces the one with the same id, and saves the project.</summary>
-    public Task SaveScriptAsync(SavedScript script, CancellationToken cancellationToken)
+    public Task SaveScriptAsync(Script script, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(script);
 
@@ -256,7 +394,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         return SaveScriptsAsync(cancellationToken);
     }
 
-    public Task DeleteScriptAsync(SavedScript script, CancellationToken cancellationToken)
+    public Task DeleteScriptAsync(Script script, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(script);
 
@@ -266,9 +404,9 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
 
     private Task SaveScriptsAsync(CancellationToken cancellationToken)
     {
-        HasScripts = Scripts.Count > 0;
-        UpdateFilteredScripts();
-        Project =Project with { Scripts = Scripts switch { [] => null, _ => Scripts.ToArray() } };
+        ProjectGroup.Update(Scripts.ToArray(), error: null, ScriptSearch);
+        UpdateScriptGroups();
+        Project = Project with { Scripts = Scripts switch { [] => null, _ => Scripts.ToArray() } };
         return store.UpdateAsync(Project, cancellationToken);
     }
 

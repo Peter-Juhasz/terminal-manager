@@ -27,6 +27,20 @@ public abstract record class LocalProject : Project
     public bool LoadEnvFile { get; init; }
 
     /// <summary>
+    /// Whether the scripts in well known files in the working folder, such as .terminal-manager.yml and package.json, are not shown; otherwise they are,
+    /// as they are when the files change, when it is a folder of Windows.
+    /// </summary>
+    /// <remarks>
+    /// Turned off rather than on, so a project saved before it was added shows them: the serializer sets an init-only property missing from the file
+    /// to its default, whatever it is initialized to.
+    /// </remarks>
+    public bool IgnoreScriptFiles { get; init; }
+
+    /// <summary>The folder the scripts of the files are read from, or <see langword="null"/> when they aren't, as <see cref="IgnoreScriptFiles"/> is set.</summary>
+    [JsonIgnore]
+    public string? ScriptFilesFolder => !IgnoreScriptFiles && IsWorkingFolderOnWindows ? ExpandedWorkingFolder : null;
+
+    /// <summary>
     /// The environment variables commands are run with: those in the .env file in the working folder, as it is when they are run, if <see cref="LoadEnvFile"/> is set,
     /// then those in <see cref="Project.ExpandedEnvironmentVariables"/>.
     /// </summary>

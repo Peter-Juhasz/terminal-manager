@@ -47,7 +47,7 @@ public abstract record class Project
     public bool PersistHistory { get; init; }
 
     /// <summary>The commands saved to the project, in the order they are shown, or <see langword="null"/> when there are none.</summary>
-    public IReadOnlyList<SavedScript>? Scripts { get; init; }
+    public IReadOnlyList<Script>? Scripts { get; init; }
 
     /// <summary>The name of the terminal the commands are run by, as shown to the user.</summary>
     [JsonIgnore]

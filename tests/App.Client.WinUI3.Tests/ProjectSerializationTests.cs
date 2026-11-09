@@ -25,6 +25,18 @@ public sealed class ProjectSerializationTests
         Assert.AreEqual("Get-Item .", powerShell.Wrap("Get-Item ."));
     }
 
+    // a project saved before the setting was added, as one saved with it on, shows the scripts of the files in its working folder
+    [TestMethod]
+    [DataRow("""{"$type":"dotnetrun","id":"866e2255-f2c1-4a2f-89cf-df8de9930c2a","displayName":"A","workingFolder":"C:\\src"}""", @"C:\src")]
+    [DataRow("""{"$type":"pwsh","id":"0fa573f3-d373-40d7-90dc-29ec60652191","displayName":"A","workingFolder":"C:\\src","ignoreScriptFiles":true}""", null)]
+    public void ScriptFilesAreShownUnlessIgnored(string json, string? folder)
+    {
+        var project = Assert.IsInstanceOfType<LocalProject>(JsonSerializer.Deserialize(json, AppJsonSerializerContext.Default.Project));
+
+        Assert.AreEqual(folder, project.ScriptFilesFolder);
+        Assert.AreEqual(folder is null, JsonSerializer.Serialize<Project>(project, AppJsonSerializerContext.Default.Project).Contains("ignoreScriptFiles", StringComparison.Ordinal));
+    }
+
     [TestMethod]
     public void UnsetValuesAreNotWritten()
     {
