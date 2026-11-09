@@ -46,6 +46,9 @@ public abstract record class Project
     /// <summary>Whether the commands that were run, with what they wrote, are saved, and shown again the first time the project is selected after the app is started.</summary>
     public bool PersistHistory { get; init; }
 
+    /// <summary>Whether the output of a command is collapsed while it runs, and is only expanded once it failed.</summary>
+    public bool CollapseSucceededOutput { get; init; }
+
     /// <summary>The commands saved to the project, in the order they are shown, or <see langword="null"/> when there are none.</summary>
     public IReadOnlyList<Script>? Scripts { get; init; }
 

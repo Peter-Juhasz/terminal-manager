@@ -462,6 +462,14 @@
                             Style="{ThemeResource CaptionTextBlockStyle}"
                             Text="The commands that were run, with what they wrote, are saved, and shown again after the app is started."
                             TextWrapping="Wrap" />
+                        <CheckBox Margin="0,12,0,0" IsChecked="{x:Bind ViewModel.CollapseSucceededOutput, Mode=TwoWay}">
+                            <TextBlock Text="Collapse output unless the command failed" TextWrapping="Wrap" />
+                        </CheckBox>
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{ThemeResource CaptionTextBlockStyle}"
+                            Text="What a command writes is hidden while it runs, and is shown once it fails or is stopped. It can still be expanded at any time."
+                            TextWrapping="Wrap" />
                     </StackPanel>
                 </Grid>
             </ScrollViewer>

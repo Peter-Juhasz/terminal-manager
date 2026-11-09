@@ -34,6 +34,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         LoadEnvFile = project is LocalProject { LoadEnvFile: true };
         LoadScriptFiles = project is LocalProject { IgnoreScriptFiles: false };
         PersistHistory = project.PersistHistory;
+        CollapseSucceededOutput = project.CollapseSucceededOutput;
         PrependScript = project.PrependScript ?? string.Empty;
         AppendScript = project.AppendScript ?? string.Empty;
         foreach (var (name, value) in project.EnvironmentVariables ?? ReadOnlyDictionary<string, string>.Empty)
@@ -333,6 +334,10 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     [ObservableProperty]
     public partial bool PersistHistory { get; set; }
 
+    /// <summary>Whether the output of a command is collapsed, and is only expanded once it failed.</summary>
+    [ObservableProperty]
+    public partial bool CollapseSucceededOutput { get; set; }
+
     /// <summary>Why the environment variables can't be saved, or <see langword="null"/> when they can.</summary>
     public string? EnvironmentVariablesError
     {
@@ -418,6 +423,7 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         {
             EnvironmentVariables = environmentVariables,
             PersistHistory = PersistHistory,
+            CollapseSucceededOutput = CollapseSucceededOutput,
             PrependScript = NullIfEmpty(PrependScript.TrimEnd()),
             AppendScript = NullIfEmpty(AppendScript.TrimEnd()),
         };

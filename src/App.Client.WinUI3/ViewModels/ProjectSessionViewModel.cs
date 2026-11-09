@@ -524,8 +524,14 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         _history.Add(command);
         _historyIndex = _history.Count;
 
+        // the project as it is when the command is started, which it is run by, whatever it is changed to while it runs
+        var project = Project;
+
         using var stopSource = new CancellationTokenSource();
-        var entry = new CommandEntryViewModel(command, isElevated, stopSource.Cancel, () => ExecuteAsync(command, isElevated));
+        var entry = new CommandEntryViewModel(command, isElevated, stopSource.Cancel, () => ExecuteAsync(command, isElevated))
+        {
+            IsExpanded = !project.CollapseSucceededOutput,
+        };
         Entries.Add(entry);
         HasEntries = true;
         entry.PropertyChanged += OnEntryChanged;
@@ -534,8 +540,6 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         UpdateRunning();
         CommandStarted?.Invoke(this, entry);
 
-        // the project as it is when the command is started, which it is run by, whatever it is changed to while it runs
-        var project = Project;
         if (GetHighlightingPrefix(project) is { } prefix)
         {
             _ = HighlightAsync(entry, prefix);
@@ -578,6 +582,13 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
             entry.PropertyChanged -= OnRunningChanged;
             _running.Remove(entry);
             UpdateRunning();
+
+            // what it wrote is shown once it is known to be needed
+            if (project.CollapseSucceededOutput && entry.IsFailed)
+            {
+                entry.IsExpanded = true;
+            }
+
             CommandCompleted?.Invoke(this, entry);
             _ = SaveHistoryAsync(CancellationToken.None);
             RunNextQueued();
