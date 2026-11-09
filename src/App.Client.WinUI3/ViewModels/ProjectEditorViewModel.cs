@@ -35,6 +35,12 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
         LoadScriptFiles = project is LocalProject { IgnoreScriptFiles: false };
         PersistHistory = project.PersistHistory;
         CollapseSucceededOutput = project.CollapseSucceededOutput;
+        LineNumbersIndex = project.ShowLineNumbers switch
+        {
+            true => 1,
+            false => 2,
+            null => 0,
+        };
         PrependScript = project.PrependScript ?? string.Empty;
         AppendScript = project.AppendScript ?? string.Empty;
         foreach (var (name, value) in project.EnvironmentVariables ?? ReadOnlyDictionary<string, string>.Empty)
@@ -338,6 +344,10 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
     [ObservableProperty]
     public partial bool CollapseSucceededOutput { get; set; }
 
+    /// <summary>Whether the lines of the output are numbered, as the index of the choice: following the setting of the app, shown, or hidden.</summary>
+    [ObservableProperty]
+    public partial int LineNumbersIndex { get; set; }
+
     /// <summary>Why the environment variables can't be saved, or <see langword="null"/> when they can.</summary>
     public string? EnvironmentVariablesError
     {
@@ -424,6 +434,12 @@ public sealed partial class ProjectEditorViewModel : ObservableObject
             EnvironmentVariables = environmentVariables,
             PersistHistory = PersistHistory,
             CollapseSucceededOutput = CollapseSucceededOutput,
+            ShowLineNumbers = LineNumbersIndex switch
+            {
+                1 => true,
+                2 => false,
+                _ => null,
+            },
             PrependScript = NullIfEmpty(PrependScript.TrimEnd()),
             AppendScript = NullIfEmpty(AppendScript.TrimEnd()),
         };

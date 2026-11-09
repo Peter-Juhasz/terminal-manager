@@ -16,6 +16,7 @@ public sealed partial class SettingsDialog : ContentDialog
         PageNavigation.SelectedItem = ViewPageItem;
         ThemeBox.SelectedIndex = (int)settingsService.Settings.Theme;
         WrapOutputSwitch.IsOn = settingsService.Settings.WrapOutput;
+        ShowLineNumbersSwitch.IsOn = settingsService.Settings.ShowLineNumbers;
         MaxOutputHeightBox.Value = settingsService.Settings.MaxOutputHeight ?? double.NaN;
         ConfirmTemplateScriptsSwitch.IsOn = settingsService.Settings.ConfirmTemplateScripts;
     }
@@ -32,6 +33,7 @@ public sealed partial class SettingsDialog : ContentDialog
             {
                 Theme = (AppTheme)ThemeBox.SelectedIndex,
                 WrapOutput = WrapOutputSwitch.IsOn,
+                ShowLineNumbers = ShowLineNumbersSwitch.IsOn,
                 ConfirmTemplateScripts = ConfirmTemplateScriptsSwitch.IsOn,
 
                 // an empty box is NaN

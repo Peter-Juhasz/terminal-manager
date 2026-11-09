@@ -77,6 +77,17 @@
                             Header="Wrap long lines of output"
                             OffContent="Off, scroll horizontally"
                             OnContent="On" />
+                        <ToggleSwitch
+                            x:Name="ShowLineNumbersSwitch"
+                            Header="Show line numbers in output"
+                            OffContent="Off"
+                            OnContent="On" />
+                        <TextBlock
+                            Margin="0,-8,0,0"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{ThemeResource CaptionTextBlockStyle}"
+                            Text="A project can show or hide them regardless of this setting."
+                            TextWrapping="Wrap" />
                         <NumberBox
                             x:Name="MaxOutputHeightBox"
                             Header="Maximum height of output (pixels)"

@@ -8,4 +8,10 @@ namespace App.Domain;
 /// </param>
 /// <param name="MaxOutputHeight">How tall the output of a command in the history grows, in pixels, before it is scrolled, following what is written last; <see langword="null"/> for as tall as it is.</param>
 /// <param name="ConfirmTemplateScripts">Whether the command of a script template, with its variables filled in, is shown to be confirmed before it is run.</param>
-public sealed record AppSettings(AppTheme Theme = AppTheme.System, [property: JsonIgnore(Condition = JsonIgnoreCondition.Never)] bool WrapOutput = true, int? MaxOutputHeight = null, bool ConfirmTemplateScripts = false);
+/// <param name="ShowLineNumbers">Whether the lines of the output of a command are numbered, unless the project sets it otherwise.</param>
+public sealed record AppSettings(
+    AppTheme Theme = AppTheme.System,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.Never)] bool WrapOutput = true,
+    int? MaxOutputHeight = null,
+    bool ConfirmTemplateScripts = false,
+    bool ShowLineNumbers = false);

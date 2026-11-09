@@ -49,6 +49,9 @@ public abstract record class Project
     /// <summary>Whether the output of a command is collapsed while it runs, and is only expanded once it failed.</summary>
     public bool CollapseSucceededOutput { get; init; }
 
+    /// <summary>Whether the lines of the output of a command are numbered, or <see langword="null"/> to follow the setting of the app.</summary>
+    public bool? ShowLineNumbers { get; init; }
+
     /// <summary>The commands saved to the project, in the order they are shown, or <see langword="null"/> when there are none.</summary>
     public IReadOnlyList<Script>? Scripts { get; init; }
 

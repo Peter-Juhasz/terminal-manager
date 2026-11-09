@@ -157,23 +157,55 @@
                         Grid.Row="2"
                         Padding="14,10,14,6"
                         Spacing="8">
-                        <!--  Scrolled horizontally only when long lines aren't wrapped, and vertically only when its height is limited, as set by the view.  -->
-                        <ScrollViewer
-                            x:Name="OutputScroller"
-                            HorizontalScrollBarVisibility="Disabled"
-                            HorizontalScrollMode="Disabled"
-                            VerticalScrollBarVisibility="Disabled"
-                            VerticalScrollMode="Disabled"
-                            Visibility="{x:Bind IsOutputVisible, Mode=OneWay}">
-                            <RichTextBlock
-                                x:Name="OutputText"
-                                controls:TerminalOutput.Output="{x:Bind DisplayedOutput, Mode=OneWay}"
-                                FontFamily="{StaticResource MonospaceFontFamily}"
-                                FontSize="13"
-                                IsTextSelectionEnabled="True"
-                                SizeChanged="OnOutputTextSizeChanged"
-                                TextWrapping="Wrap" />
-                        </ScrollViewer>
+                        <!--
+                            The line numbers beside the output, when they are shown, as set by the view; laid out in rows as high as those of the output,
+                            and scrolled vertically along with it, but kept in view when it is scrolled horizontally.
+                        -->
+                        <Grid Visibility="{x:Bind IsOutputVisible, Mode=OneWay}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <ScrollViewer
+                                x:Name="LineNumbersScroller"
+                                AutomationProperties.AccessibilityView="Raw"
+                                HorizontalScrollBarVisibility="Disabled"
+                                HorizontalScrollMode="Disabled"
+                                IsHitTestVisible="False"
+                                IsTabStop="False"
+                                VerticalScrollBarVisibility="Hidden"
+                                Visibility="Collapsed">
+                                <TextBlock
+                                    x:Name="LineNumbersText"
+                                    Margin="0,0,12,0"
+                                    FontFamily="{StaticResource MonospaceFontFamily}"
+                                    FontSize="13"
+                                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                    LineHeight="18"
+                                    LineStackingStrategy="BlockLineHeight"
+                                    TextAlignment="Right" />
+                            </ScrollViewer>
+
+                            <!--  Scrolled horizontally only when long lines aren't wrapped, and vertically only when its height is limited, as set by the view.  -->
+                            <ScrollViewer
+                                x:Name="OutputScroller"
+                                Grid.Column="1"
+                                HorizontalScrollBarVisibility="Disabled"
+                                HorizontalScrollMode="Disabled"
+                                VerticalScrollBarVisibility="Disabled"
+                                VerticalScrollMode="Disabled">
+                                <RichTextBlock
+                                    x:Name="OutputText"
+                                    controls:TerminalOutput.Output="{x:Bind DisplayedOutput, Mode=OneWay}"
+                                    FontFamily="{StaticResource MonospaceFontFamily}"
+                                    FontSize="13"
+                                    IsTextSelectionEnabled="True"
+                                    LineHeight="18"
+                                    LineStackingStrategy="BlockLineHeight"
+                                    SizeChanged="OnOutputTextSizeChanged"
+                                    TextWrapping="Wrap" />
+                            </ScrollViewer>
+                        </Grid>
                         <TextBlock
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                             Style="{ThemeResource CaptionTextBlockStyle}"

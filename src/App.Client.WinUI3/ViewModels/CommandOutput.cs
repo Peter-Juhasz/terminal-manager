@@ -18,9 +18,16 @@ public sealed class CommandOutput
     private readonly List<OutputChunk> _chunks = [];
     private int _length;
     private IReadOnlyList<UrlMatch>? _links;
+    private List<int>? _lineNumbers;
 
     /// <summary>The chunks of the output, none of which are empty.</summary>
     public IReadOnlyList<OutputChunk> Chunks => _chunks;
+
+    /// <summary>
+    /// For the lines of another output, such as those an <see cref="OutputLineFilter"/> found, the number of each in that output, counted from 1;
+    /// <see langword="null"/> when the lines are numbered one after the other.
+    /// </summary>
+    public IReadOnlyList<int>? LineNumbers => _lineNumbers;
 
     public bool IsEmpty => _chunks.Count == 0;
 
@@ -38,9 +45,16 @@ public sealed class CommandOutput
     /// <summary>Raised when the output was completed, so its <see cref="Links"/> can be shown.</summary>
     public event EventHandler? Completed;
 
-    public void Append(IReadOnlyList<OutputChunk> chunks)
+    /// <param name="chunks">What was written next.</param>
+    /// <param name="lineNumbers">The numbers of the lines that start in <paramref name="chunks"/>, in the output they were taken from; see <see cref="LineNumbers"/>.</param>
+    public void Append(IReadOnlyList<OutputChunk> chunks, IReadOnlyList<int>? lineNumbers = null)
     {
         ArgumentNullException.ThrowIfNull(chunks);
+
+        if (lineNumbers is not null)
+        {
+            (_lineNumbers ??= []).AddRange(lineNumbers);
+        }
 
         var count = _chunks.Count;
         for (var index = 0; index < chunks.Count; index++)

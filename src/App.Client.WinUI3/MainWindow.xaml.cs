@@ -92,6 +92,7 @@ public sealed partial class MainWindow : Window
 	private void ApplySettings()
 	{
 		ProjectView.WrapOutput = _settingsService.Settings.WrapOutput;
+		ProjectView.ShowLineNumbers = _settingsService.Settings.ShowLineNumbers;
 		ProjectView.MaxOutputHeight = _settingsService.Settings.MaxOutputHeight ?? double.PositiveInfinity;
 		ProjectView.ConfirmTemplateScripts = _settingsService.Settings.ConfirmTemplateScripts;
 

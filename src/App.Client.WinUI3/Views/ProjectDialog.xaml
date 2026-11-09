@@ -470,6 +470,16 @@
                             Style="{ThemeResource CaptionTextBlockStyle}"
                             Text="What a command writes is hidden while it runs, and is shown once it fails or is stopped. It can still be expanded at any time."
                             TextWrapping="Wrap" />
+                        <ComboBox
+                            Margin="0,12,0,0"
+                            HorizontalAlignment="Stretch"
+                            Header="Line numbers in output"
+                            SelectedIndex="{x:Bind ViewModel.LineNumbersIndex, Mode=TwoWay}">
+                            <!--  In the order of the indexes of the view model.  -->
+                            <ComboBoxItem Content="Use app setting" />
+                            <ComboBoxItem Content="Show" />
+                            <ComboBoxItem Content="Hide" />
+                        </ComboBox>
                     </StackPanel>
                 </Grid>
             </ScrollViewer>

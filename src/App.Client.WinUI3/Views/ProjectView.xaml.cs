@@ -39,6 +39,14 @@ public sealed partial class ProjectView : UserControl
     // The commands of the history are attached to once, however many times their element is recycled.
     private readonly ConditionalWeakTable<RichTextBlock, QuickInfoHover> _commandHovers = [];
 
+    // The line numbers of the output of an entry, made once for each element, however many times it is recycled.
+    // Kept on the element itself, as its managed wrapper may be let go and made again, which a weak table keyed by it would lose the gutter with.
+    private static readonly DependencyProperty LineNumberGutterProperty = DependencyProperty.RegisterAttached(
+        "LineNumberGutter",
+        typeof(LineNumberGutter),
+        typeof(ProjectView),
+        new PropertyMetadata(null));
+
     // What a token of a command is, as told by the session the view shows now.
     private Task<QuickInfo?> GetQuickInfoAsync(string text, int position, CancellationToken cancellationToken) =>
         Session?.GetQuickInfoAsync(text, position, cancellationToken) ?? Task.FromResult<QuickInfo?>(null);
@@ -74,6 +82,7 @@ public sealed partial class ProjectView : UserControl
             // the pane is out of the way until there is a script to show in it
             view.SetScriptsPaneVisible(session.HasScripts);
             view.SetScriptSearchVisible(session.ScriptFilter is not "");
+            view.ApplyLineNumbersToRealized();
             view.ScrollToEnd();
             view.FocusInput();
             session.PrepareCompletion();
@@ -159,6 +168,55 @@ public sealed partial class ProjectView : UserControl
     /// <summary>Whether the command of a script template, with its variables filled in, is shown to be confirmed before it is run.</summary>
     public bool ConfirmTemplateScripts { get; set; }
 
+    public static readonly DependencyProperty ShowLineNumbersProperty = DependencyProperty.Register(
+        nameof(ShowLineNumbers),
+        typeof(bool),
+        typeof(ProjectView),
+        new PropertyMetadata(false, static (sender, _) => ((ProjectView)sender).ApplyLineNumbersToRealized()));
+
+    /// <summary>Whether the lines of the output of a command are numbered, unless the project of the session sets it otherwise.</summary>
+    public bool ShowLineNumbers
+    {
+        get => (bool)GetValue(ShowLineNumbersProperty);
+        set => SetValue(ShowLineNumbersProperty, value);
+    }
+
+    // the project sets it for itself, or follows the setting of the app
+    private bool IsShowingLineNumbers => Session?.Project.ShowLineNumbers ?? ShowLineNumbers;
+
+    // the entries laid out already; the others get it when they are prepared
+    private void ApplyLineNumbersToRealized()
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(HistoryRepeater); i++)
+        {
+            if (VisualTreeHelper.GetChild(HistoryRepeater, i) is FrameworkElement element)
+            {
+                ApplyLineNumbers(element);
+            }
+        }
+    }
+
+    private void ApplyLineNumbers(FrameworkElement element) => GetLineNumberGutter(element)?.IsEnabled = IsShowingLineNumbers;
+
+    private LineNumberGutter? GetLineNumberGutter(FrameworkElement element)
+    {
+        if (element.GetValue(LineNumberGutterProperty) is LineNumberGutter gutter)
+        {
+            return gutter;
+        }
+
+        if (element.FindName("OutputText") is not RichTextBlock output || element.FindName("OutputScroller") is not ScrollViewer outputScroller
+            || element.FindName("LineNumbersScroller") is not ScrollViewer scroller || element.FindName("LineNumbersText") is not TextBlock numbers)
+        {
+            return null;
+        }
+
+        // made for whatever is applied first, such as the wrapping, so it starts as the setting is
+        gutter = new(output, outputScroller, scroller, numbers) { IsEnabled = IsShowingLineNumbers };
+        element.SetValue(LineNumberGutterProperty, gutter);
+        return gutter;
+    }
+
     // The settings and the search are out of reach of the template.
     private void OnEntryElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
     {
@@ -166,6 +224,7 @@ public sealed partial class ProjectView : UserControl
         {
             ApplyWrapOutput(element);
             ApplyMaxOutputHeight(element);
+            ApplyLineNumbers(element);
             ApplySearch(element, args.Index);
             if (element.FindName("CommandText") is RichTextBlock command)
             {
@@ -269,6 +328,9 @@ public sealed partial class ProjectView : UserControl
         text.TextWrapping = WrapOutput ? TextWrapping.Wrap : TextWrapping.NoWrap;
         scroller.HorizontalScrollMode = WrapOutput ? ScrollMode.Disabled : ScrollMode.Enabled;
         scroller.HorizontalScrollBarVisibility = WrapOutput ? ScrollBarVisibility.Disabled : ScrollBarVisibility.Auto;
+
+        // the lines take as many rows as they are wrapped in
+        GetLineNumberGutter(element)?.Invalidate();
     }
 
     private void ApplyMaxOutputHeight(FrameworkElement element)
@@ -276,6 +338,12 @@ public sealed partial class ProjectView : UserControl
         if (element.FindName("OutputScroller") is not ScrollViewer scroller)
         {
             return;
+        }
+
+        // the line numbers are as high as the output they are beside
+        if (element.FindName("LineNumbersScroller") is ScrollViewer lineNumbers)
+        {
+            lineNumbers.MaxHeight = MaxOutputHeight;
         }
 
         var isLimited = double.IsFinite(MaxOutputHeight);
@@ -334,10 +402,11 @@ public sealed partial class ProjectView : UserControl
             SetScriptsPaneVisible(true);
         }
 
-        // the working folder may have changed
+        // the working folder may have changed, and whether the lines of the output are numbered
         if (e.PropertyName is nameof(ProjectSessionViewModel.Project) && Session is { } session)
         {
             session.PrepareCompletion();
+            ApplyLineNumbersToRealized();
         }
 
         if (e.PropertyName is nameof(ProjectSessionViewModel.ScriptSearch))

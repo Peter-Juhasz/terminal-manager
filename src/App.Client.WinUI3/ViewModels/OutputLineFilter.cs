@@ -31,6 +31,10 @@ public sealed class OutputLineFilter(TextSearch search)
     private OutputStream _foundStream;
     private readonly List<OutputChunk> _chunks = [];
 
+    // the number of the line being searched in the output, and of each line found since the last update
+    private int _lineNumber = 1;
+    private readonly List<int> _foundLineNumbers = [];
+
     // the number of chunks of the output that were searched
     private int _chunkCount;
     private bool _isCompleted;
@@ -114,27 +118,32 @@ public sealed class OutputLineFilter(TextSearch search)
                 var line = lines[..length];
                 if (Search.IsMatch(line.TrimEnd(LineBreaks)))
                 {
-                    Add(stream, line);
+                    AddLine(stream, line);
                 }
 
+                _lineNumber++;
                 lines = lines[length..];
             }
 
             return;
         }
 
-        // The query can't span lines, so the lines it isn't found in are skipped as they are searched for it, without looking for where each ends.
+        // The query can't span lines, so the lines it isn't found in are skipped as they are searched for it, without looking for where each ends;
+        // they are only counted.
         while (!lines.IsEmpty)
         {
             var index = Search.IndexOf(lines);
             if (index < 0)
             {
+                _lineNumber += lines.Count('\n');
                 return;
             }
 
             var start = lines[..index].LastIndexOf('\n') + 1;
             var end = index + lines[index..].IndexOf('\n') + 1;
-            Add(stream, lines[start..end]);
+            _lineNumber += lines[..start].Count('\n');
+            AddLine(stream, lines[start..end]);
+            _lineNumber++;
             lines = lines[end..];
         }
     }
@@ -147,10 +156,11 @@ public sealed class OutputLineFilter(TextSearch search)
             var (stream, text) = _line[0];
             if (Search.IsMatch(text.Span.TrimEnd(LineBreaks)))
             {
-                Add(stream, text.Span);
+                AddLine(stream, text.Span);
             }
 
             _line.Clear();
+            _lineNumber++;
             return;
         }
 
@@ -162,6 +172,7 @@ public sealed class OutputLineFilter(TextSearch search)
 
         if (Search.IsMatch(_lineText.WrittenSpan.TrimEnd(LineBreaks)))
         {
+            _foundLineNumbers.Add(_lineNumber);
             foreach (var (stream, text) in _line)
             {
                 Add(stream, text.Span);
@@ -169,6 +180,14 @@ public sealed class OutputLineFilter(TextSearch search)
         }
 
         _line.Clear();
+        _lineNumber++;
+    }
+
+    // Adds a whole line found, written to a single stream.
+    private void AddLine(OutputStream stream, ReadOnlySpan<char> line)
+    {
+        _foundLineNumbers.Add(_lineNumber);
+        Add(stream, line);
     }
 
     private void Add(OutputStream stream, ReadOnlySpan<char> text)
@@ -201,7 +220,8 @@ public sealed class OutputLineFilter(TextSearch search)
             return;
         }
 
-        Output.Append(_chunks);
+        Output.Append(_chunks, _foundLineNumbers);
         _chunks.Clear();
+        _foundLineNumbers.Clear();
     }
 }

@@ -23,6 +23,37 @@ public sealed class OutputLineFilterTests
     }
 
     [TestMethod]
+    public void NumbersTheLinesFoundAsTheyAreInTheOutput()
+    {
+        var filter = Filter("b");
+        filter.Update([new(Out, "a\r\nb1\r\nc\r\nd\r\nb2\r\n")]);
+
+        Assert.AreSequenceEqual(new[] { 2, 5 }, filter.Output.LineNumbers!);
+    }
+
+    [TestMethod]
+    public void NumbersTheLinesFoundByARegularExpression()
+    {
+        var filter = Filter("^b", isRegex: true);
+        filter.Update([new(Out, "a\nb1\nc\nb2\n")]);
+
+        Assert.AreSequenceEqual(new[] { 2, 4 }, filter.Output.LineNumbers!);
+    }
+
+    [TestMethod]
+    public void NumbersTheLinesFoundAcrossChunksAndUpdates()
+    {
+        var filter = Filter("x");
+        List<OutputChunk> chunks = [new(Out, "a\nb"), new(Error, "x\nc\n")];
+        filter.Update(chunks);
+        chunks.Add(new(Out, "d\ne\nx"));
+        filter.Update(chunks);
+        filter.Complete();
+
+        Assert.AreSequenceEqual(new[] { 2, 6 }, filter.Output.LineNumbers!);
+    }
+
+    [TestMethod]
     public void FindsTheQueryInTheFirstAndLastLines()
     {
         var filter = Filter("x");
