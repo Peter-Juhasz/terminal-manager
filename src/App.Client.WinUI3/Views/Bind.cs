@@ -38,9 +38,16 @@ public static class Bind
     /// <summary>Whether the right side of a row of a comparison is empty, filled in to line up with a line removed on the left.</summary>
     public static Visibility RightFillerIf(DiffKind kind) => VisibleIf(kind is DiffKind.Deleted);
 
-    /// <summary>The style of the badge of a project with <paramref name="runningCount"/> commands running: a dot for one, a number for more.</summary>
-    public static Style RunningBadgeStyle(int runningCount) =>
-        (Style)Application.Current.Resources[runningCount > 1 ? "AttentionValueInfoBadgeStyle" : "AttentionDotInfoBadgeStyle"];
+    /// <summary>
+    /// The style of the badge of a project with <paramref name="runningCount"/> commands running: a dot for one, a number for more,
+    /// and a red dot when none are, as it is then only shown for a command that failed.
+    /// </summary>
+    public static Style ProjectBadgeStyle(int runningCount) => (Style)Application.Current.Resources[runningCount switch
+    {
+        0 => "CriticalDotInfoBadgeStyle",
+        1 => "AttentionDotInfoBadgeStyle",
+        _ => "AttentionValueInfoBadgeStyle",
+    }];
 
     /// <summary>The color of a progress ring in <paramref name="state"/>, as a progress bar shows an error or a pause.</summary>
     public static Brush ProgressForeground(ProgressState state) => (Brush)Application.Current.Resources[state switch

@@ -15,13 +15,15 @@ public sealed partial class MainViewModel(ProjectStore store, HistoryStore histo
     public partial ProjectSessionViewModel? SelectedSession { get; set; }
 
     // the history of a project, and the files of scripts in its working folder, are only read once it is shown
-    partial void OnSelectedSessionChanged(ProjectSessionViewModel? value)
+    partial void OnSelectedSessionChanged(ProjectSessionViewModel? oldValue, ProjectSessionViewModel? newValue)
     {
-        if (value is null)
+        oldValue?.IsShown = false;
+        if (newValue is not { } value)
         {
             return;
         }
 
+        value.IsShown = true;
         _ = value.LoadHistoryAsync(CancellationToken.None);
         value.StartWatchingScriptFiles();
     }

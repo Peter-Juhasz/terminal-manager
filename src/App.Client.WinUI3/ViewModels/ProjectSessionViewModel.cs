@@ -252,17 +252,40 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
 
     /// <summary>The number of commands that are running; any number of them can run at the same time.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsRunning), nameof(RunningBadgeValue), nameof(IsRunningBadgeVisible))]
+    [NotifyPropertyChangedFor(nameof(IsRunning), nameof(BadgeValue), nameof(IsBadgeVisible), nameof(IsFailedBadgeVisible))]
     [NotifyCanExecuteChangedFor(nameof(ClearCommand), nameof(ClearUnpinnedCommand))]
     public partial int RunningCount { get; private set; }
 
+    /// <summary>Whether the project is the one shown, so the commands that fail in it are seen as they do.</summary>
+    [ObservableProperty]
+    public partial bool IsShown { get; set; }
+
+    partial void OnIsShownChanged(bool value)
+    {
+        if (value)
+        {
+            HasUnseenFailure = false;
+        }
+    }
+
+    /// <summary>Whether a command failed, other than by being stopped, since the project was last shown.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsFailedBadgeVisible), nameof(IsBadgeVisible))]
+    public partial bool HasUnseenFailure { get; private set; }
+
+    /// <summary>Whether the badge of the project is a red dot, which it is once the commands running have ended, if one failed unseen.</summary>
+    public bool IsFailedBadgeVisible => HasUnseenFailure && !IsRunning;
+
     public bool IsRunning => RunningCount > 0;
 
-    /// <summary>The number shown on the badge of the project, or -1 for a dot when only one command is running.</summary>
-    public int RunningBadgeValue => RunningCount > 1 ? RunningCount : -1;
+    /// <summary>The number shown on the badge of the project, or -1 for a dot when only one command is running, or a failure is shown.</summary>
+    public int BadgeValue => RunningCount > 1 ? RunningCount : -1;
 
-    /// <summary>Whether the badge is shown, which it is while commands are running, unless the progress of the only one is shown instead.</summary>
-    public bool IsRunningBadgeVisible => IsRunning && !HasRunningProgress;
+    /// <summary>
+    /// Whether the badge is shown, which it is while commands are running, unless the progress of the only one is shown instead,
+    /// and once they have ended, if one failed unseen.
+    /// </summary>
+    public bool IsBadgeVisible => (IsRunning && !HasRunningProgress) || IsFailedBadgeVisible;
 
     /// <summary>Whether the only command running reports its progress.</summary>
     public bool HasRunningProgress => SoleRunning is { IsProgressVisible: true };
@@ -582,6 +605,11 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
             await tickSource.CancelAsync();
             await ticking;
             entry.PropertyChanged -= OnRunningChanged;
+            if (!IsShown && entry is { IsFailed: true, WasStopped: false })
+            {
+                HasUnseenFailure = true;
+            }
+
             _running.Remove(entry);
             UpdateRunning();
 
@@ -614,7 +642,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
     private void NotifyRunningProgressChanged()
     {
         OnPropertyChanged(nameof(HasRunningProgress));
-        OnPropertyChanged(nameof(IsRunningBadgeVisible));
+        OnPropertyChanged(nameof(IsBadgeVisible));
         OnPropertyChanged(nameof(RunningProgressState));
         OnPropertyChanged(nameof(RunningProgressValue));
         OnPropertyChanged(nameof(IsRunningProgressIndeterminate));
