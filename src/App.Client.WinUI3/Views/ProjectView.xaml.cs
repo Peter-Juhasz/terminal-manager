@@ -674,6 +674,72 @@ public sealed partial class ProjectView : UserControl
         session.RemoveEntryCommand.Execute(entry);
     }
 
+    // only what can be compared is offered; the items are found by name, as those in a template have no fields: an entry that has ended, with the run before it, or with another one selected first
+    private void OnEntryMenuOpening(object? sender, object e)
+    {
+        if (Session is not { } session || sender is not MenuFlyout { Target.DataContext: CommandEntryViewModel entry } menu)
+        {
+            return;
+        }
+
+        var selected = session.EntrySelectedForComparison;
+        foreach (var item in menu.Items.OfType<MenuFlyoutItem>())
+        {
+            item.Visibility = Bind.VisibleIf(item.Name switch
+            {
+                "CompareWithPreviousRunItem" => entry.IsCompleted && session.FindPreviousRun(entry) is not null,
+                "SelectForComparisonItem" => entry.IsCompleted,
+                "CompareWithSelectedItem" => entry.IsCompleted && selected is not null && selected != entry,
+                _ => item.Visibility is Visibility.Visible,
+            });
+        }
+    }
+
+    private void OnCompareWithPreviousRunClick(object sender, RoutedEventArgs e)
+    {
+        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not CommandEntryViewModel entry
+            || session.FindPreviousRun(entry) is not { } previous)
+        {
+            return;
+        }
+
+        OpenComparison(previous, entry);
+    }
+
+    private void OnSelectForComparisonClick(object sender, RoutedEventArgs e)
+    {
+        if (Session is not { } session || (sender as FrameworkElement)?.Tag is not CommandEntryViewModel entry)
+        {
+            return;
+        }
+
+        session.EntrySelectedForComparison = entry;
+    }
+
+    // the one selected first is on the left, as the one compared with it is the change
+    private void OnCompareWithSelectedClick(object sender, RoutedEventArgs e)
+    {
+        if (Session is not { EntrySelectedForComparison: { } selected } || (sender as FrameworkElement)?.Tag is not CommandEntryViewModel entry)
+        {
+            return;
+        }
+
+        OpenComparison(selected, entry);
+    }
+
+    // only commands that have ended are compared, as their output no longer changes
+    private void OpenComparison(CommandEntryViewModel left, CommandEntryViewModel right)
+    {
+        if (!left.IsCompleted || !right.IsCompleted)
+        {
+            return;
+        }
+
+        var viewModel = new OutputComparisonViewModel(ComparedOutput.From(left), ComparedOutput.From(right));
+        var theme = (XamlRoot.Content as FrameworkElement)?.RequestedTheme ?? ElementTheme.Default;
+        _ = new OutputComparisonWindow(viewModel, theme).ShowAsync();
+    }
+
     private void OnCancelQueuedClick(object sender, RoutedEventArgs e)
     {
         if (Session is not { } session || (sender as FrameworkElement)?.Tag is not QueuedCommand queued)

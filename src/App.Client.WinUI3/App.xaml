@@ -10,7 +10,10 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
 
-            <!--  The colors of a script, as Visual Studio colors it; plain in high contrast, as the system colors of text are all there is. And the colors of what is found by a search, as a browser marks it.  -->
+            <!--
+                The colors of a script, as Visual Studio colors it; plain in high contrast, as the system colors of text are all there is. And the colors of what is found by a search, as a browser marks it.
+                And the colors of a comparison: the lines removed and added, and the parts of them that were changed, more strongly; in high contrast only the parts changed, highlighted as selected text is.
+            -->
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
                     <SolidColorBrush x:Key="SyntaxKeywordBrush" Color="#0000FF" />
@@ -19,6 +22,12 @@
                     <SolidColorBrush x:Key="SyntaxTypeNameBrush" Color="#2B91AF" />
                     <SolidColorBrush x:Key="SearchHighlightBackgroundBrush" Color="#FFE066" />
                     <SolidColorBrush x:Key="SearchHighlightForegroundBrush" Color="#000000" />
+                    <SolidColorBrush x:Key="DiffRemovedLineBrush" Color="#FFEBE9" />
+                    <SolidColorBrush x:Key="DiffAddedLineBrush" Color="#E6FFEC" />
+                    <SolidColorBrush x:Key="DiffRemovedHighlightBrush" Color="#FFC0BE" />
+                    <SolidColorBrush x:Key="DiffAddedHighlightBrush" Color="#ABF2BC" />
+                    <SolidColorBrush x:Key="DiffHighlightForegroundBrush" Color="#1F2328" />
+                    <SolidColorBrush x:Key="DiffFillerBrush" Color="#08000000" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Default">
                     <SolidColorBrush x:Key="SyntaxKeywordBrush" Color="#569CD6" />
@@ -27,6 +36,12 @@
                     <SolidColorBrush x:Key="SyntaxTypeNameBrush" Color="#4EC9B0" />
                     <SolidColorBrush x:Key="SearchHighlightBackgroundBrush" Color="#F2CC60" />
                     <SolidColorBrush x:Key="SearchHighlightForegroundBrush" Color="#000000" />
+                    <SolidColorBrush x:Key="DiffRemovedLineBrush" Color="#1FF85149" />
+                    <SolidColorBrush x:Key="DiffAddedLineBrush" Color="#262EA043" />
+                    <SolidColorBrush x:Key="DiffRemovedHighlightBrush" Color="#66F85149" />
+                    <SolidColorBrush x:Key="DiffAddedHighlightBrush" Color="#662EA043" />
+                    <SolidColorBrush x:Key="DiffHighlightForegroundBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="DiffFillerBrush" Color="#0AFFFFFF" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="HighContrast">
                     <SolidColorBrush x:Key="SyntaxKeywordBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
@@ -35,6 +50,12 @@
                     <SolidColorBrush x:Key="SyntaxTypeNameBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
                     <SolidColorBrush x:Key="SearchHighlightBackgroundBrush" Color="{ThemeResource SystemColorHighlightColor}" />
                     <SolidColorBrush x:Key="SearchHighlightForegroundBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
+                    <SolidColorBrush x:Key="DiffRemovedLineBrush" Color="Transparent" />
+                    <SolidColorBrush x:Key="DiffAddedLineBrush" Color="Transparent" />
+                    <SolidColorBrush x:Key="DiffRemovedHighlightBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="DiffAddedHighlightBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+                    <SolidColorBrush x:Key="DiffHighlightForegroundBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
+                    <SolidColorBrush x:Key="DiffFillerBrush" Color="Transparent" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
 

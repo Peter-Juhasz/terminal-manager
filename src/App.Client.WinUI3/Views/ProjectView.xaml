@@ -31,7 +31,7 @@
                         Background="Transparent"
                         ColumnSpacing="8">
                         <Grid.ContextFlyout>
-                            <MenuFlyout>
+                            <MenuFlyout Opening="OnEntryMenuOpening">
                                 <MenuFlyoutItem Command="{x:Bind TogglePinnedCommand}" Text="{x:Bind PinToolTip, Mode=OneWay}">
                                     <MenuFlyoutItem.Icon>
                                         <FontIcon Glyph="&#xE718;" />
@@ -45,6 +45,27 @@
                                         <FontIcon Glyph="&#xE74E;" />
                                     </MenuFlyoutItem.Icon>
                                 </MenuFlyoutItem>
+                                <!--  Compared with the run before of the same command, or with any other selected first, once it has ended; shown as they can be when the menu is opened.  -->
+                                <MenuFlyoutSeparator Visibility="{x:Bind IsCompleted, Mode=OneWay}" />
+                                <MenuFlyoutItem
+                                    x:Name="CompareWithPreviousRunItem"
+                                    Click="OnCompareWithPreviousRunClick"
+                                    Tag="{x:Bind}"
+                                    Text="Compare with previous run">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon Glyph="&#xE89A;" />
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                                <MenuFlyoutItem
+                                    x:Name="SelectForComparisonItem"
+                                    Click="OnSelectForComparisonClick"
+                                    Tag="{x:Bind}"
+                                    Text="Select for compare" />
+                                <MenuFlyoutItem
+                                    x:Name="CompareWithSelectedItem"
+                                    Click="OnCompareWithSelectedClick"
+                                    Tag="{x:Bind}"
+                                    Text="Compare with selected" />
                                 <MenuFlyoutSeparator Visibility="{x:Bind IsCompleted, Mode=OneWay}" />
                                 <MenuFlyoutItem
                                     Click="OnRemoveEntryClick"

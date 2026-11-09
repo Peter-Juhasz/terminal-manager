@@ -23,6 +23,21 @@ public static class Bind
 
     public static Visibility VisibleIfNull(object? value) => value is null ? Visibility.Visible : Visibility.Collapsed;
 
+    /// <summary>The number of a line of a side of a comparison, or nothing where the side has no line.</summary>
+    public static string LineNumber(DiffLine? line) => line?.Number.ToString(System.Globalization.CultureInfo.CurrentCulture) ?? string.Empty;
+
+    /// <summary>Whether the left side of a row of a comparison is shown removed: deleted, or changed into the right side.</summary>
+    public static Visibility RemovedIf(DiffKind kind) => VisibleIf(kind is DiffKind.Deleted or DiffKind.Modified);
+
+    /// <summary>Whether the right side of a row of a comparison is shown added: inserted, or changed from the left side.</summary>
+    public static Visibility AddedIf(DiffKind kind) => VisibleIf(kind is DiffKind.Inserted or DiffKind.Modified);
+
+    /// <summary>Whether the left side of a row of a comparison is empty, filled in to line up with a line added on the right.</summary>
+    public static Visibility LeftFillerIf(DiffKind kind) => VisibleIf(kind is DiffKind.Inserted);
+
+    /// <summary>Whether the right side of a row of a comparison is empty, filled in to line up with a line removed on the left.</summary>
+    public static Visibility RightFillerIf(DiffKind kind) => VisibleIf(kind is DiffKind.Deleted);
+
     /// <summary>The style of the badge of a project with <paramref name="runningCount"/> commands running: a dot for one, a number for more.</summary>
     public static Style RunningBadgeStyle(int runningCount) =>
         (Style)Application.Current.Resources[runningCount > 1 ? "AttentionValueInfoBadgeStyle" : "AttentionDotInfoBadgeStyle"];

@@ -670,12 +670,36 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         Remove(other => other == entry);
     }
 
+    /// <summary>The entry selected to be compared with another one, which is compared with it from the menu of the other.</summary>
+    public CommandEntryViewModel? EntrySelectedForComparison { get; set; }
+
+    /// <summary>The last run of the command of <paramref name="entry"/> before it, which has ended, if there is one.</summary>
+    public CommandEntryViewModel? FindPreviousRun(CommandEntryViewModel entry)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+
+        var index = Entries.IndexOf(entry);
+        for (var previous = index - 1; previous >= 0; previous--)
+        {
+            if (Entries[previous] is { IsCompleted: true } candidate && candidate.Command == entry.Command)
+            {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
     private void Remove(Func<CommandEntryViewModel, bool> predicate)
     {
         foreach (var entry in Entries.Where(predicate).ToList())
         {
             entry.PropertyChanged -= OnEntryChanged;
             Entries.Remove(entry);
+            if (entry == EntrySelectedForComparison)
+            {
+                EntrySelectedForComparison = null;
+            }
         }
 
         HasEntries = Entries.Count > 0;
