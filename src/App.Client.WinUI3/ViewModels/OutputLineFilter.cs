@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Text;
 using App.Client.WinUI3.Services;
+using App.Domain;
 
 namespace App.Client.WinUI3.ViewModels;
 

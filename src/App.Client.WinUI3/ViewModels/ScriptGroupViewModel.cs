@@ -1,6 +1,6 @@
 using System.Collections.ObjectModel;
-using App.Client.WinUI3.Models;
 using App.Client.WinUI3.Services;
+using App.Domain;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 

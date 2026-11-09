@@ -1,4 +1,5 @@
-using App.Client.WinUI3.Services;
+using App.Extensions.PowerShell;
+using App.Services;
 
 namespace App.Client.WinUI3.Tests;
 

@@ -5,8 +5,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:App.Client.WinUI3.Controls"
     xmlns:local="using:App.Client.WinUI3.Views"
-    xmlns:models="using:App.Client.WinUI3.Models"
-    xmlns:services="using:App.Client.WinUI3.Services"
+    xmlns:models="using:App.Domain"
+    xmlns:services="using:App.Services"
     xmlns:vm="using:App.Client.WinUI3.ViewModels">
 
     <UserControl.Resources>

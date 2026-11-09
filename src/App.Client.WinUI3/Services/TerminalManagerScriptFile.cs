@@ -1,4 +1,4 @@
-using App.Client.WinUI3.Models;
+using App.Domain;
 using PeterJuhasz.Text.Yaml.Model;
 using PeterJuhasz.Text.Yaml.Parsing;
 

@@ -1,6 +1,5 @@
 using System.Text.Json;
-using App.Client.WinUI3.Models;
-using App.Client.WinUI3.Services;
+using App.Domain;
 
 namespace App.Client.WinUI3.Tests;
 

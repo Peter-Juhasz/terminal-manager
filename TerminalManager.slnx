@@ -7,7 +7,16 @@
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/App.Client.WinUI3.Benchmarks/App.Client.WinUI3.Benchmarks.csproj" />
   </Folder>
+  <Folder Name="/extensions/">
+    <Project Path="src/App.Extensions.Azure/App.Extensions.Azure.csproj" />
+    <Project Path="src/App.Extensions.Cmd/App.Extensions.Cmd.csproj" />
+    <Project Path="src/App.Extensions.Node/App.Extensions.Node.csproj" />
+    <Project Path="src/App.Extensions.PowerShell/App.Extensions.PowerShell.csproj" />
+    <Project Path="src/App.Extensions.Telnet/App.Extensions.Telnet.csproj" />
+  </Folder>
   <Folder Name="/src/">
+    <Project Path="src/App.Domain/App.Domain.csproj" />
+    <Project Path="src/App.Services/App.Services.csproj" />
     <Project Path="src/App.Client.WinUI3/App.Client.WinUI3.csproj">
       <Platform Solution="*|ARM64" Project="ARM64" />
       <Platform Solution="*|x64" Project="x64" />

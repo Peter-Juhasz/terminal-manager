@@ -1,5 +1,5 @@
-using App.Client.WinUI3.Models;
 using App.Client.WinUI3.Services;
+using App.Domain;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 

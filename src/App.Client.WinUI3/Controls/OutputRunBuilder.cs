@@ -1,4 +1,4 @@
-using App.Client.WinUI3.Services;
+using App.Domain;
 
 namespace App.Client.WinUI3.Controls;
 

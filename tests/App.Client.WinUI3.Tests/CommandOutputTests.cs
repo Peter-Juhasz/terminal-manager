@@ -1,5 +1,6 @@
 using App.Client.WinUI3.Services;
 using App.Client.WinUI3.ViewModels;
+using App.Domain;
 
 namespace App.Client.WinUI3.Tests;
 

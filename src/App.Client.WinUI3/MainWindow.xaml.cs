@@ -1,8 +1,9 @@
 using System.Runtime.InteropServices;
-using App.Client.WinUI3.Models;
 using App.Client.WinUI3.Services;
 using App.Client.WinUI3.ViewModels;
 using App.Client.WinUI3.Views;
+using App.Domain;
+using App.Services;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;

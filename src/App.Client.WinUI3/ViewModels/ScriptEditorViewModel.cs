@@ -1,4 +1,4 @@
-using App.Client.WinUI3.Models;
+using App.Domain;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace App.Client.WinUI3.ViewModels;

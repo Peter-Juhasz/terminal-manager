@@ -75,6 +75,16 @@
     <PackageReference Include="PeterJuhasz.Repositories.Json" Version="1.*-*" />
     <PackageReference Include="PeterJuhasz.Text.Yaml" Version="1.*-*" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\App.Domain\App.Domain.csproj" />
+    <ProjectReference Include="..\App.Services\App.Services.csproj" />
+    <ProjectReference Include="..\App.Extensions.PowerShell\App.Extensions.PowerShell.csproj" />
+    <ProjectReference Include="..\App.Extensions.Cmd\App.Extensions.Cmd.csproj" />
+    <ProjectReference Include="..\App.Extensions.Azure\App.Extensions.Azure.csproj" />
+    <ProjectReference Include="..\App.Extensions.Telnet\App.Extensions.Telnet.csproj" />
+    <ProjectReference Include="..\App.Extensions.Node\App.Extensions.Node.csproj" />
+  </ItemGroup>
+
 
   <!--
     Defining the "HasPackageAndPublishMenuAddedByProject" property here allows the Solution

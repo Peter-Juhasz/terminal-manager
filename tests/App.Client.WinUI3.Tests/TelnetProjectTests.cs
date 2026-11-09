@@ -4,8 +4,9 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using App.Client.WinUI3.Models;
-using App.Client.WinUI3.Services;
+using App.Domain;
+using App.Extensions.Telnet;
+using App.Services;
 
 namespace App.Client.WinUI3.Tests;
 

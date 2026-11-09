@@ -4,7 +4,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:App.Client.WinUI3.Views"
-    xmlns:models="using:App.Client.WinUI3.Models"
+    xmlns:models="using:App.Domain"
     xmlns:viewModels="using:App.Client.WinUI3.ViewModels"
     CloseButtonText="Cancel"
     DefaultButton="Primary"

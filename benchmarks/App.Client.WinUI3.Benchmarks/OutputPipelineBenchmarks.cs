@@ -1,6 +1,6 @@
 using System.Threading.Channels;
 using App.Client.WinUI3.Benchmarks.Baseline;
-using App.Client.WinUI3.Services;
+using App.Domain;
 using BenchmarkDotNet.Attributes;
 
 namespace App.Client.WinUI3.Benchmarks;

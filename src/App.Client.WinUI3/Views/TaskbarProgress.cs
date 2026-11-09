@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
-using App.Client.WinUI3.Services;
+using App.Services;
 using Windows.Win32.Foundation;
 
 namespace App.Client.WinUI3.Views;

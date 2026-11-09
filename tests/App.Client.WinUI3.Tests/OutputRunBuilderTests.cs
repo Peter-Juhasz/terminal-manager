@@ -1,6 +1,6 @@
 using System.Text;
 using App.Client.WinUI3.Controls;
-using App.Client.WinUI3.Services;
+using App.Domain;
 
 namespace App.Client.WinUI3.Tests;
 

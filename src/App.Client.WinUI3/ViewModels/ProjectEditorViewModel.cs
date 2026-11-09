@@ -1,7 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using App.Client.WinUI3.Models;
-using App.Client.WinUI3.Services;
+using App.Domain;
+using App.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 

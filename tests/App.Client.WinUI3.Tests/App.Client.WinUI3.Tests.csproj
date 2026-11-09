@@ -10,70 +10,12 @@
   <!-- A WinUI app can't be referenced by a test project, so the code under test, which doesn't depend on WinUI, is compiled in from it. -->
   <ItemGroup>
     <Compile Include="$(AppDirectory)Controls\OutputRunBuilder.cs" Link="App\Controls\OutputRunBuilder.cs" />
-    <Compile Include="$(AppDirectory)Models\CmdProject.cs" Link="App\Models\CmdProject.cs" />
-    <Compile Include="$(AppDirectory)Models\DeveloperCmdProject.cs" Link="App\Models\DeveloperCmdProject.cs" />
-    <Compile Include="$(AppDirectory)Models\DotNetRunProject.cs" Link="App\Models\DotNetRunProject.cs" />
-    <Compile Include="$(AppDirectory)Models\DotNetFileProject.cs" Link="App\Models\DotNetFileProject.cs" />
-    <Compile Include="$(AppDirectory)Models\CommandLanguage.cs" Link="App\Models\CommandLanguage.cs" />
-    <Compile Include="$(AppDirectory)Models\InterpreterProject.cs" Link="App\Models\InterpreterProject.cs" />
-    <Compile Include="$(AppDirectory)Models\PythonProject.cs" Link="App\Models\PythonProject.cs" />
-    <Compile Include="$(AppDirectory)Models\NodeProject.cs" Link="App\Models\NodeProject.cs" />
-    <Compile Include="$(AppDirectory)Models\VisualStudioEnvironment.cs" Link="App\Models\VisualStudioEnvironment.cs" />
-    <Compile Include="$(AppDirectory)Models\AppJsonSerializerContext.cs" Link="App\Models\AppJsonSerializerContext.cs" />
-    <Compile Include="$(AppDirectory)Models\AppSettings.cs" Link="App\Models\AppSettings.cs" />
-    <Compile Include="$(AppDirectory)Models\AppTheme.cs" Link="App\Models\AppTheme.cs" />
-    <Compile Include="$(AppDirectory)Models\HistoryEntry.cs" Link="App\Models\HistoryEntry.cs" />
-    <Compile Include="$(AppDirectory)Models\PowerShellProject.cs" Link="App\Models\PowerShellProject.cs" />
-    <Compile Include="$(AppDirectory)Models\WindowsPowerShellProject.cs" Link="App\Models\WindowsPowerShellProject.cs" />
-    <Compile Include="$(AppDirectory)Models\DeveloperPowerShellProject.cs" Link="App\Models\DeveloperPowerShellProject.cs" />
-    <Compile Include="$(AppDirectory)Models\Project.cs" Link="App\Models\Project.cs" />
-    <Compile Include="$(AppDirectory)Models\LocalProject.cs" Link="App\Models\LocalProject.cs" />
-    <Compile Include="$(AppDirectory)Models\AzureVmProject.cs" Link="App\Models\AzureVmProject.cs" />
-    <Compile Include="$(AppDirectory)Models\AzureVmShellProject.cs" Link="App\Models\AzureVmShellProject.cs" />
-    <Compile Include="$(AppDirectory)Models\AzureVmPowerShellProject.cs" Link="App\Models\AzureVmPowerShellProject.cs" />
-    <Compile Include="$(AppDirectory)Models\ShellScript.cs" Link="App\Models\ShellScript.cs" />
-    <Compile Include="$(AppDirectory)Models\PowerShellScript.cs" Link="App\Models\PowerShellScript.cs" />
-    <Compile Include="$(AppDirectory)Models\ContainerProject.cs" Link="App\Models\ContainerProject.cs" />
-    <Compile Include="$(AppDirectory)Models\DockerProject.cs" Link="App\Models\DockerProject.cs" />
-    <Compile Include="$(AppDirectory)Models\DockerShellProject.cs" Link="App\Models\DockerShellProject.cs" />
-    <Compile Include="$(AppDirectory)Models\DockerPowerShellProject.cs" Link="App\Models\DockerPowerShellProject.cs" />
-    <Compile Include="$(AppDirectory)Models\KubectlProject.cs" Link="App\Models\KubectlProject.cs" />
-    <Compile Include="$(AppDirectory)Models\KubectlShellProject.cs" Link="App\Models\KubectlShellProject.cs" />
-    <Compile Include="$(AppDirectory)Models\KubectlPowerShellProject.cs" Link="App\Models\KubectlPowerShellProject.cs" />
-    <Compile Include="$(AppDirectory)Models\PowerShellRemotingProject.cs" Link="App\Models\PowerShellRemotingProject.cs" />
-    <Compile Include="$(AppDirectory)Models\WslProject.cs" Link="App\Models\WslProject.cs" />
-    <Compile Include="$(AppDirectory)Models\TelnetProject.cs" Link="App\Models\TelnetProject.cs" />
-    <Compile Include="$(AppDirectory)Services\ICredentialStore.cs" Link="App\Services\ICredentialStore.cs" />
-    <Compile Include="$(AppDirectory)Services\TelnetCommandRunner.cs" Link="App\Services\TelnetCommandRunner.cs" />
-    <Compile Include="$(AppDirectory)Services\TelnetOutputScanner.cs" Link="App\Services\TelnetOutputScanner.cs" />
-    <Compile Include="$(AppDirectory)Services\TelnetProtocol.cs" Link="App\Services\TelnetProtocol.cs" />
-    <Compile Include="$(AppDirectory)Models\Script.cs" Link="App\Models\Script.cs" />
-    <Compile Include="$(AppDirectory)Models\ScriptFileSnapshot.cs" Link="App\Models\ScriptFileSnapshot.cs" />
-    <Compile Include="$(AppDirectory)Services\IScriptFileFormat.cs" Link="App\Services\IScriptFileFormat.cs" />
     <Compile Include="$(AppDirectory)Services\TerminalManagerScriptFile.cs" Link="App\Services\TerminalManagerScriptFile.cs" />
-    <Compile Include="$(AppDirectory)Services\PackageJsonScriptFile.cs" Link="App\Services\PackageJsonScriptFile.cs" />
     <Compile Include="$(AppDirectory)Services\ScriptFileWatcher.cs" Link="App\Services\ScriptFileWatcher.cs" />
-    <Compile Include="$(AppDirectory)Services\CmdCompleter.cs" Link="App\Services\CmdCompleter.cs" />
-    <Compile Include="$(AppDirectory)Services\CommandCompletion.cs" Link="App\Services\CommandCompletion.cs" />
     <Compile Include="$(AppDirectory)Services\CommandRunner.cs" Link="App\Services\CommandRunner.cs" />
-    <Compile Include="$(AppDirectory)Services\ProcessRunner.cs" Link="App\Services\ProcessRunner.cs" />
-    <Compile Include="$(AppDirectory)Services\AzureVmCommandRunner.cs" Link="App\Services\AzureVmCommandRunner.cs" />
-    <Compile Include="$(AppDirectory)Services\DotEnvFile.cs" Link="App\Services\DotEnvFile.cs" />
     <Compile Include="$(AppDirectory)Services\ElevationClient.cs" Link="App\Services\ElevationClient.cs" />
     <Compile Include="$(AppDirectory)Services\ElevationProtocol.cs" Link="App\Services\ElevationProtocol.cs" />
     <Compile Include="$(AppDirectory)Services\ElevationServer.cs" Link="App\Services\ElevationServer.cs" />
-    <Compile Include="$(AppDirectory)Services\HighlightedCode.cs" Link="App\Services\HighlightedCode.cs" />
-    <Compile Include="$(AppDirectory)Services\ICommandCompleter.cs" Link="App\Services\ICommandCompleter.cs" />
-    <Compile Include="$(AppDirectory)Services\ICommandRunner.cs" Link="App\Services\ICommandRunner.cs" />
-    <Compile Include="$(AppDirectory)Services\IOutputSink.cs" Link="App\Services\IOutputSink.cs" />
-    <Compile Include="$(AppDirectory)Services\IQuickInfoProvider.cs" Link="App\Services\IQuickInfoProvider.cs" />
-    <Compile Include="$(AppDirectory)Services\ISyntaxHighlighter.cs" Link="App\Services\ISyntaxHighlighter.cs" />
-    <Compile Include="$(AppDirectory)Services\OutputBuffer.cs" Link="App\Services\OutputBuffer.cs" />
-    <Compile Include="$(AppDirectory)Services\OutputChunk.cs" Link="App\Services\OutputChunk.cs" />
-    <Compile Include="$(AppDirectory)Services\PowerShellHighlighter.cs" Link="App\Services\PowerShellHighlighter.cs" />
-    <Compile Include="$(AppDirectory)Services\PowerShellHost.cs" Link="App\Services\PowerShellHost.cs" />
-    <Compile Include="$(AppDirectory)Services\PowerShellLanguageService.cs" Link="App\Services\PowerShellLanguageService.cs" />
-    <Compile Include="$(AppDirectory)Services\ProgressSequenceParser.cs" Link="App\Services\ProgressSequenceParser.cs" />
     <Compile Include="$(AppDirectory)Services\ScriptTemplate.cs" Link="App\Services\ScriptTemplate.cs" />
     <Compile Include="$(AppDirectory)Services\SettingsService.cs" Link="App\Services\SettingsService.cs" />
     <Compile Include="$(AppDirectory)Services\TextSearch.cs" Link="App\Services\TextSearch.cs" />
@@ -87,6 +29,16 @@
     <PackageReference Include="PeterJuhasz.Repositories.FileSystem" Version="2.*-*" />
     <PackageReference Include="PeterJuhasz.Repositories.Json" Version="1.*-*" />
     <PackageReference Include="PeterJuhasz.Text.Yaml" Version="1.*-*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\App.Domain\App.Domain.csproj" />
+    <ProjectReference Include="..\..\src\App.Services\App.Services.csproj" />
+    <ProjectReference Include="..\..\src\App.Extensions.PowerShell\App.Extensions.PowerShell.csproj" />
+    <ProjectReference Include="..\..\src\App.Extensions.Cmd\App.Extensions.Cmd.csproj" />
+    <ProjectReference Include="..\..\src\App.Extensions.Azure\App.Extensions.Azure.csproj" />
+    <ProjectReference Include="..\..\src\App.Extensions.Telnet\App.Extensions.Telnet.csproj" />
+    <ProjectReference Include="..\..\src\App.Extensions.Node\App.Extensions.Node.csproj" />
   </ItemGroup>
 
 </Project>

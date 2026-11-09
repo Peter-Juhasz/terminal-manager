@@ -1,5 +1,5 @@
 using System.Text;
-using App.Client.WinUI3.Services;
+using App.Services;
 
 namespace App.Client.WinUI3.Tests;
 

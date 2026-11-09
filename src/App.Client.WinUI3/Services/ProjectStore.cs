@@ -1,4 +1,4 @@
-using App.Client.WinUI3.Models;
+using App.Domain;
 using PeterJuhasz.Repositories.Abstractions;
 
 namespace App.Client.WinUI3.Services;

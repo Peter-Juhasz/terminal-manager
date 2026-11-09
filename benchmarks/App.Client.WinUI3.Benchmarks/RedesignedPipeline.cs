@@ -1,6 +1,7 @@
 using App.Client.WinUI3.Controls;
-using App.Client.WinUI3.Services;
 using App.Client.WinUI3.ViewModels;
+using App.Domain;
+using App.Services;
 
 namespace App.Client.WinUI3.Benchmarks;
 

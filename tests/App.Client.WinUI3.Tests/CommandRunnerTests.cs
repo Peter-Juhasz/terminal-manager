@@ -1,7 +1,8 @@
 using System.Diagnostics;
 using System.Text;
-using App.Client.WinUI3.Models;
 using App.Client.WinUI3.Services;
+using App.Domain;
+using App.Services;
 
 namespace App.Client.WinUI3.Tests;
 

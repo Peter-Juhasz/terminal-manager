@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
-using App.Client.WinUI3.Models;
 using App.Client.WinUI3.Services;
+using App.Domain;
+using App.Extensions.Cmd;
+using App.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace App.Client.WinUI3.ViewModels;

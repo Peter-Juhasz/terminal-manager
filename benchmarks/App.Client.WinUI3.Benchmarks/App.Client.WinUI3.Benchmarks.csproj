@@ -11,16 +11,17 @@
   <!-- A WinUI app can't be referenced by another project, so the code measured, which doesn't depend on WinUI, is compiled in from it. -->
   <ItemGroup>
     <Compile Include="$(AppDirectory)Controls\OutputRunBuilder.cs" Link="App\Controls\OutputRunBuilder.cs" />
-    <Compile Include="$(AppDirectory)Services\IOutputSink.cs" Link="App\Services\IOutputSink.cs" />
-    <Compile Include="$(AppDirectory)Services\OutputBuffer.cs" Link="App\Services\OutputBuffer.cs" />
-    <Compile Include="$(AppDirectory)Services\OutputChunk.cs" Link="App\Services\OutputChunk.cs" />
-    <Compile Include="$(AppDirectory)Services\ProgressSequenceParser.cs" Link="App\Services\ProgressSequenceParser.cs" />
     <Compile Include="$(AppDirectory)ViewModels\CommandOutput.cs" Link="App\ViewModels\CommandOutput.cs" />
     <Compile Include="$(AppDirectory)Services\UrlDetector.cs" Link="App\Services\UrlDetector.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\App.Domain\App.Domain.csproj" />
+    <ProjectReference Include="..\..\src\App.Services\App.Services.csproj" />
   </ItemGroup>
 
 </Project>

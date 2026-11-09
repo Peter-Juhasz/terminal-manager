@@ -1,6 +1,7 @@
 using System.Globalization;
-using App.Client.WinUI3.Models;
 using App.Client.WinUI3.Services;
+using App.Domain;
+using App.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Windows.ApplicationModel.DataTransfer;

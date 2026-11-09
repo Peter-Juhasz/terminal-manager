@@ -1,5 +1,6 @@
 using System.Collections.Frozen;
-using App.Client.WinUI3.Services;
+using App.Extensions.Cmd;
+using App.Services;
 
 namespace App.Client.WinUI3.Tests;
 
