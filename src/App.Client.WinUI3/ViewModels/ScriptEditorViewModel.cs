@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using App.Domain;
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -31,6 +32,8 @@ public sealed partial class ScriptEditorViewModel : ObservableObject
 
     public string Title => IsNew ? "Save script" : "Edit script";
 
+    // an instance property, as the dialogs bind to it
+    [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Bound from XAML through the view model.")]
     public string PrimaryButtonText => "Save";
 
     [ObservableProperty]

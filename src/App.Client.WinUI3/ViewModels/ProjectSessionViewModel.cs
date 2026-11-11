@@ -14,7 +14,7 @@ namespace App.Client.WinUI3.ViewModels;
 /// <summary>
 /// A project, with the commands run in it since the app was started, and before it if its history is kept.
 /// </summary>
-public sealed partial class ProjectSessionViewModel(Project project, CommandRunner runner, ElevatedCommandRunner elevatedRunner, ICommandCompleter completer, CmdCompleter cmdCompleter, IQuickInfoProvider quickInfo, ISyntaxHighlighter highlighter, ProjectStore store, HistoryStore history) : ObservableObject
+public sealed partial class ProjectSessionViewModel(Project project, CommandRunner runner, ElevatedCommandRunner elevatedRunner, ICommandCompleter completer, CmdCompleter cmdCompleter, IQuickInfoProvider quickInfo, ISyntaxHighlighter highlighter, ProjectStore store, HistoryStore history) : ObservableObject, IDisposable
 {
     // Reading the saved history, which is started the first time the project is selected; until then it isn't saved either, so it isn't saved over.
     private Task? _loadingHistory;
@@ -139,6 +139,13 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         _isWatchingScriptFiles = false;
         _scriptFileWatcher?.Dispose();
         _scriptFileWatcher = null;
+    }
+
+    /// <summary>Stops watching the files in the working folder, and lets go of what saving the history uses, such as when the project is deleted, or the app is closed.</summary>
+    public void Dispose()
+    {
+        StopWatchingScriptFiles();
+        _savingHistory.Dispose();
     }
 
     // the working folder, whether the files are read, or the language the scripts are written for may have changed

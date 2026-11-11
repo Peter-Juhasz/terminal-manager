@@ -7,7 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace App.Client.WinUI3.ViewModels;
 
-public sealed partial class MainViewModel(ProjectStore store, HistoryStore history, CommandRunner runner, ElevatedCommandRunner elevatedRunner, ICommandCompleter completer, CmdCompleter cmdCompleter, IQuickInfoProvider quickInfo, ISyntaxHighlighter highlighter) : ObservableObject
+public sealed partial class MainViewModel(ProjectStore store, HistoryStore history, CommandRunner runner, ElevatedCommandRunner elevatedRunner, ICommandCompleter completer, CmdCompleter cmdCompleter, IQuickInfoProvider quickInfo, ISyntaxHighlighter highlighter) : ObservableObject, IDisposable
 {
     public ObservableCollection<ProjectSessionViewModel> Sessions { get; } = [];
 
@@ -136,7 +136,7 @@ public sealed partial class MainViewModel(ProjectStore store, HistoryStore histo
         }
 
         session.StopAll();
-        session.StopWatchingScriptFiles();
+        session.Dispose();
         var index = Sessions.IndexOf(session);
         Sessions.Remove(session);
         session.RunningProgressChanged -= OnRunningProgressChanged;
@@ -146,6 +146,15 @@ public sealed partial class MainViewModel(ProjectStore store, HistoryStore histo
         if (SelectedSession == session || SelectedSession is null)
         {
             SelectedSession = Sessions.Count > 0 ? Sessions[Math.Min(index, Sessions.Count - 1)] : null;
+        }
+    }
+
+    /// <summary>Lets go of what the projects hold on to, such as when the app is closed.</summary>
+    public void Dispose()
+    {
+        foreach (var session in Sessions)
+        {
+            session.Dispose();
         }
     }
 

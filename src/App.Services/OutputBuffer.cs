@@ -133,7 +133,7 @@ public sealed class OutputBuffer : IOutputSink
 
     private static List<OutputChunk> Split(StringBuilder text, List<(OutputStream Stream, int End)> pieces)
     {
-        var chunks = new List<OutputChunk>(pieces.Count + (text.Length / MaxChunkLength));
+        List<OutputChunk> chunks = [with(capacity: pieces.Count + (text.Length / MaxChunkLength))];
         var start = 0;
         foreach (var (stream, end) in pieces)
         {

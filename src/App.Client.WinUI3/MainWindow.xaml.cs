@@ -69,7 +69,12 @@ public sealed partial class MainWindow : Window
 		};
 		Activated += (_, e) => _isActive = e.WindowActivationState is not WindowActivationState.Deactivated;
 
-		Closed += (_, _) => ViewModel.StopAll();
+		Closed += (_, _) =>
+		{
+			ViewModel.StopAll();
+			ProjectView.Dispose();
+			ViewModel.Dispose();
+		};
 	}
 
 	// Whether the window has the focus, so a command that ends is noticed without flashing.

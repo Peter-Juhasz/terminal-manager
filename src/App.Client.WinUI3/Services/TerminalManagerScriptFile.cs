@@ -71,8 +71,8 @@ public sealed class TerminalManagerScriptFile : IScriptFileFormat
             throw new ScriptFileFormatException("'scripts' must be a list of scripts, each with a 'name' and a 'command'.");
         }
 
-        var result = new List<Script>(scripts.Items.Length);
-        var names = new HashSet<string>(StringComparer.Ordinal);
+        List<Script> result = [with(capacity: scripts.Items.Length)];
+        HashSet<string> names = [with(StringComparer.Ordinal)];
         foreach (var (item, index) in scripts.Items.Select(static (item, index) => (item, index)))
         {
             if (item is not MappingNode mapping)

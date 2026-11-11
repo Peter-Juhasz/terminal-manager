@@ -48,7 +48,11 @@ public sealed partial class OutputComparisonWindow : Window
         AppWindow.Resize(new SizeInt32((int)(DefaultWidth * scale), (int)(DefaultHeight * scale)));
 
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
-        Closed += (_, _) => ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        Closed += (_, _) =>
+        {
+            ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            ViewModel.Dispose();
+        };
     }
 
     public OutputComparisonViewModel ViewModel { get; }

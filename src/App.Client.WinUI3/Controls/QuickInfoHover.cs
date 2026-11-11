@@ -21,7 +21,7 @@ public delegate Task<QuickInfo?> QuickInfoSource(string text, int position, Canc
 /// The tooltip is set on the element only while it is shown, so it isn't opened by the element being hovered anywhere else.
 /// The text is asked for again once it is answered, and nothing is shown when it changed in the meantime.
 /// </remarks>
-internal sealed class QuickInfoHover
+internal sealed partial class QuickInfoHover : IDisposable
 {
     // How long the mouse rests before the token under it is told about.
     private static readonly TimeSpan HoverDelay = TimeSpan.FromMilliseconds(400);
@@ -93,6 +93,9 @@ internal sealed class QuickInfoHover
             _toolTip = null;
         }
     }
+
+    /// <summary>Closes the tooltip, and lets go of the request that is still asked for.</summary>
+    public void Dispose() => Close();
 
     private void OnPointerMoved(object sender, PointerRoutedEventArgs e)
     {

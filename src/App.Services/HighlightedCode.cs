@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace App.Services;
 
 /// <summary>The kinds of text of a script that are colored; the rest is shown as it is.</summary>
@@ -5,6 +7,7 @@ public enum SyntaxKind
 {
     Keyword,
     Comment,
+    [SuppressMessage("Naming", "CA1720:Identifiers should not contain type names", Justification = "It is the kind of text of a string literal, as the others are named after what the text is.")]
     String,
     TypeName,
 }

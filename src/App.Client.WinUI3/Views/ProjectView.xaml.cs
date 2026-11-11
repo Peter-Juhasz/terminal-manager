@@ -23,7 +23,7 @@ namespace App.Client.WinUI3.Views;
 /// <summary>
 /// The commands run in a project, and where the next one is typed.
 /// </summary>
-public sealed partial class ProjectView : UserControl
+public sealed partial class ProjectView : UserControl, IDisposable
 {
     public ProjectView()
     {
@@ -35,6 +35,13 @@ public sealed partial class ProjectView : UserControl
     }
 
     private readonly QuickInfoHover _inputHover;
+
+    /// <summary>Lets go of what the view holds on to, such as when its window is closed.</summary>
+    public void Dispose()
+    {
+        _inputHover.Dispose();
+        _completing.Dispose();
+    }
 
     // The commands of the history are attached to once, however many times their element is recycled.
     private readonly ConditionalWeakTable<RichTextBlock, QuickInfoHover> _commandHovers = [];
@@ -390,7 +397,7 @@ public sealed partial class ProjectView : UserControl
     {
         if (Session?.Project is LocalProject { IsWorkingFolderOnWindows: true, ExpandedWorkingFolder: var folder } && Directory.Exists(folder))
         {
-            Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true })?.Dispose();
+            Process.StartAndForget(new ProcessStartInfo(folder) { UseShellExecute = true });
         }
     }
 
@@ -591,7 +598,7 @@ public sealed partial class ProjectView : UserControl
 
         try
         {
-            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose();
+            Process.StartAndForget(new ProcessStartInfo(path) { UseShellExecute = true });
         }
         catch (Win32Exception)
         {

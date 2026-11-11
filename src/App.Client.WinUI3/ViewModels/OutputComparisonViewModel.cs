@@ -23,7 +23,7 @@ public sealed record ComparedOutput(string Command, DateTimeOffset StartedAt, st
 /// The outputs of two commands, compared line by line side by side, again whenever what is ignored changes; the comparison is made off the UI thread,
 /// as long outputs take a while.
 /// </summary>
-public sealed partial class OutputComparisonViewModel : ObservableObject
+public sealed partial class OutputComparisonViewModel : ObservableObject, IDisposable
 {
     // a number, with the separators of decimals and times, so durations and timestamps don't make every line differ
     private static readonly Regex Numbers = NumbersRegex();
@@ -85,6 +85,14 @@ public sealed partial class OutputComparisonViewModel : ObservableObject
     public bool HasError => ErrorText is not null;
 
     public bool HasNoChanges => !IsComparing && ChangeStarts.Count is 0;
+
+    /// <summary>Cancels the comparison that is still being made, such as when its window is closed.</summary>
+    public void Dispose()
+    {
+        _comparison?.Cancel();
+        _comparison?.Dispose();
+        _comparison = null;
+    }
 
     partial void OnIgnoreWhitespaceChanged(bool value) => _ = CompareAsync();
 
