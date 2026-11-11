@@ -52,7 +52,7 @@ scripts:
 
 ## Build
 
-Requires Windows and the .NET 10 SDK.
+Requires Windows and the .NET 11 SDK.
 
 ```powershell
 dotnet publish src/App.Client.WinUI3/App.Client.WinUI3.csproj -c Release -r win-x64 --self-contained -p:Platform=x64 -o publish/win-x64

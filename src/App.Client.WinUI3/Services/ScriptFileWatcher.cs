@@ -23,7 +23,7 @@ public sealed partial class ScriptFileWatcher : IDisposable
 
     private readonly string _folder;
     private readonly Project _project;
-    private readonly IReadOnlyList<IScriptFileFormat> _formats;
+    private readonly IScriptFileFormat[] _formats;
     private readonly FileSystemWatcher? _watcher;
     private readonly Timer _timer;
     private readonly Lock _lock = new();
@@ -48,7 +48,7 @@ public sealed partial class ScriptFileWatcher : IDisposable
         _formats = (formats ?? DefaultFormats).Where(format => format.IsSupportedBy(project)).ToArray();
         _timer = new(OnTimer);
 
-        if (_formats.Count == 0)
+        if (_formats.Length == 0)
         {
             return;
         }
@@ -78,7 +78,7 @@ public sealed partial class ScriptFileWatcher : IDisposable
     /// <summary>Reads the files in the background, and again each time they change; called once <see cref="Changed"/> is handled, so it is raised for the first read too.</summary>
     public void Start()
     {
-        if (_formats.Count == 0)
+        if (_formats.Length == 0)
         {
             return;
         }

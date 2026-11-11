@@ -323,7 +323,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
         return ExecuteAsync(command, isElevated);
     }
 
-    private bool CanRunScript(Script? script) => script is not null;
+    private static bool CanRunScript(Script? script) => script is not null;
 
     /// <summary>Runs <paramref name="script"/>, and leaves what was typed in the input as it is.</summary>
     [RelayCommand(CanExecute = nameof(CanRunScript), AllowConcurrentExecutions = true)]

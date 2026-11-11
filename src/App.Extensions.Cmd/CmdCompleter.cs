@@ -15,7 +15,7 @@ namespace App.Extensions.Cmd;
 public sealed partial class CmdCompleter : ICommandCompleter
 {
     // the characters cmd takes a name apart at, or reads as something else, unless it is quoted
-    private static readonly char[] CharactersToQuote = [' ', '&', '(', ')', '[', ']', '{', '}', '^', '=', ';', '!', '\'', '+', ',', '`', '~'];
+    private static readonly System.Buffers.SearchValues<char> CharactersToQuote = System.Buffers.SearchValues.Create([' ', '&', '(', ')', '[', ']', '{', '}', '^', '=', ';', '!', '\'', '+', ',', '`', '~']);
 
     private static readonly EnumerationOptions Options = new() { IgnoreInaccessible = true };
 
