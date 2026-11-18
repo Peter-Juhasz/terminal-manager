@@ -397,7 +397,8 @@ public sealed partial class ProjectView : UserControl, IDisposable
     {
         if (Session?.Project is LocalProject { IsWorkingFolderOnWindows: true, ExpandedWorkingFolder: var folder } && Directory.Exists(folder))
         {
-            Process.StartAndForget(new ProcessStartInfo(folder) { UseShellExecute = true });
+            // not StartAndForget, which doesn't support shell execution
+            Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true })?.Dispose();
         }
     }
 
@@ -598,7 +599,8 @@ public sealed partial class ProjectView : UserControl, IDisposable
 
         try
         {
-            Process.StartAndForget(new ProcessStartInfo(path) { UseShellExecute = true });
+            // not StartAndForget, which doesn't support shell execution
+            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose();
         }
         catch (Win32Exception)
         {

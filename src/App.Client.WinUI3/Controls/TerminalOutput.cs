@@ -246,7 +246,8 @@ public static partial class TerminalOutput
 
             try
             {
-                Process.StartAndForget(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
+                // not StartAndForget, which doesn't support shell execution
+                Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true })?.Dispose();
             }
             catch (Win32Exception ex)
             {
