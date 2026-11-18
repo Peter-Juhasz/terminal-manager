@@ -1,12 +1,6 @@
 {
   "profiles": {
-    "App.Client.WinUI3 (Package)": {
-      "commandName": "MsixPackage",
-      "environmentVariables": {
-        "TERMINAL_DATA_FOLDER": "%OneDrive%\\Apps\\Terminal"
-      }
-    },
-    "App.Client.WinUI3 (Unpackaged)": {
+    "App.Client.WinUI3": {
       "commandName": "Project",
       "environmentVariables": {
         "TERMINAL_DATA_FOLDER": "%OneDrive%\\Apps\\Terminal"

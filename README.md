@@ -48,7 +48,7 @@ scripts:
 - Taskbar progress from commands that report it
 - Light, dark or system theme, output wrapping and a maximum output height
 - Passwords for Telnet projects stay in the Windows Credential Manager, never in the project
-- Self-contained and ahead-of-time compiled for fast startup, for x64 and ARM64
+- Ahead-of-time compiled for fast startup, for x64 and ARM64, using the Windows App Runtime 2 that comes with Windows 11 (offered to be installed where it's missing)
 
 ## Build
 
