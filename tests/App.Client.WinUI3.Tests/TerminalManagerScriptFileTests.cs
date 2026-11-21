@@ -37,6 +37,31 @@ public sealed class TerminalManagerScriptFileTests
     }
 
     [TestMethod]
+    public void ReadsWhetherScriptsAreElevated()
+    {
+        var scripts = Parse("""
+            scripts:
+            - name: Restart
+              elevated: true
+              command: iisreset
+            - name: Build
+              elevated: false
+              command: dotnet build
+            - name: Test
+              command: dotnet test
+            """);
+
+        Assert.AreSequenceEqual([true, false, false], scripts.Select(static script => script.RequiresElevation));
+    }
+
+    [TestMethod]
+    [DataRow("yes")]
+    [DataRow("'true'")]
+    [DataRow("[true]")]
+    public void RejectsElevatedOtherThanTrueOrFalse(string value) =>
+        Assert.ThrowsExactly<ScriptFileFormatException>(() => Parse($"scripts:\n- name: A\n  elevated: {value}\n  command: a\n"));
+
+    [TestMethod]
     public void GivesTheSameIdEachTime()
     {
         const string text = "scripts:\n- name: Build\n  command: dotnet build\n- name: Test\n  command: dotnet test\n";

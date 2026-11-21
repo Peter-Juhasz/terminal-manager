@@ -33,6 +33,7 @@ A WinUI 3 app that keeps your terminals organized by project. Every project is a
 - Templates with variables, such as `git switch -c {{ branch }}` or `{{ runtime = win-x64 }}` for a default value
 - Team scripts from a `.terminal-manager.yml` file kept with your code, reloaded when it changes
 - Scripts from `package.json`, run by the package manager of the package
+- Mark a script to always run as administrator
 
 ```yaml
 scripts:
@@ -42,6 +43,9 @@ scripts:
   command: |
     git tag v{{ version }}
     git push origin v{{ version }}
+- name: Restart IIS
+  elevated: true
+  command: iisreset
 ```
 
 **Everything else**

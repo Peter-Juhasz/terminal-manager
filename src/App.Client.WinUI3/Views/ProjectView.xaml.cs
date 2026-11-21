@@ -623,7 +623,7 @@ public sealed partial class ProjectView : UserControl, IDisposable
             return;
         }
 
-        var dialog = new ScriptDialog(new ScriptEditorViewModel(session.Input.Trim())) { XamlRoot = XamlRoot };
+        var dialog = new ScriptDialog(new ScriptEditorViewModel(session.Input.Trim()) { CanRequireElevation = session.CanRunElevated }) { XamlRoot = XamlRoot };
         if (await Dialogs.ShowAsync(dialog) is ContentDialogResult.Primary)
         {
             await session.SaveScriptAsync(dialog.ViewModel.Build(), CancellationToken.None);
@@ -637,7 +637,7 @@ public sealed partial class ProjectView : UserControl, IDisposable
             return;
         }
 
-        var dialog = new ScriptDialog(new ScriptEditorViewModel(entry.Command)) { XamlRoot = XamlRoot };
+        var dialog = new ScriptDialog(new ScriptEditorViewModel(entry.Command) { CanRequireElevation = session.CanRunElevated, RequiresElevation = entry.IsElevated }) { XamlRoot = XamlRoot };
         if (await Dialogs.ShowAsync(dialog) is ContentDialogResult.Primary)
         {
             await session.SaveScriptAsync(dialog.ViewModel.Build(), CancellationToken.None);
@@ -851,7 +851,13 @@ public sealed partial class ProjectView : UserControl, IDisposable
             return;
         }
 
-        var viewModel = new ScriptEditorViewModel(script.Command) { Name = group.IsReadOnly ? script.Name : $"{script.Name} (copy)", IsTemplate = script.IsTemplate };
+        var viewModel = new ScriptEditorViewModel(script.Command)
+        {
+            Name = group.IsReadOnly ? script.Name : $"{script.Name} (copy)",
+            IsTemplate = script.IsTemplate,
+            RequiresElevation = script.RequiresElevation,
+            CanRequireElevation = session.CanRunElevated,
+        };
         var dialog = new ScriptDialog(viewModel) { XamlRoot = XamlRoot };
         if (await Dialogs.ShowAsync(dialog) is ContentDialogResult.Primary)
         {
@@ -866,7 +872,7 @@ public sealed partial class ProjectView : UserControl, IDisposable
             return;
         }
 
-        var dialog = new ScriptDialog(new ScriptEditorViewModel(script)) { XamlRoot = XamlRoot };
+        var dialog = new ScriptDialog(new ScriptEditorViewModel(script) { CanRequireElevation = session.CanRunElevated }) { XamlRoot = XamlRoot };
         if (await Dialogs.ShowAsync(dialog) is ContentDialogResult.Primary)
         {
             await session.SaveScriptAsync(dialog.ViewModel.Build(), CancellationToken.None);

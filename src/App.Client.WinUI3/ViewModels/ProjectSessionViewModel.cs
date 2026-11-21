@@ -334,7 +334,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
 
     /// <summary>Runs <paramref name="script"/>, and leaves what was typed in the input as it is.</summary>
     [RelayCommand(CanExecute = nameof(CanRunScript), AllowConcurrentExecutions = true)]
-    private Task RunScriptAsync(Script? script) => script is null ? Task.CompletedTask : ExecuteAsync(script.Command, isElevated: false);
+    private Task RunScriptAsync(Script? script) => script is null ? Task.CompletedTask : ExecuteAsync(script.Command, isElevated: script.RequiresElevation);
 
     /// <summary>Runs <paramref name="script"/> as an administrator, and leaves what was typed in the input as it is.</summary>
     [RelayCommand(CanExecute = nameof(CanRunScript), AllowConcurrentExecutions = true)]
@@ -358,7 +358,7 @@ public sealed partial class ProjectSessionViewModel(Project project, CommandRunn
             return;
         }
 
-        AddToQueue(script.Command, isElevated: false);
+        AddToQueue(script.Command, isElevated: script.RequiresElevation);
     }
 
     /// <summary>Queues <paramref name="script"/> to be run as an administrator, and leaves what was typed in the input as it is.</summary>

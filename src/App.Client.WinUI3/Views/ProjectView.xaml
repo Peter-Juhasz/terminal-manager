@@ -956,7 +956,7 @@
                                                             VerticalAlignment="Top"
                                                             FontSize="12"
                                                             Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                                                            Glyph="&#xE768;" />
+                                                            Glyph="{x:Bind local:Bind.ScriptGlyph(Script.RequiresElevation)}" />
                                                         <StackPanel Grid.Column="1" Spacing="2">
                                                             <TextBlock
                                                                 x:Name="ScriptNameText"

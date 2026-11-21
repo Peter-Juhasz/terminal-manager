@@ -93,6 +93,28 @@ public sealed class ProjectSerializationTests
     }
 
     [TestMethod]
+    public void SavedScriptRequiringElevationRoundTrips()
+    {
+        var project = new PowerShellProject
+        {
+            Id = Guid.NewGuid(),
+            DisplayName = "A",
+            WorkingFolder = @"C:\",
+            Scripts =
+            [
+                new() { Id = Guid.NewGuid(), Name = "Restart", Command = "Restart-Service w3svc", RequiresElevation = true },
+                new() { Id = Guid.NewGuid(), Name = "Build", Command = "dotnet build" },
+            ],
+        };
+
+        var json = JsonSerializer.Serialize<Project>(project, AppJsonSerializerContext.Default.Project);
+        var deserialized = JsonSerializer.Deserialize(json, AppJsonSerializerContext.Default.Project);
+
+        Assert.IsNotNull(deserialized?.Scripts);
+        Assert.AreSequenceEqual([true, false], deserialized.Scripts.Select(static script => script.RequiresElevation));
+    }
+
+    [TestMethod]
     public void WindowsPowerShellRoundTrips()
     {
         var project = new WindowsPowerShellProject { Id = Guid.NewGuid(), DisplayName = "A", WorkingFolder = @"C:\", PrependScript = "$a = 1" };

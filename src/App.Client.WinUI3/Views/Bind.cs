@@ -23,6 +23,9 @@ public static class Bind
 
     public static Visibility VisibleIfNull(object? value) => value is null ? Visibility.Visible : Visibility.Collapsed;
 
+    /// <summary>The glyph of the run button of a script: a shield when it is run as an administrator, a play button otherwise.</summary>
+    public static string ScriptGlyph(bool requiresElevation) => requiresElevation ? "" : "";
+
     /// <summary>The number of a line of a side of a comparison, or nothing where the side has no line.</summary>
     public static string LineNumber(DiffLine? line) => line?.Number.ToString(System.Globalization.CultureInfo.CurrentCulture) ?? string.Empty;
 

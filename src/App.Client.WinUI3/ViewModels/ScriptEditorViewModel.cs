@@ -26,6 +26,7 @@ public sealed partial class ScriptEditorViewModel : ObservableObject
         Name = script.Name;
         Command = script.Command;
         IsTemplate = script.IsTemplate;
+        RequiresElevation = script.RequiresElevation;
     }
 
     public bool IsNew => _script is null;
@@ -48,11 +49,18 @@ public sealed partial class ScriptEditorViewModel : ObservableObject
     [ObservableProperty]
     public partial bool IsTemplate { get; set; }
 
+    /// <summary>Whether the script is always run as an administrator.</summary>
+    [ObservableProperty]
+    public partial bool RequiresElevation { get; set; }
+
+    /// <summary>Whether the project can run commands as an administrator, so the script can be set to require it.</summary>
+    public bool CanRequireElevation { get; init; } = true;
+
     public bool IsValid => !string.IsNullOrWhiteSpace(Name) && !string.IsNullOrWhiteSpace(Command);
 
     public Script Build() => _script switch
     {
-        null => new Script { Id = Guid.NewGuid(), Name = Name.Trim(), Command = Command.Trim(), IsTemplate = IsTemplate },
-        { } script => script with { Name = Name.Trim(), Command = Command.Trim(), IsTemplate = IsTemplate },
+        null => new Script { Id = Guid.NewGuid(), Name = Name.Trim(), Command = Command.Trim(), IsTemplate = IsTemplate, RequiresElevation = RequiresElevation },
+        { } script => script with { Name = Name.Trim(), Command = Command.Trim(), IsTemplate = IsTemplate, RequiresElevation = RequiresElevation },
     };
 }

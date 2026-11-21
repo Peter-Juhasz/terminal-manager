@@ -10,11 +10,15 @@ namespace App.Client.WinUI3.Services;
 /// <remarks>
 /// The scripts are a list under <c>scripts</c>, in the order they are shown, each with a <c>name</c> and a <c>command</c>,
 /// and optionally a <c>description</c> shown in place of the command, and the <c>language</c> it is written in, or a list of them,
-/// so it is only shown for projects whose commands are written in one of them. A script with variables, written as <c>{{ name }}</c>, is a template.
+/// so it is only shown for projects whose commands are written in one of them, and <c>elevated: true</c> to always run it as an administrator.
+/// A script with variables, written as <c>{{ name }}</c>, is a template.
 /// <code>
 /// scripts:
 /// - name: Build
 ///   command: dotnet build
+/// - name: Restart IIS
+///   elevated: true
+///   command: iisreset
 /// - name: Deploy
 ///   description: Deploys to the given environment
 ///   language: powershell
@@ -105,6 +109,7 @@ public sealed class TerminalManagerScriptFile : IScriptFileFormat
         var command = mapping.GetText(name, "command");
         var description = mapping.GetText(name, "description");
         var languages = mapping.GetLanguages(name);
+        var elevated = mapping.GetFlag(name, "elevated");
 
         if (command?.Trim() is not { Length: > 0 } trimmed)
         {
@@ -123,6 +128,7 @@ public sealed class TerminalManagerScriptFile : IScriptFileFormat
             Command = trimmed,
             Description = description?.Trim() is { Length: > 0 } trimmedDescription ? trimmedDescription : null,
             IsTemplate = ScriptTemplate.GetVariables(trimmed) is { Count: > 0 },
+            RequiresElevation = elevated,
         };
     }
 }
@@ -140,6 +146,15 @@ file static class NodeExtensions
                 _ => throw new ScriptFileFormatException($"'{key}' of script '{script}' must be text."),
             }
             : null;
+
+        /// <summary>Whether <paramref name="key"/> of the script named <paramref name="script"/> is <c>true</c>; <see langword="false"/> when it isn't given.</summary>
+        public bool GetFlag(string script, string key) => mapping.TryGetValue(key, out var node)
+            && node switch
+            {
+                ScalarNode { IsNull: true } => false,
+                ScalarNode scalar when scalar.TryGetBoolean(out var value) => value,
+                _ => throw new ScriptFileFormatException($"'{key}' of script '{script}' must be true or false."),
+            };
 
         /// <summary>The languages the script named <paramref name="script"/> is written in, or <see langword="null"/> when it is shown for any.</summary>
         public IReadOnlySet<CommandLanguage>? GetLanguages(string script) => mapping.TryGetValue("language", out var node)

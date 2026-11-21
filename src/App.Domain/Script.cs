@@ -16,6 +16,9 @@ public sealed record class Script
     /// <summary>Whether <see cref="Command"/> has variables, written as <c>{{ name }}</c>, which are asked for each time it is run.</summary>
     public bool IsTemplate { get; init; }
 
+    /// <summary>Whether it is always run as an administrator, where the project supports it.</summary>
+    public bool RequiresElevation { get; init; }
+
     /// <summary>What is shown under the name in place of <see cref="Command"/>, such as what a script of a package.json file runs, or <see langword="null"/> to show the command.</summary>
     public string? Description { get; init; }
 
